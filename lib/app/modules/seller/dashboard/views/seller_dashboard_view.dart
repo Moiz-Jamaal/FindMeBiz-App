@@ -280,22 +280,47 @@ class SellerDashboardView extends GetView<SellerDashboardController> {
           const SizedBox(height: 16),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppConstants.defaultPadding),
-            child: Row(
+            child: Column(
               children: [
-                Expanded(
-                  child: _buildQuickActionCard(
-                    'Add Product',
-                    Icons.add_box,
-                    controller.addProduct,
-                  ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildQuickActionCard(
+                        'Add Product',
+                        Icons.add_box,
+                        controller.addProduct,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _buildQuickActionCard(
+                        'View Products',
+                        Icons.inventory,
+                        controller.viewProducts,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildQuickActionCard(
-                    'View Products',
-                    Icons.inventory,
-                    controller.viewProducts,
-                  ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildQuickActionCard(
+                        'Customer Enquiries',
+                        Icons.help_outline,
+                        () => Get.toNamed('/seller-enquiries'),
+                        badge: '3',
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _buildQuickActionCard(
+                        'Analytics',
+                        Icons.analytics,
+                        () => Get.toNamed('/seller-analytics'),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -374,7 +399,7 @@ class SellerDashboardView extends GetView<SellerDashboardController> {
     );
   }
 
-  Widget _buildQuickActionCard(String title, IconData icon, VoidCallback onTap) {
+  Widget _buildQuickActionCard(String title, IconData icon, VoidCallback onTap, {String? badge}) {
     return Card(
       child: InkWell(
         onTap: onTap,
@@ -383,10 +408,39 @@ class SellerDashboardView extends GetView<SellerDashboardController> {
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [
-              Icon(
-                icon,
-                size: 32,
-                color: AppTheme.sellerPrimary,
+              Stack(
+                children: [
+                  Icon(
+                    icon,
+                    size: 32,
+                    color: AppTheme.sellerPrimary,
+                  ),
+                  if (badge != null && badge.isNotEmpty)
+                    Positioned(
+                      right: 0,
+                      top: 0,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: AppTheme.errorColor,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 16,
+                          minHeight: 16,
+                        ),
+                        child: Text(
+                          badge,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                ],
               ),
               const SizedBox(height: 8),
               Text(

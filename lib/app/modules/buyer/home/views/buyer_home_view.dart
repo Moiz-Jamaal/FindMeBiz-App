@@ -16,6 +16,7 @@ class BuyerHomeView extends GetView<BuyerHomeController> {
         children: [
           _buildHomeTab(),
           _buildSearchTab(),
+          _buildEnquiryTab(),
           _buildMapTab(),
           _buildProfileTab(),
         ],
@@ -34,6 +35,10 @@ class BuyerHomeView extends GetView<BuyerHomeController> {
           BottomNavigationBarItem(
             icon: Icon(Icons.search),
             label: 'Search',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.help_outline),
+            label: 'Enquiry',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.map),
@@ -214,15 +219,15 @@ class BuyerHomeView extends GetView<BuyerHomeController> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 8),
                 Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () => Get.toNamed('/buyer-search'),
-                    icon: const Icon(Icons.search, size: 18),
-                    label: const Text('Advanced Search'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppTheme.buyerPrimary,
-                      side: const BorderSide(color: AppTheme.buyerPrimary),
+                  child: ElevatedButton.icon(
+                    onPressed: () => Get.toNamed('/buyer-create-enquiry'),
+                    icon: const Icon(Icons.help_outline, size: 18),
+                    label: const Text('Post Enquiry'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.orange,
+                      foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
@@ -230,6 +235,8 @@ class BuyerHomeView extends GetView<BuyerHomeController> {
                     ),
                   ),
                 ),
+                const SizedBox(width: 8),
+              
               ],
             ),
           ],
@@ -567,6 +574,12 @@ class BuyerHomeView extends GetView<BuyerHomeController> {
   Widget _buildSearchTab() {
     return const Center(
       child: Text('Redirecting to Search...'),
+    );
+  }
+
+  Widget _buildEnquiryTab() {
+    return const Center(
+      child: Text('Redirecting to Enquiry...'),
     );
   }
 

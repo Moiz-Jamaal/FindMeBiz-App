@@ -170,7 +170,7 @@ class ProductDetailView extends GetView<ProductDetailController> {
                 Icon(Icons.category, size: 16, color: AppTheme.textSecondary),
                 const SizedBox(width: 4),
                 Text(
-                  product.category,
+                  product.categories.isNotEmpty ? product.categories.first : 'No Category',
                   style: Get.textTheme.bodyMedium?.copyWith(
                     color: AppTheme.textSecondary,
                   ),

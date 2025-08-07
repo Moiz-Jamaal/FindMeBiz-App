@@ -141,7 +141,7 @@ class BuyerProductView extends GetView<BuyerProductViewController> {
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
-                  product.category,
+                  product.categories.isNotEmpty ? product.categories.first : 'No Category',
                   style: Get.textTheme.bodySmall?.copyWith(
                     color: AppTheme.buyerPrimary,
                     fontWeight: FontWeight.w500,

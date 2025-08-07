@@ -97,7 +97,7 @@ class SellerProfileViewController extends GetxController {
   void _extractProductCategories() {
     final categories = <String>{'All'};
     for (final product in products) {
-      categories.add(product.category);
+      categories.addAll(product.categories);
     }
     sellerCategories.addAll(categories.toList());
   }
@@ -230,7 +230,8 @@ class SellerProfileViewController extends GetxController {
     }
     
     final categoryName = sellerCategories[selectedProductCategory.value];
-    return products.where((product) => product.category == categoryName).toList();
+    return products.where((product) => 
+        categoryName == 'All' || product.categories.contains(categoryName)).toList();
   }
 
   void viewProduct(Product product) {
@@ -382,21 +383,21 @@ class SellerProfileViewController extends GetxController {
           Product(
             id: 'p1', sellerId: sellerId, name: 'Premium Silk Saree',
             description: 'Beautiful Banarasi silk saree with gold thread work',
-            price: 5500.0, category: 'Apparel', images: ['mock1'],
+            price: 5500.0, categories: ['Apparel'], images: ['mock1'],
             createdAt: DateTime.now().subtract(const Duration(days: 3)),
             updatedAt: DateTime.now(),
           ),
           Product(
             id: 'p2', sellerId: sellerId, name: 'Traditional Lehenga',
             description: 'Elegant wedding lehenga with intricate embroidery',
-            price: 8500.0, category: 'Apparel', images: ['mock2'],
+            price: 8500.0, categories: ['Apparel'], images: ['mock2'],
             createdAt: DateTime.now().subtract(const Duration(days: 1)),
             updatedAt: DateTime.now(),
           ),
           Product(
             id: 'p3', sellerId: sellerId, name: 'Silk Dupatta',
             description: 'Matching silk dupatta with golden border',
-            price: 1200.0, category: 'Apparel', images: ['mock3'],
+            price: 1200.0, categories: ['Apparel'], images: ['mock3'],
             createdAt: DateTime.now().subtract(const Duration(days: 5)),
             updatedAt: DateTime.now(),
           ),
@@ -408,14 +409,14 @@ class SellerProfileViewController extends GetxController {
           Product(
             id: 'p4', sellerId: sellerId, name: 'Handwoven Wall Hanging',
             description: 'Traditional Gujarati wall art with mirror work',
-            price: 1200.0, category: 'Art & Crafts', images: ['mock4'],
+            price: 1200.0, categories: ['Art & Crafts'], images: ['mock4'],
             createdAt: DateTime.now().subtract(const Duration(days: 1)),
             updatedAt: DateTime.now(),
           ),
           Product(
             id: 'p5', sellerId: sellerId, name: 'Wooden Handicraft',
             description: 'Hand-carved wooden decorative items',
-            price: 800.0, category: 'Home Decor', images: ['mock5'],
+            price: 800.0, categories: ['Home Decor'], images: ['mock5'],
             createdAt: DateTime.now().subtract(const Duration(days: 2)),
             updatedAt: DateTime.now(),
           ),
@@ -427,14 +428,14 @@ class SellerProfileViewController extends GetxController {
           Product(
             id: 'p6', sellerId: sellerId, name: 'Gujarati Thali Special',
             description: 'Authentic Gujarati thali with 12 varieties of traditional dishes',
-            price: 350.0, category: 'Food & Beverages', images: ['mock6'],
+            price: 350.0, categories: ['Food & Beverages'], images: ['mock6'],
             createdAt: DateTime.now().subtract(const Duration(hours: 6)),
             updatedAt: DateTime.now(),
           ),
           Product(
             id: 'p7', sellerId: sellerId, name: 'Traditional Spice Mix',
             description: 'Homemade Gujarati spice blend for authentic flavors',
-            price: 120.0, category: 'Food & Beverages', images: ['mock7'],
+            price: 120.0, categories: ['Food & Beverages'], images: ['mock7'],
             createdAt: DateTime.now().subtract(const Duration(days: 1)),
             updatedAt: DateTime.now(),
           ),
@@ -446,14 +447,14 @@ class SellerProfileViewController extends GetxController {
           Product(
             id: 'p8', sellerId: sellerId, name: 'Diamond Necklace Set',
             description: 'Elegant diamond necklace with matching earrings',
-            price: 25000.0, category: 'Jewelry', images: ['mock8'],
+            price: 25000.0, categories: ['Jewelry'], images: ['mock8'],
             createdAt: DateTime.now().subtract(const Duration(days: 2)),
             updatedAt: DateTime.now(),
           ),
           Product(
             id: 'p9', sellerId: sellerId, name: 'Gold Ring Collection',
             description: 'Beautiful gold rings with precious stones',
-            price: 8500.0, category: 'Jewelry', images: ['mock9'],
+            price: 8500.0, categories: ['Jewelry'], images: ['mock9'],
             createdAt: DateTime.now().subtract(const Duration(days: 3)),
             updatedAt: DateTime.now(),
           ),
@@ -465,14 +466,14 @@ class SellerProfileViewController extends GetxController {
           Product(
             id: 'p10', sellerId: sellerId, name: 'Decorative Vases Set',
             description: 'Elegant ceramic vases for home decoration',
-            price: 1200.0, category: 'Home Decor', images: ['mock10'],
+            price: 1200.0, categories: ['Home Decor'], images: ['mock10'],
             createdAt: DateTime.now().subtract(const Duration(days: 1)),
             updatedAt: DateTime.now(),
           ),
           Product(
             id: 'p11', sellerId: sellerId, name: 'Wall Art Collection',
             description: 'Beautiful framed wall art pieces',
-            price: 800.0, category: 'Home Decor', images: ['mock11'],
+            price: 800.0, categories: ['Home Decor'], images: ['mock11'],
             createdAt: DateTime.now().subtract(const Duration(days: 4)),
             updatedAt: DateTime.now(),
           ),
@@ -485,7 +486,7 @@ class SellerProfileViewController extends GetxController {
           Product(
             id: 'p_default', sellerId: sellerId, name: 'Sample Product',
             description: 'Sample product description',
-            price: 500.0, category: 'Others', images: ['mock_default'],
+            price: 500.0, categories: ['Others'], images: ['mock_default'],
             createdAt: DateTime.now().subtract(const Duration(days: 1)),
             updatedAt: DateTime.now(),
           ),

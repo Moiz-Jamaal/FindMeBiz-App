@@ -111,7 +111,7 @@ class ProductsController extends GetxController {
       filteredProducts.assignAll(products);
     } else {
       filteredProducts.assignAll(
-        products.where((product) => product.category == selectedCategory.value).toList()
+        products.where((product) => product.categories.contains(selectedCategory.value)).toList()
       );
     }
     update(['products_list']);
@@ -126,7 +126,7 @@ class ProductsController extends GetxController {
         name: 'Beautiful Silk Saree',
         description: 'Traditional Surat silk saree with intricate designs. Perfect for special occasions.',
         price: 2500.0,
-        category: 'Apparel',
+        categories: ['Apparel'],
         images: [
           'https://via.placeholder.com/300x300/FF6B35/FFFFFF?text=Silk+Saree',
         ],
@@ -139,7 +139,7 @@ class ProductsController extends GetxController {
         name: 'Handcrafted Jewelry Set',
         description: 'Elegant gold-plated jewelry set with matching earrings and necklace.',
         price: 1800.0,
-        category: 'Jewelry',
+        categories: ['Jewelry'],
         images: [
           'https://via.placeholder.com/300x300/4CAF50/FFFFFF?text=Jewelry+Set',
         ],
@@ -152,7 +152,7 @@ class ProductsController extends GetxController {
         name: 'Gujarati Thali Special',
         description: 'Authentic Gujarati thali with 12 varieties of traditional dishes.',
         price: 350.0,
-        category: 'Food & Beverages',
+        categories: ['Food & Beverages'],
         images: [
           'https://via.placeholder.com/300x300/2196F3/FFFFFF?text=Gujarati+Thali',
         ],
@@ -165,7 +165,7 @@ class ProductsController extends GetxController {
         name: 'Handwoven Wall Art',
         description: 'Beautiful handwoven wall hanging with traditional patterns.',
         price: 1200.0,
-        category: 'Art & Crafts',
+        categories: ['Art & Crafts'],
         images: [
           'https://via.placeholder.com/300x300/9C27B0/FFFFFF?text=Wall+Art',
         ],
@@ -178,7 +178,7 @@ class ProductsController extends GetxController {
         name: 'Decorative Brass Items',
         description: 'Set of 3 decorative brass items for home decoration.',
         price: 800.0,
-        category: 'Home Decor',
+        categories: ['Home Decor'],
         images: [
           'https://via.placeholder.com/300x300/FF9800/FFFFFF?text=Brass+Items',
         ],

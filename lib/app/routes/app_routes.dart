@@ -20,11 +20,16 @@ abstract class Routes {
   static const SELLER_ADVERTISING = _Paths.SELLER_ADVERTISING;
   static const SELLER_ANALYTICS = _Paths.SELLER_ANALYTICS;
   static const SELLER_CUSTOMER_INQUIRIES = _Paths.SELLER_CUSTOMER_INQUIRIES;
+  static const SELLER_ENQUIRIES = _Paths.SELLER_ENQUIRIES;
+  static const SELLER_ENQUIRY_DETAILS = _Paths.SELLER_ENQUIRY_DETAILS;
   static const SELLER_SETTINGS = _Paths.SELLER_SETTINGS;
   
   // Buyer routes
   static const BUYER_HOME = _Paths.BUYER_HOME;
   static const BUYER_SEARCH = _Paths.BUYER_SEARCH;
+  static const BUYER_ENQUIRY = _Paths.BUYER_ENQUIRY;
+  static const BUYER_CREATE_ENQUIRY = _Paths.BUYER_CREATE_ENQUIRY;
+  static const BUYER_ENQUIRY_DETAILS = _Paths.BUYER_ENQUIRY_DETAILS;
   static const BUYER_SELLER_VIEW = _Paths.BUYER_SELLER_VIEW;
   static const BUYER_MAP = _Paths.BUYER_MAP;
   static const BUYER_PROFILE = _Paths.BUYER_PROFILE;
@@ -51,11 +56,16 @@ abstract class _Paths {
   static const SELLER_ADVERTISING = '/seller-advertising';
   static const SELLER_ANALYTICS = '/seller-analytics';
   static const SELLER_CUSTOMER_INQUIRIES = '/seller-customer-inquiries';
+  static const SELLER_ENQUIRIES = '/seller-enquiries';
+  static const SELLER_ENQUIRY_DETAILS = '/seller-enquiry-details';
   static const SELLER_SETTINGS = '/seller-settings';
   
   // Buyer paths
   static const BUYER_HOME = '/buyer-home';
   static const BUYER_SEARCH = '/buyer-search';
+  static const BUYER_ENQUIRY = '/buyer-enquiry';
+  static const BUYER_CREATE_ENQUIRY = '/buyer-create-enquiry';
+  static const BUYER_ENQUIRY_DETAILS = '/buyer-enquiry-details';
   static const BUYER_SELLER_VIEW = '/buyer-seller-view';
   static const BUYER_MAP = '/buyer-map';
   static const BUYER_PROFILE = '/buyer-profile';

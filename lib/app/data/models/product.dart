@@ -4,7 +4,7 @@ class Product {
   final String name;
   final String description;
   final double? price;
-  final String category;
+  final List<String> categories;
   final List<String> images;
   final bool isAvailable;
   final DateTime createdAt;
@@ -17,13 +17,16 @@ class Product {
     required this.name,
     required this.description,
     this.price,
-    required this.category,
+    required this.categories,
     this.images = const [],
     this.isAvailable = true,
     required this.createdAt,
     required this.updatedAt,
     this.customAttributes = const {},
   });
+
+  // Convenience getter for backward compatibility
+  String get category => categories.isNotEmpty ? categories.first : 'Uncategorized';
 
   factory Product.fromJson(Map<String, dynamic> json) {
     return Product(
@@ -32,7 +35,7 @@ class Product {
       name: json['name'] as String,
       description: json['description'] as String,
       price: (json['price'] as num?)?.toDouble(),
-      category: json['category'] as String,
+      categories: List<String>.from(json['categories'] ?? [json['category']].where((c) => c != null)),
       images: List<String>.from(json['images'] ?? []),
       isAvailable: json['isAvailable'] as bool? ?? true,
       createdAt: DateTime.parse(json['createdAt'] as String),
@@ -48,7 +51,7 @@ class Product {
       'name': name,
       'description': description,
       'price': price,
-      'category': category,
+      'categories': categories,
       'images': images,
       'isAvailable': isAvailable,
       'createdAt': createdAt.toIso8601String(),
@@ -71,7 +74,7 @@ class Product {
     String? name,
     String? description,
     double? price,
-    String? category,
+    List<String>? categories,
     List<String>? images,
     bool? isAvailable,
     DateTime? createdAt,
@@ -84,7 +87,7 @@ class Product {
       name: name ?? this.name,
       description: description ?? this.description,
       price: price ?? this.price,
-      category: category ?? this.category,
+      categories: categories ?? this.categories,
       images: images ?? this.images,
       isAvailable: isAvailable ?? this.isAvailable,
       createdAt: createdAt ?? this.createdAt,
@@ -104,6 +107,6 @@ class Product {
 
   @override
   String toString() {
-    return 'Product(id: $id, name: $name, category: $category, price: $price)';
+    return 'Product(id: $id, name: $name, categories: $categories, price: $price)';
   }
 }

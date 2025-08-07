@@ -120,7 +120,7 @@ class ProductDetailController extends GetxController {
       name: '${originalProduct.name} (Copy)',
       description: originalProduct.description,
       price: originalProduct.price,
-      category: originalProduct.category,
+      categories: List.from(originalProduct.categories),
       images: List.from(originalProduct.images),
       isAvailable: false, // Start as unavailable
       createdAt: DateTime.now(),

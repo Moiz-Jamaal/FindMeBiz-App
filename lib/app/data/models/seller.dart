@@ -5,6 +5,7 @@ class Seller extends User {
   final String businessName;
   final String? bio;
   final String? businessLogo;
+  final List<String> categories;
   final List<String> socialMediaLinks;
   final String? whatsappNumber;
   final StallLocation? stallLocation;
@@ -24,6 +25,7 @@ class Seller extends User {
     required this.businessName,
     this.bio,
     this.businessLogo,
+    this.categories = const [],
     this.socialMediaLinks = const [],
     this.whatsappNumber,
     this.stallLocation,
@@ -57,6 +59,7 @@ class Seller extends User {
       businessName: json['businessName'] as String,
       bio: json['bio'] as String?,
       businessLogo: json['businessLogo'] as String?,
+      categories: List<String>.from(json['categories'] ?? []),
       socialMediaLinks: List<String>.from(json['socialMediaLinks'] ?? []),
       whatsappNumber: json['whatsappNumber'] as String?,
       stallLocation: json['stallLocation'] != null 
@@ -77,6 +80,7 @@ class Seller extends User {
       'businessName': businessName,
       'bio': bio,
       'businessLogo': businessLogo,
+      'categories': categories,
       'socialMediaLinks': socialMediaLinks,
       'whatsappNumber': whatsappNumber,
       'stallLocation': stallLocation?.toJson(),
@@ -101,6 +105,7 @@ class Seller extends User {
     String? businessName,
     String? bio,
     String? businessLogo,
+    List<String>? categories,
     List<String>? socialMediaLinks,
     String? whatsappNumber,
     StallLocation? stallLocation,
@@ -120,6 +125,7 @@ class Seller extends User {
       businessName: businessName ?? this.businessName,
       bio: bio ?? this.bio,
       businessLogo: businessLogo ?? this.businessLogo,
+      categories: categories ?? this.categories,
       socialMediaLinks: socialMediaLinks ?? this.socialMediaLinks,
       whatsappNumber: whatsappNumber ?? this.whatsappNumber,
       stallLocation: stallLocation ?? this.stallLocation,

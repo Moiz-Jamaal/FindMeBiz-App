@@ -111,7 +111,7 @@ class AddProductController extends GetxController {
       name: nameController.text.trim(),
       description: descriptionController.text.trim(),
       price: double.tryParse(priceController.text.trim()),
-      category: selectedCategory.value,
+      categories: [selectedCategory.value],
       images: List<String>.from(productImages),
       isAvailable: isAvailable.value,
       createdAt: DateTime.now(),

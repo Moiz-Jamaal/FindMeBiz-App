@@ -3,7 +3,6 @@ import 'package:get/get.dart';
 import '../../../../data/models/seller.dart';
 import '../../../../data/models/product.dart';
 import '../../../../core/constants/app_constants.dart';
-import '../../../../core/theme/app_theme.dart';
 
 class SearchController extends GetxController {
   // Search controllers
@@ -141,7 +140,7 @@ class SearchController extends GetxController {
     for (final product in mockProducts) {
       if (_matchesQuery(product.name, query) ||
           _matchesQuery(product.description, query) ||
-          _matchesQuery(product.category, query)) {
+          (product.categories.isNotEmpty && _matchesQuery(product.categories.first, query))) {
         productResults.add(product);
       }
     }
@@ -164,7 +163,7 @@ class SearchController extends GetxController {
           !selectedCategories.contains('All')); // Simplified for sellers
       
       productResults.removeWhere((product) => 
-          !selectedCategories.contains(product.category));
+          product.categories.isEmpty || !selectedCategories.any((cat) => product.categories.contains(cat)));
     }
     
     // Filter by search type
@@ -340,28 +339,28 @@ class SearchController extends GetxController {
       Product(
         id: '1', sellerId: '1', name: 'Premium Silk Saree',
         description: 'Beautiful Banarasi silk saree with gold thread work',
-        price: 5500.0, category: 'Apparel', images: ['mock1'],
+        price: 5500.0, categories: ['Apparel'], images: ['mock1'],
         createdAt: DateTime.now().subtract(const Duration(days: 3)),
         updatedAt: DateTime.now(),
       ),
       Product(
         id: '2', sellerId: '2', name: 'Handwoven Wall Hanging',
         description: 'Traditional Gujarati wall art with mirror work',
-        price: 1200.0, category: 'Art & Crafts', images: ['mock2'],
+        price: 1200.0, categories: ['Art & Crafts'], images: ['mock2'],
         createdAt: DateTime.now().subtract(const Duration(days: 1)),
         updatedAt: DateTime.now(),
       ),
       Product(
         id: '3', sellerId: '3', name: 'Diamond Necklace Set',
         description: 'Elegant diamond necklace with matching earrings',
-        price: 25000.0, category: 'Jewelry', images: ['mock3'],
+        price: 25000.0, categories: ['Jewelry'], images: ['mock3'],
         createdAt: DateTime.now().subtract(const Duration(days: 5)),
         updatedAt: DateTime.now(),
       ),
       Product(
         id: '4', sellerId: '4', name: 'Gujarati Thali',
         description: 'Complete traditional Gujarati meal with 12 varieties',
-        price: 350.0, category: 'Food & Beverages', images: ['mock4'],
+        price: 350.0, categories: ['Food & Beverages'], images: ['mock4'],
         createdAt: DateTime.now().subtract(const Duration(hours: 6)),
         updatedAt: DateTime.now(),
       ),

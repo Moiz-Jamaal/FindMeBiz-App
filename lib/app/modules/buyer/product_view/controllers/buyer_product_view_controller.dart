@@ -3,7 +3,6 @@ import 'package:get/get.dart';
 import '../../../../data/models/product.dart';
 import '../../../../data/models/seller.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../../../core/constants/app_constants.dart';
 import '../views/buyer_product_view.dart';
 import '../bindings/buyer_product_view_binding.dart';
 
@@ -52,7 +51,7 @@ class BuyerProductViewController extends GetxController {
         name: 'Premium Silk Saree',
         description: 'Beautiful Banarasi silk saree with intricate gold thread work. Handwoven by skilled artisans with traditional techniques passed down through generations. Perfect for weddings, festivals, and special occasions.',
         price: 5500.0,
-        category: 'Apparel',
+        categories: ['Apparel'],
         images: ['image1', 'image2', 'image3'],
         createdAt: DateTime.now().subtract(const Duration(days: 3)),
         updatedAt: DateTime.now(),
@@ -117,7 +116,7 @@ class BuyerProductViewController extends GetxController {
         name: 'Cotton Saree',
         description: 'Traditional cotton saree',
         price: 2500.0,
-        category: 'Apparel',
+        categories: ['Apparel'],
         images: ['img1'],
         createdAt: DateTime.now().subtract(const Duration(days: 1)),
         updatedAt: DateTime.now(),
@@ -128,7 +127,7 @@ class BuyerProductViewController extends GetxController {
         name: 'Designer Blouse',
         description: 'Elegant designer blouse',
         price: 1200.0,
-        category: 'Apparel',
+        categories: ['Apparel'],
         images: ['img2'],
         createdAt: DateTime.now().subtract(const Duration(days: 2)),
         updatedAt: DateTime.now(),

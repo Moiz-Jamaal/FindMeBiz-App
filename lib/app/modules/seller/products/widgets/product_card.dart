@@ -73,7 +73,7 @@ class ProductCard extends StatelessWidget {
                     // Category
                     Flexible(
                       child: Text(
-                        product.category,
+                        product.categories.isNotEmpty ? product.categories.first : 'No Category',
                         style: Get.textTheme.bodySmall?.copyWith(
                           color: AppTheme.textSecondary,
                           fontSize: 11,
@@ -193,7 +193,7 @@ class ProductCard extends StatelessWidget {
                     const SizedBox(height: 4),
                     
                     Text(
-                      product.category,
+                      product.categories.isNotEmpty ? product.categories.first : 'No Category',
                       style: Get.textTheme.bodySmall?.copyWith(
                         color: AppTheme.textSecondary,
                       ),

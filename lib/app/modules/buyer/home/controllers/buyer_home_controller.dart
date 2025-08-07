@@ -110,9 +110,12 @@ class BuyerHomeController extends GetxController {
       // Navigate to dedicated search screen instead of showing search tab
       Get.toNamed('/buyer-search');
     } else if (index == 2) {
+      // Navigate to enquiry screen
+      Get.toNamed('/buyer-enquiry');
+    } else if (index == 3) {
       // Navigate to map screen
       Get.toNamed('/buyer-map');
-    } else if (index == 3) {
+    } else if (index == 4) {
       // Navigate to profile screen
       Get.toNamed('/buyer-profile');
     } else {

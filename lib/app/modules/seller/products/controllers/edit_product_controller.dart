@@ -53,7 +53,7 @@ class EditProductController extends GetxController {
     nameController.text = product.name;
     descriptionController.text = product.description;
     priceController.text = product.price?.toString() ?? '';
-    selectedCategory.value = product.category;
+    selectedCategory.value = product.categories.isNotEmpty ? product.categories.first : '';
     productImages.addAll(product.images);
     isAvailable.value = product.isAvailable;
   }
@@ -72,7 +72,7 @@ class EditProductController extends GetxController {
     return nameController.text != originalProduct.name ||
            descriptionController.text != originalProduct.description ||
            priceController.text != (originalProduct.price?.toString() ?? '') ||
-           selectedCategory.value != originalProduct.category ||
+           selectedCategory.value != (originalProduct.categories.isNotEmpty ? originalProduct.categories.first : '') ||
            !_listsEqual(productImages, originalProduct.images) ||
            isAvailable.value != originalProduct.isAvailable;
   }
@@ -135,7 +135,7 @@ class EditProductController extends GetxController {
       price: priceController.text.trim().isNotEmpty 
           ? double.tryParse(priceController.text.trim())
           : null,
-      category: selectedCategory.value,
+      categories: [selectedCategory.value],
       images: List.from(productImages),
       isAvailable: isAvailable.value,
       createdAt: originalProduct.createdAt,
