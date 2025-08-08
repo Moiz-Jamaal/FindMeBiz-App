@@ -7,13 +7,17 @@ import 'app/core/theme/app_theme.dart';
 import 'app/core/constants/app_constants.dart';
 import 'app/services/communication_service.dart';
 import 'app/services/performance_service.dart';
+import 'app/services/role_service.dart';
+import 'package:get_storage/get_storage.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await GetStorage.init();
   
   // Initialize services
   Get.put(CommunicationService());
   Get.put(PerformanceService());
+  await Get.putAsync<RoleService>(() async => RoleService().init());
   
   // Preload critical data
   Get.find<PerformanceService>().preloadCriticalData();

@@ -1,4 +1,5 @@
 import 'package:get/get.dart';
+import '../../../../services/role_service.dart';
 
 class SellerOnboardingController extends GetxController {
   // Current step in onboarding process
@@ -53,6 +54,8 @@ class SellerOnboardingController extends GetxController {
     // Simulate API call
     Future.delayed(const Duration(seconds: 2), () {
       isLoading.value = false;
+  // Mark seller as onboarded for future quick switches
+  Get.find<RoleService>().sellerOnboarded = true;
       Get.offAllNamed('/seller-dashboard');
     });
   }

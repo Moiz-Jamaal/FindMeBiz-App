@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../controllers/buyer_home_controller.dart';
+import '../../../shared/widgets/module_switcher.dart';
 
 class BuyerHomeView extends GetView<BuyerHomeController> {
   const BuyerHomeView({super.key});
@@ -106,6 +107,7 @@ class BuyerHomeView extends GetView<BuyerHomeController> {
                     ],
                   ),
                 ),
+                const ModuleSwitchButton(),
                 IconButton(
                   icon: Stack(
                     children: [

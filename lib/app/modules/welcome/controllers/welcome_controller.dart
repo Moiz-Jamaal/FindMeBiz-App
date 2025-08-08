@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 import '../../../data/models/user_role.dart';
+import '../../../services/role_service.dart';
 
 class WelcomeController extends GetxController {
   // Selected role
@@ -34,15 +35,12 @@ class WelcomeController extends GetxController {
     // Simulate navigation delay for smooth UX
     Future.delayed(const Duration(milliseconds: 800), () {
       isLoading.value = false;
-      
-      switch (selectedRole.value!) {
-        case UserRole.seller:
-          Get.offAllNamed('/seller-onboarding');
-          break;
-        case UserRole.buyer:
-          Get.offAllNamed('/buyer-home');
-          break;
+      final roleService = Get.find<RoleService>();
+      // If picking seller first time, ensure we mark sellerOnboarded=false
+      if (selectedRole.value == UserRole.seller) {
+        roleService.sellerOnboarded = false;
       }
+      roleService.switchTo(selectedRole.value!);
     });
   }
 

@@ -5,6 +5,7 @@ import '../../../../core/constants/app_constants.dart';
 import '../controllers/seller_dashboard_controller.dart';
 import '../../products/views/products_view.dart';
 import '../../profile/views/seller_profile_edit_view.dart';
+import '../../../shared/widgets/module_switcher.dart';
 
 class SellerDashboardView extends GetView<SellerDashboardController> {
   const SellerDashboardView({super.key});
@@ -86,23 +87,31 @@ class SellerDashboardView extends GetView<SellerDashboardController> {
           ),
           color: Colors.white,
           child: SafeArea(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.end,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text(
-                  'Welcome back!',
-                  style: Get.textTheme.titleMedium?.copyWith(
-                    color: AppTheme.textSecondary,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Text(
+                        'Welcome back!',
+                        style: Get.textTheme.titleMedium?.copyWith(
+                          color: AppTheme.textSecondary,
+                        ),
+                      ),
+                      Obx(() => Text(
+                        controller.businessName.value,
+                        style: Get.textTheme.headlineMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.sellerPrimary,
+                        ),
+                      )),
+                    ],
                   ),
                 ),
-                Obx(() => Text(
-                  controller.businessName.value,
-                  style: Get.textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.sellerPrimary,
-                  ),
-                )),
+                const ModuleSwitchButton(),
               ],
             ),
           ),

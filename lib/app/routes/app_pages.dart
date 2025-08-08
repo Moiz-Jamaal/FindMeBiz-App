@@ -1,4 +1,6 @@
 import 'package:get/get.dart';
+import '../services/role_service.dart';
+import '../data/models/user_role.dart';
 
 // Core modules
 import '../modules/home/bindings/home_binding.dart';
@@ -60,7 +62,20 @@ part 'app_routes.dart';
 class AppPages {
   AppPages._();
 
-  static const INITIAL = Routes.WELCOME;
+  static String get INITIAL {
+    // Decide startup route based on saved role and onboarding state
+    if (Get.isRegistered<RoleService>()) {
+      final role = Get.find<RoleService>();
+      if (role.hasSavedRole) {
+        if (role.currentRole.value == UserRole.buyer) {
+          return Routes.BUYER_HOME;
+        } else {
+          return role.sellerOnboarded ? Routes.SELLER_DASHBOARD : Routes.SELLER_ONBOARDING;
+        }
+      }
+    }
+    return Routes.WELCOME;
+  }
 
   static final routes = [
     // Core routes
