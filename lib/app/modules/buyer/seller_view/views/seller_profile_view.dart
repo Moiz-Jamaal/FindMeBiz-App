@@ -34,10 +34,10 @@ class SellerProfileView extends GetView<SellerProfileViewController> {
       backgroundColor: Colors.white,
       elevation: 1,
       pinned: true,
-      title: Obx(() => Text(
+      title: Text(
         controller.seller.value?.businessName ?? '',
         style: const TextStyle(color: AppTheme.textPrimary),
-      )),
+      ),
       leading: IconButton(
         icon: const Icon(Icons.arrow_back, color: AppTheme.textPrimary),
         onPressed: () => Get.back(),
@@ -93,9 +93,8 @@ class SellerProfileView extends GetView<SellerProfileViewController> {
       child: Container(
         color: Colors.white,
         padding: const EdgeInsets.all(AppConstants.defaultPadding),
-        child: Obx(() {
+        child: () {
           final seller = controller.seller.value!;
-          
           return Column(
             children: [
               // Profile Picture and Basic Info
@@ -176,7 +175,7 @@ class SellerProfileView extends GetView<SellerProfileViewController> {
               ],
             ],
           );
-        }),
+        }(),
       ),
     );
   }
@@ -273,10 +272,9 @@ class SellerProfileView extends GetView<SellerProfileViewController> {
 
   Widget _buildStallInfo() {
     return SliverToBoxAdapter(
-      child: Obx(() {
+      child: () {
         final stallLocation = controller.seller.value?.stallLocation;
         if (stallLocation == null) return const SizedBox();
-        
         return Container(
           margin: const EdgeInsets.all(AppConstants.defaultPadding),
           child: Card(
@@ -301,17 +299,14 @@ class SellerProfileView extends GetView<SellerProfileViewController> {
                     ],
                   ),
                   const SizedBox(height: 12),
-                  
                   if (stallLocation.stallNumber != null) ...[
                     _buildInfoRow('Stall Number', stallLocation.stallNumber!),
                     const SizedBox(height: 8),
                   ],
-                  
                   if (stallLocation.area != null) ...[
                     _buildInfoRow('Area', stallLocation.area!),
                     const SizedBox(height: 8),
                   ],
-                  
                   if (stallLocation.address != null) ...[
                     _buildInfoRow('Address', stallLocation.address!),
                   ],
@@ -320,7 +315,7 @@ class SellerProfileView extends GetView<SellerProfileViewController> {
             ),
           ),
         );
-      }),
+      }(),
     );
   }
 

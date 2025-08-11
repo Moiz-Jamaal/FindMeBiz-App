@@ -4,6 +4,10 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../controllers/buyer_home_controller.dart';
 import '../../../shared/widgets/module_switcher.dart';
+import '../../../../services/ad_service.dart';
+import '../../../shared/widgets/ads/banner_ad_tile.dart';
+import '../../../shared/widgets/ads/native_ad_card.dart';
+import '../../../../data/models/sponsored_content.dart';
 
 class BuyerHomeView extends GetView<BuyerHomeController> {
   const BuyerHomeView({super.key});
@@ -61,10 +65,29 @@ class BuyerHomeView extends GetView<BuyerHomeController> {
         slivers: [
           _buildAppBar(),
           _buildSearchSection(),
+          _buildHeaderAdBanner(),
           _buildFeaturedSection(),
           _buildCategoriesSection(),
           _buildNewSellersSection(),
         ],
+      ),
+    );
+  }
+  
+  Widget _buildHeaderAdBanner() {
+  final adService = Get.find<AdService>();
+  // Show a single subtle banner header deterministically
+  final ads = adService.getSponsoredForSlot(AdSlot.homeHeaderBanner);
+  if (ads.isEmpty) return const SliverToBoxAdapter(child: SizedBox.shrink());
+  final ad = ads.first;
+    return SliverToBoxAdapter(
+      child: BannerAdTile(
+        ad: ad,
+        onTap: () {
+          if (ad.deeplinkRoute != null) {
+            Get.toNamed(ad.deeplinkRoute!, arguments: ad.payload);
+          }
+        },
       ),
     );
   }
@@ -281,9 +304,26 @@ class BuyerHomeView extends GetView<BuyerHomeController> {
               padding: const EdgeInsets.symmetric(
                 horizontal: AppConstants.defaultPadding,
               ),
-              itemCount: controller.featuredSellers.length,
+              itemCount: controller.featuredSellers.length + 1,
               itemBuilder: (context, index) {
-                final seller = controller.featuredSellers[index];
+                final adService = Get.find<AdService>();
+                // Deterministic: insert a single ad after the 3rd card if possible
+                if (index == 3) {
+                  final ad = adService.getSponsoredForSlot(AdSlot.homeFeatured).first;
+                  return SizedBox(
+                    width: 160,
+                    child: NativeAdCard(
+                      ad: ad,
+                      onTap: () {
+                        if (ad.deeplinkRoute != null) {
+                          Get.toNamed(ad.deeplinkRoute!, arguments: ad.payload);
+                        }
+                      },
+                    ),
+                  );
+                }
+                final dataIndex = index % controller.featuredSellers.length;
+                final seller = controller.featuredSellers[dataIndex];
                 return _buildFeaturedSellerCard(seller);
               },
             )),
@@ -506,10 +546,26 @@ class BuyerHomeView extends GetView<BuyerHomeController> {
             padding: const EdgeInsets.symmetric(
               horizontal: AppConstants.defaultPadding,
             ),
-            itemCount: controller.newSellers.length,
+            itemCount: controller.newSellers.length + 1, // one subtle ad
             itemBuilder: (context, index) {
-              final seller = controller.newSellers[index];
-              return _buildNewSellerTile(seller);
+              final adService = Get.find<AdService>();
+              // Deterministic: insert a single ad after the 4th tile if possible
+              if (index == 4) {
+                final ad = adService.getSponsoredForSlot(AdSlot.homeNewSellers).first;
+                return NativeAdCard(
+                  ad: ad,
+                  onTap: () {
+                    if (ad.deeplinkRoute != null) {
+                      Get.toNamed(ad.deeplinkRoute!, arguments: ad.payload);
+                    }
+                  },
+                );
+              }
+              if (index < controller.newSellers.length) {
+                final seller = controller.newSellers[index];
+                return _buildNewSellerTile(seller);
+              }
+              return const SizedBox.shrink();
             },
           )),
           const SizedBox(height: 20),

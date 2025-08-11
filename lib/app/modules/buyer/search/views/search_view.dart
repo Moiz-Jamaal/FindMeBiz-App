@@ -3,6 +3,10 @@ import 'package:get/get.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../controllers/search_controller.dart' as search;
+import '../../../../services/ad_service.dart';
+import '../../../shared/widgets/ads/native_ad_card.dart';
+import '../../../shared/widgets/ads/banner_ad_tile.dart';
+import '../../../../data/models/sponsored_content.dart';
 
 class SearchView extends GetView<search.SearchController> {
   const SearchView({super.key});
@@ -478,33 +482,74 @@ class SearchView extends GetView<search.SearchController> {
   }
 
   Widget _buildSellerResults() {
-    return Obx(() => ListView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: controller.searchResults.length,
-      itemBuilder: (context, index) {
-        final seller = controller.searchResults[index];
-        return _buildSellerCard(seller);
-      },
-    ));
+    return Obx(() {
+      final sellers = controller.searchResults;
+      // Deterministic placement: insert a single native ad after the 2nd seller if available
+      final adIndex = sellers.length >= 2 ? 2 : (sellers.isNotEmpty ? 1 : null);
+      final itemCount = sellers.length + (adIndex != null ? 1 : 0);
+      final adService = Get.find<AdService>();
+      final ad = adService.getSponsoredForSlot(AdSlot.searchSellers).first;
+
+      return ListView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: itemCount,
+        itemBuilder: (context, index) {
+          if (adIndex != null && index == adIndex) {
+            return NativeAdCard(
+              ad: ad,
+              onTap: () {
+                if (ad.deeplinkRoute != null) {
+                  Get.toNamed(ad.deeplinkRoute!, arguments: ad.payload);
+                }
+              },
+            );
+          }
+          final dataIndex = adIndex != null && index > adIndex ? index - 1 : index;
+          final seller = sellers[dataIndex];
+          return _buildSellerCard(seller);
+        },
+      );
+    });
   }
 
   Widget _buildProductResults() {
-    return Obx(() => GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        childAspectRatio: 0.8,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-      ),
-      itemCount: controller.productResults.length,
-      itemBuilder: (context, index) {
-        final product = controller.productResults[index];
-        return _buildProductCard(product);
-      },
-    ));
+  final adService = Get.find<AdService>();
+  // Deterministic: show a single slim banner above grid if there are any products
+  final showBanner = controller.productResults.isNotEmpty;
+  final ad = showBanner ? adService.getSponsoredForSlot(AdSlot.searchProducts).first : null;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (showBanner && ad != null) ...[
+          BannerAdTile(
+            ad: ad,
+            onTap: () {
+              if (ad.deeplinkRoute != null) {
+                Get.toNamed(ad.deeplinkRoute!, arguments: ad.payload);
+              }
+            },
+          ),
+          const SizedBox(height: 12),
+        ],
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            childAspectRatio: 0.8,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+          ),
+          itemCount: controller.productResults.length,
+          itemBuilder: (context, index) {
+            final product = controller.productResults[index];
+            return _buildProductCard(product);
+          },
+        ),
+      ],
+    );
   }
   Widget _buildSellerCard(seller) {
     return Card(
