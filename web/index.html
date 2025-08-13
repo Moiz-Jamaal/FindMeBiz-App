@@ -31,6 +31,12 @@
 
   <title>FindMeBiz</title>
   <link rel="manifest" href="manifest.json">
+  <script>
+    if ('serviceWorker' in navigator) {
+      // Register Firebase Messaging service worker
+      navigator.serviceWorker.register('firebase-messaging-sw.js').catch(console.error);
+    }
+  </script>
 </head>
 <body>
   <script src="flutter_bootstrap.js" async></script>

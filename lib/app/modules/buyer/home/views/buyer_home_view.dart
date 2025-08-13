@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/constants/app_constants.dart';
@@ -8,53 +9,124 @@ import '../../../../services/ad_service.dart';
 import '../../../shared/widgets/ads/banner_ad_tile.dart';
 import '../../../shared/widgets/ads/native_ad_card.dart';
 import '../../../../data/models/sponsored_content.dart';
+import '../../../../core/widgets/app_logo.dart';
 
 class BuyerHomeView extends GetView<BuyerHomeController> {
   const BuyerHomeView({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    final bool isWideWeb = kIsWeb && width >= 900;
+
+    final Widget stackedTabs = Obx(() => IndexedStack(
+          index: controller.currentIndex.value,
+          children: [
+            _buildHomeTab(),
+            _buildSearchTab(),
+            _buildEnquiryTab(),
+            _buildMapTab(),
+            _buildProfileTab(),
+          ],
+        ));
+
+    if (isWideWeb) {
+      // Instagram-like web layout: left sidebar + centered fixed-width content
+      return Scaffold(
+        backgroundColor: AppTheme.backgroundColor,
+        body: SafeArea(
+          child: Row(
+            children: [
+              Obx(() => NavigationRail(
+                    backgroundColor: Colors.white,
+                    selectedIndex: controller.currentIndex.value,
+                    onDestinationSelected: controller.changeTab,
+                    labelType: NavigationRailLabelType.all,
+                    leading: const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 12),
+                      child: AppLogo(size: 36),
+                    ),
+                    selectedIconTheme: IconThemeData(color: AppTheme.buyerPrimary),
+                    selectedLabelTextStyle: TextStyle(
+                      color: AppTheme.buyerPrimary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    destinations: const [
+                      NavigationRailDestination(
+                        icon: Icon(Icons.home_outlined),
+                        selectedIcon: Icon(Icons.home),
+                        label: Text('Home'),
+                      ),
+                      NavigationRailDestination(
+                        icon: Icon(Icons.search),
+                        selectedIcon: Icon(Icons.search),
+                        label: Text('Search'),
+                      ),
+                      NavigationRailDestination(
+                        icon: Icon(Icons.help_outline),
+                        selectedIcon: Icon(Icons.help),
+                        label: Text('Enquiry'),
+                      ),
+                      NavigationRailDestination(
+                        icon: Icon(Icons.map_outlined),
+                        selectedIcon: Icon(Icons.map),
+                        label: Text('Map'),
+                      ),
+                      NavigationRailDestination(
+                        icon: Icon(Icons.person_outline),
+                        selectedIcon: Icon(Icons.person),
+                        label: Text('Profile'),
+                      ),
+                    ],
+                  )),
+              const VerticalDivider(width: 1),
+              Expanded(
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 560),
+                    child: stackedTabs,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Mobile/tablet: keep bottom navigation
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
-      body: Obx(() => IndexedStack(
-        index: controller.currentIndex.value,
-        children: [
-          _buildHomeTab(),
-          _buildSearchTab(),
-          _buildEnquiryTab(),
-          _buildMapTab(),
-          _buildProfileTab(),
-        ],
-      )),
+      body: stackedTabs,
       bottomNavigationBar: Obx(() => BottomNavigationBar(
-        currentIndex: controller.currentIndex.value,
-        onTap: controller.changeTab,
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: AppTheme.buyerPrimary,
-        unselectedItemColor: AppTheme.textHint,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.search),
-            label: 'Search',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.help_outline),
-            label: 'Enquiry',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.map),
-            label: 'Map',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Profile',
-          ),
-        ],
-      )),
+            currentIndex: controller.currentIndex.value,
+            onTap: controller.changeTab,
+            type: BottomNavigationBarType.fixed,
+            selectedItemColor: AppTheme.buyerPrimary,
+            unselectedItemColor: AppTheme.textHint,
+            items: const [
+              BottomNavigationBarItem(
+                icon: Icon(Icons.home),
+                label: 'Home',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.search),
+                label: 'Search',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.help_outline),
+                label: 'Enquiry',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.map),
+                label: 'Map',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.person),
+                label: 'Profile',
+              ),
+            ],
+          )),
     );
   }
 

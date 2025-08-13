@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/constants/app_constants.dart';
@@ -6,48 +7,119 @@ import '../controllers/seller_dashboard_controller.dart';
 import '../../products/views/products_view.dart';
 import '../../profile/views/seller_profile_edit_view.dart';
 import '../../../shared/widgets/module_switcher.dart';
+import '../../../../core/widgets/app_logo.dart';
 
 class SellerDashboardView extends GetView<SellerDashboardController> {
   const SellerDashboardView({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    final bool isWideWeb = kIsWeb && width >= 900;
+
+    final Widget stackedTabs = Obx(() => IndexedStack(
+          index: controller.currentIndex.value,
+          children: [
+            _buildDashboardTab(),
+            _buildProductsTab(),
+            _buildProfileTab(),
+            _buildAnalyticsTab(),
+          ],
+        ));
+
+    if (isWideWeb) {
+      return Scaffold(
+        backgroundColor: AppTheme.backgroundColor,
+        body: SafeArea(
+          child: Row(
+            children: [
+              Obx(() => NavigationRail(
+                    backgroundColor: Colors.white,
+                    selectedIndex: controller.currentIndex.value,
+                    onDestinationSelected: controller.changeTab,
+                    labelType: NavigationRailLabelType.all,
+                    leading: const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 12),
+                      child: AppLogo(size: 36),
+                    ),
+                    selectedIconTheme: IconThemeData(color: AppTheme.sellerPrimary),
+                    selectedLabelTextStyle: TextStyle(
+                      color: AppTheme.sellerPrimary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    destinations: const [
+                      NavigationRailDestination(
+                        icon: Icon(Icons.dashboard_outlined),
+                        selectedIcon: Icon(Icons.dashboard),
+                        label: Text('Dashboard'),
+                      ),
+                      NavigationRailDestination(
+                        icon: Icon(Icons.inventory_2_outlined),
+                        selectedIcon: Icon(Icons.inventory_2),
+                        label: Text('Products'),
+                      ),
+                      NavigationRailDestination(
+                        icon: Icon(Icons.person_outline),
+                        selectedIcon: Icon(Icons.person),
+                        label: Text('Profile'),
+                      ),
+                      NavigationRailDestination(
+                        icon: Icon(Icons.analytics_outlined),
+                        selectedIcon: Icon(Icons.analytics),
+                        label: Text('Analytics'),
+                      ),
+                    ],
+                  )),
+              const VerticalDivider(width: 1),
+              Expanded(
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 560),
+                    child: stackedTabs,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        floatingActionButton: Obx(() => controller.currentIndex.value == 1
+            ? FloatingActionButton(
+                onPressed: controller.addProduct,
+                backgroundColor: AppTheme.sellerPrimary,
+                child: const Icon(Icons.add, color: Colors.white),
+              )
+            : const SizedBox()),
+      );
+    }
+
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
-      body: Obx(() => IndexedStack(
-        index: controller.currentIndex.value,
-        children: [
-          _buildDashboardTab(),
-          _buildProductsTab(),
-          _buildProfileTab(),
-          _buildAnalyticsTab(),
-        ],
-      )),
+      body: stackedTabs,
       bottomNavigationBar: Obx(() => BottomNavigationBar(
-        currentIndex: controller.currentIndex.value,
-        onTap: controller.changeTab,
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: AppTheme.sellerPrimary,
-        unselectedItemColor: AppTheme.textHint,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.dashboard),
-            label: 'Dashboard',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.inventory),
-            label: 'Products',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Profile',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.analytics),
-            label: 'Analytics',
-          ),
-        ],
-      )),
+            currentIndex: controller.currentIndex.value,
+            onTap: controller.changeTab,
+            type: BottomNavigationBarType.fixed,
+            selectedItemColor: AppTheme.sellerPrimary,
+            unselectedItemColor: AppTheme.textHint,
+            items: const [
+              BottomNavigationBarItem(
+                icon: Icon(Icons.dashboard),
+                label: 'Dashboard',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.inventory),
+                label: 'Products',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.person),
+                label: 'Profile',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.analytics),
+                label: 'Analytics',
+              ),
+            ],
+          )),
       floatingActionButton: Obx(() => controller.currentIndex.value == 1
           ? FloatingActionButton(
               onPressed: controller.addProduct,
