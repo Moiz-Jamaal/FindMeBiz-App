@@ -1,6 +1,6 @@
-# Souq Database Architecture
+# FindMeBiz Database Architecture
 
-This document proposes a complete backend data model for Souq, aligned with current Flutter models and seller/buyer flows. It includes:
+This document proposes a complete backend data model for FindMeBiz, aligned with current Flutter models and seller/buyer flows. It includes:
 - Entity-Relationship (ER) design
 - SQL (PostgreSQL) schema with indexes and constraints
 - Firestore (NoSQL) alternative structure

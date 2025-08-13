@@ -105,7 +105,7 @@ class BuyerNotificationsController extends GetxController {
         ),
         NotificationItem(
           id: '4',
-          title: 'Welcome to Souq Istefada!',
+          title: 'Welcome to FindMeBiz!',
           message: 'Discover amazing sellers and products at Istefada marketplace',
           type: NotificationType.general,
           timestamp: DateTime.now().subtract(const Duration(days: 1)),

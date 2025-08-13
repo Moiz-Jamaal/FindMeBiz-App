@@ -162,7 +162,7 @@ class SellerProfileViewController extends GetxController {
     
     // TODO: Uncomment when url_launcher is added to pubspec.yaml
     /*
-    const message = 'Hi, I found your profile on Souq Istefada and I\'m interested in your products.';
+  const message = 'Hi, I found your profile on FindMeBiz and I\'m interested in your products.';
     final whatsappNumber = seller.whatsappNumber!.replaceAll(RegExp(r'[^\d]'), '');
     final url = 'https://wa.me/$whatsappNumber?text=${Uri.encodeComponent(message)}';
     try {

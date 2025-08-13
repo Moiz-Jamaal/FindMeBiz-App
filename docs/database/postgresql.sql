@@ -1,4 +1,4 @@
--- Souq PostgreSQL schema
+-- FindMeBiz PostgreSQL schema
 -- Run in a fresh database. Adjust extensions/roles as needed.
 
 CREATE TABLE "user" (

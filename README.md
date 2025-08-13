@@ -1,4 +1,4 @@
-# souq
+# FindMeBiz
 
 A new Flutter project.
 

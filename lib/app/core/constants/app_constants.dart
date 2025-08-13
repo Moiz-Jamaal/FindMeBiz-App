@@ -3,12 +3,12 @@ class AppConstants {
   AppConstants._();
   
   // App Info
-  static const String appName = 'Souq Istefada';
+  static const String appName = 'FindMeBiz';
   static const String appVersion = '1.0.0';
   static const String appDescription = 'Seller & Buyer Connect Platform';
   
   // API Base URLs (Placeholder)
-  static const String baseUrl = 'https://api.souq-istefada.com';
+  static const String baseUrl = 'https://api.findmebiz.com';
   static const String apiVersion = '/v1';
   
   // Storage Keys
@@ -63,13 +63,13 @@ class AppConstants {
   static const String currencyCode = 'INR';
   
   // Contact Info
-  static const String supportEmail = 'support@souq-istefada.com';
+  static const String supportEmail = 'support@findmebiz.com';
   static const String supportPhone = '+91-9876543210';
   static const String whatsappNumber = '+919876543210';
   
   // Social Media
-  static const String instagramHandle = '@souq_istefada';
-  static const String facebookPage = 'souq.istefada';
+  static const String instagramHandle = '@findmebiz';
+  static const String facebookPage = 'findmebiz';
   
   // Categories (will be dynamic later)
   static const List<String> productCategories = [
@@ -119,7 +119,7 @@ class AppStrings {
   static const String no = 'No';
   
   // Welcome & Onboarding
-  static const String welcome = 'Welcome to Souq Istefada';
+  static const String welcome = 'Welcome to FindMeBiz';
   static const String welcomeSubtitle = 'Connect, Discover, Trade at the biggest Istefada event';
   static const String chooseRole = 'What brings you here?';
   static const String seller = 'I\'m a Seller';

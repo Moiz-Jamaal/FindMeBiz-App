@@ -8,6 +8,7 @@ import UIKit
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
     GeneratedPluginRegistrant.register(with: self)
+  // Firebase is initialized in Dart via DefaultFirebaseOptions; no native init is required here.
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 }

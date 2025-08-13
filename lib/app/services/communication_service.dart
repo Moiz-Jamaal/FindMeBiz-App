@@ -108,7 +108,7 @@ class CommunicationService extends GetxService {
     try {
       final cleanNumber = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
       final encodedMessage = Uri.encodeComponent(
-        message ?? 'Hi! I found your business on Souq Istefada app.',
+  message ?? 'Hi! I found your business on FindMeBiz app.',
       );
       
       final smsUrl = 'sms:$cleanNumber?body=$encodedMessage';
@@ -149,10 +149,10 @@ class CommunicationService extends GetxService {
   }) async {
     try {
       final emailSubject = Uri.encodeComponent(
-        subject ?? 'Inquiry from Souq Istefada',
+  subject ?? 'Inquiry from FindMeBiz',
       );
       final emailBody = Uri.encodeComponent(
-        body ?? 'Hi! I found your business on Souq Istefada app and would like to know more.',
+  body ?? 'Hi! I found your business on FindMeBiz app and would like to know more.',
       );
       
       final emailUrl = 'mailto:$email?subject=$emailSubject&body=$emailBody';
@@ -417,12 +417,12 @@ class CommunicationService extends GetxService {
     final business = businessName ?? 'your business';
     final buyer = buyerName ?? 'A potential customer';
     
-    return '''Hi! $buyer found $business on the Souq Istefada app.
+  return '''Hi! $buyer found $business on the FindMeBiz app.
 
 I'm interested in learning more about your products and services. Could you please share more details?
 
 Thank you!
 
-Sent via Souq Istefada app''';
+Sent via FindMeBiz app''';
   }
 }

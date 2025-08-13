@@ -1,6 +1,6 @@
 {
-    "name": "souq",
-    "short_name": "souq",
+    "name": "FindMeBiz",
+    "short_name": "FindMeBiz",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

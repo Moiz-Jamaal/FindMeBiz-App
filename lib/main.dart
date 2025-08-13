@@ -8,6 +8,7 @@ import 'app/core/constants/app_constants.dart';
 import 'app/services/communication_service.dart';
 import 'app/services/performance_service.dart';
 import 'app/services/role_service.dart';
+import 'app/services/push_notification_service.dart';
 import 'package:get_storage/get_storage.dart';
 
 Future<void> main() async {
@@ -18,6 +19,7 @@ Future<void> main() async {
   Get.put(CommunicationService());
   Get.put(PerformanceService());
   await Get.putAsync<RoleService>(() async => RoleService().init());
+  await Get.putAsync<PushNotificationService>(() async => PushNotificationService().init());
   
   // Preload critical data
   Get.find<PerformanceService>().preloadCriticalData();

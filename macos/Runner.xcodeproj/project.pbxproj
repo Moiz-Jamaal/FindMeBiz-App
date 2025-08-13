@@ -1,3 +1,12 @@
+	33CC10ED2044A3C60003C045 /* FindMeBiz.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "FindMeBiz.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+				33CC10ED2044A3C60003C045 /* FindMeBiz.app */,
+			productReference = 33CC10ED2044A3C60003C045 /* FindMeBiz.app */;
+				PRODUCT_BUNDLE_IDENTIFIER = com.application.findmebiz.RunnerTests;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/FindMeBiz.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/FindMeBiz";
+				PRODUCT_BUNDLE_IDENTIFIER = com.application.findmebiz.RunnerTests;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/FindMeBiz.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/FindMeBiz";
+				PRODUCT_BUNDLE_IDENTIFIER = com.application.findmebiz.RunnerTests;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/FindMeBiz.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/FindMeBiz";
 // !$*UTF8*$!
 {
 	archiveVersion = 1;

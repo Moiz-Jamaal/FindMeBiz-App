@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../services/payment_service.dart';
 
 class AdvertisingController extends GetxController {
   // Active campaign state
@@ -50,7 +51,7 @@ class AdvertisingController extends GetxController {
     }
     selectedAdType.value = adTypeId;
     final type = selectedAdTypeObject;
-    _showFixedPriceConfirmation(type, type.basePrice);
+  _showFixedPriceConfirmation(type, type.basePrice);
   }
 
   void _showFixedPriceConfirmation(AdType type, double price) {
@@ -86,7 +87,7 @@ class AdvertisingController extends GetxController {
     );
   }
 
-  void _processPaymentFixed(AdType type, double price) {
+  Future<void> _processPaymentFixed(AdType type, double price) async {
     isProcessingPayment.value = true;
     Get.dialog(
       Dialog(
@@ -110,11 +111,38 @@ class AdvertisingController extends GetxController {
       barrierDismissible: false,
     );
 
-    Future.delayed(const Duration(seconds: 2), () {
-      isProcessingPayment.value = false;
+    try {
+      final payment = Get.find<PaymentService>();
+      final result = await payment.payINR(
+        amountInPaise: (price * 100).toInt(),
+        description: type.name,
+        receipt: 'adv_${DateTime.now().millisecondsSinceEpoch}',
+        notes: {'ad_type': type.id},
+      );
       Get.back();
-      _activateFixedCampaign(type, price);
-    });
+      isProcessingPayment.value = false;
+      if (result.success) {
+        _activateFixedCampaign(type, price);
+      } else {
+        Get.snackbar(
+          'Payment Failed',
+          result.error ?? 'Unable to complete payment',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+      }
+    } catch (e) {
+      Get.back();
+      isProcessingPayment.value = false;
+      Get.snackbar(
+        'Payment Error',
+        e.toString(),
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    }
   }
 
   void _activateFixedCampaign(AdType type, double price) {
