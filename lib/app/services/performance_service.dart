@@ -189,7 +189,7 @@ class PerformanceService extends GetxService {
             'Offline Mode',
             'Showing cached data due to network issues',
             snackPosition: SnackPosition.BOTTOM,
-            backgroundColor: Colors.orange,
+            backgroundColor: const Color(0xFF0EA5A4),
             colorText: Colors.white,
           );
           return cachedData;
@@ -287,7 +287,7 @@ class PerformanceService extends GetxService {
         'Something went wrong',
         'Please try again in a moment',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.orange,
+  backgroundColor: const Color(0xFF0EA5A4),
         colorText: Colors.white,
         duration: const Duration(seconds: 3),
       );

@@ -16,7 +16,9 @@ class ModuleSwitchButton extends StatelessWidget {
         tooltip: isBuyer ? 'Switch to Seller' : 'Switch to Buyer',
         icon: CircleAvatar(
           radius: 16,
-          backgroundColor: isBuyer ? Colors.orange : Colors.blue,
+          backgroundColor: isBuyer
+              ? const Color(0xFF2E7D32) // seller green when switching to seller
+              : const Color(0xFF0EA5A4), // brand teal when switching to buyer
           child: const Icon(
             Icons.swap_horiz,
             size: 18,

@@ -6,21 +6,23 @@ class AppTheme {
   AppTheme._();
 
   // Primary Colors - Marketplace inspired
-  static const Color primaryColor = Color(0xFF1B73E8); // Google Blue
-  static const Color primaryDark = Color(0xFF1557B0);
-  static const Color primaryLight = Color(0xFF4285F4);
+  // Brand teal from app icon
+  static const Color primaryColor = Color(0xFF0EA5A4);
+  static const Color primaryDark = Color(0xFF0B8584);
+  static const Color primaryLight = Color(0xFF33BDBB);
   
   // Accent Colors
-  static const Color accentColor = Color(0xFFFF6B35); // Orange for CTAs
-  static const Color accentLight = Color(0xFFFF8A50);
+  // Accent Colors (align with brand for consistency)
+  static const Color accentColor = Color(0xFF0EA5A4);
+  static const Color accentLight = Color(0xFF33BDBB);
   
   // Seller Colors
   static const Color sellerPrimary = Color(0xFF2E7D32); // Green for sellers
   static const Color sellerLight = Color(0xFF4CAF50);
   
   // Buyer Colors  
-  static const Color buyerPrimary = Color(0xFF1976D2); // Blue for buyers
-  static const Color buyerLight = Color(0xFF42A5F5);
+  static const Color buyerPrimary = primaryColor; // Align buyer with brand
+  static const Color buyerLight = primaryLight;
   
   // Neutral Colors
   static const Color backgroundColor = Color(0xFFF8F9FA);
@@ -87,12 +89,14 @@ class AppTheme {
         fontSize: 18,
         fontWeight: FontWeight.w600,
       ),
+      iconTheme: IconThemeData(color: primaryColor),
+      actionsIconTheme: IconThemeData(color: primaryColor),
     ),
     
     // Elevated Button Theme
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
-        backgroundColor: primaryColor,
+  backgroundColor: primaryColor,
         foregroundColor: Colors.white,
         elevation: 2,
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),

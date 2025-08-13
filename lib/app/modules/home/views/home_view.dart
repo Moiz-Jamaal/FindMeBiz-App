@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:souq/app/core/widgets/app_logo.dart';
 
 import 'package:get/get.dart';
 
@@ -10,8 +11,15 @@ class HomeView extends GetView<HomeController> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('HomeView'),
         centerTitle: true,
+    title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+      const AppLogo(size: 24, radius: 6),
+            const SizedBox(width: 8),
+            const Text('FindMeBiz'),
+          ],
+        ),
       ),
       body: const Center(
         child: Text(

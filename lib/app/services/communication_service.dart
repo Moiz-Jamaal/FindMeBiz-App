@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:get/get.dart';
-import '../core/constants/app_constants.dart';
 
 class CommunicationService extends GetxService {
   static CommunicationService get to => Get.find();
@@ -298,7 +297,7 @@ class CommunicationService extends GetxService {
                 icon: Icons.phone,
                 title: 'Call',
                 subtitle: phoneNumber,
-                color: Colors.blue,
+                color: const Color(0xFF0EA5A4),
                 onTap: () {
                   Get.back();
                   launchPhoneCall(
@@ -313,7 +312,7 @@ class CommunicationService extends GetxService {
                 icon: Icons.sms,
                 title: 'SMS',
                 subtitle: phoneNumber,
-                color: Colors.orange,
+                color: const Color(0xFF0EA5A4),
                 onTap: () {
                   Get.back();
                   launchSMS(
@@ -395,7 +394,7 @@ class CommunicationService extends GetxService {
       'WhatsApp Unavailable',
       'WhatsApp not found. Trying SMS instead...',
       snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: Colors.orange,
+  backgroundColor: const Color(0xFF0EA5A4),
       colorText: Colors.white,
       duration: const Duration(seconds: 2),
     );

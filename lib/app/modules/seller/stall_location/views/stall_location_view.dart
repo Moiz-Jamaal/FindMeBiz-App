@@ -396,10 +396,10 @@ class StallLocationView extends GetView<StallLocationController> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.blue.withOpacity(0.1),
+                  color: const Color(0xFF0EA5A4).withOpacity(0.08),
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color: Colors.blue.withOpacity(0.3),
+                    color: const Color(0xFF0EA5A4).withOpacity(0.2),
                   ),
                 ),
                 child: Row(
@@ -407,7 +407,7 @@ class StallLocationView extends GetView<StallLocationController> {
                   children: [
                     Icon(
                       Icons.info_outline,
-                      color: Colors.blue,
+                      color: const Color(0xFF0EA5A4),
                       size: 20,
                     ),
                     const SizedBox(width: 8),
@@ -415,7 +415,7 @@ class StallLocationView extends GetView<StallLocationController> {
                       child: Text(
                         'Tap anywhere on the map above to select your exact stall location. This helps buyers find you easily!',
                         style: Get.textTheme.bodySmall?.copyWith(
-                          color: Colors.blue.shade700,
+                          color: const Color(0xFF0B8584),
                         ),
                       ),
                     ),

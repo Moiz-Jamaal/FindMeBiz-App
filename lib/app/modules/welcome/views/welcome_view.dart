@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/app_logo.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../data/models/user_role.dart';
 import '../controllers/welcome_controller.dart';
@@ -48,27 +49,8 @@ class WelcomeView extends GetView<WelcomeController> {
   Widget _buildHeader() {
     return Column(
       children: [
-        // App Icon/Logo Placeholder
-        Container(
-          width: 100,
-          height: 100,
-          decoration: BoxDecoration(
-            gradient: AppTheme.primaryGradient,
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: AppTheme.primaryColor.withOpacity(0.3),
-                blurRadius: 20,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
-          child: const Icon(
-            Icons.store,
-            size: 50,
-            color: Colors.white,
-          ),
-        ),
+  // App Icon
+  const AppLogo(size: 100, radius: 20, padding: EdgeInsets.all(6)),
         
         const SizedBox(height: 24),
         
