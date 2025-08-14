@@ -30,8 +30,7 @@ class BuyerHomeView extends GetView<BuyerHomeController> {
           ],
         ));
 
-    if (isWideWeb) {
-      // Instagram-like web layout: left sidebar + centered fixed-width content
+  if (isWideWeb) {
       return Scaffold(
         backgroundColor: AppTheme.backgroundColor,
         body: SafeArea(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:flutter/foundation.dart';
 
 import 'app/routes/app_pages.dart';
 import 'app/core/theme/app_theme.dart';
@@ -56,10 +57,35 @@ Future<void> main() async {
       
       // Error handling
       builder: (context, child) {
-        return MediaQuery(
+        // Normalize text scale
+        final normalized = MediaQuery(
           data: MediaQuery.of(context).copyWith(textScaleFactor: 1.0),
-          child: child!,
+          child: child ?? const SizedBox.shrink(),
         );
+
+    // Instagram-like web layout: center all pages at fixed width on wide web
+    if (kIsWeb) {
+          return LayoutBuilder(
+            builder: (context, constraints) {
+              final width = constraints.maxWidth;
+      final route = Get.currentRoute;
+      // Do not center hub pages that have their own web sidebar layout
+      final bool isHub = route == Routes.BUYER_HOME || route == Routes.SELLER_DASHBOARD;
+      final bool useFixed = width >= 900 && !isHub;
+              if (useFixed) {
+                return Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 560),
+                    child: normalized,
+                  ),
+                );
+              }
+              return normalized;
+            },
+          );
+        }
+
+        return normalized;
       },
     ),
   );
