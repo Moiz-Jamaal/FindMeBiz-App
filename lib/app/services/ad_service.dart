@@ -10,6 +10,7 @@ class AdService extends GetxService {
   // Frequency caps per slot (e.g., insert every N items at most)
   final Map<AdSlot, int> frequency = {
     AdSlot.homeHeaderBanner: 1, // show at top occasionally
+  AdSlot.homeBelowSearchBanner: 1,
     AdSlot.homeFeatured: 5, // every ~5 cards
     AdSlot.homeNewSellers: 6,
     AdSlot.searchSellers: 6,

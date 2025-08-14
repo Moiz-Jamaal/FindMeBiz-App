@@ -8,6 +8,7 @@ import '../../../shared/widgets/module_switcher.dart';
 import '../../../../services/ad_service.dart';
 import '../../../shared/widgets/ads/banner_ad_tile.dart';
 import '../../../shared/widgets/ads/native_ad_card.dart';
+import '../../../shared/widgets/ads/rotating_banner_carousel.dart';
 import '../../../../data/models/sponsored_content.dart';
 import '../../../../core/widgets/app_logo.dart';
 
@@ -135,8 +136,9 @@ class BuyerHomeView extends GetView<BuyerHomeController> {
       child: CustomScrollView(
         slivers: [
           _buildAppBar(),
+          _buildTopBannerCarousel(),
           _buildSearchSection(),
-          _buildHeaderAdBanner(),
+          _buildBelowSearchBannerCarousel(),
           _buildFeaturedSection(),
           _buildCategoriesSection(),
           _buildNewSellersSection(),
@@ -144,23 +146,59 @@ class BuyerHomeView extends GetView<BuyerHomeController> {
       ),
     );
   }
-  
-  Widget _buildHeaderAdBanner() {
-  final adService = Get.find<AdService>();
-  // Show a single subtle banner header deterministically
-  final ads = adService.getSponsoredForSlot(AdSlot.homeHeaderBanner);
-  if (ads.isEmpty) return const SliverToBoxAdapter(child: SizedBox.shrink());
-  final ad = ads.first;
-    return SliverToBoxAdapter(
-      child: BannerAdTile(
-        ad: ad,
-        onTap: () {
-          if (ad.deeplinkRoute != null) {
-            Get.toNamed(ad.deeplinkRoute!, arguments: ad.payload);
-          }
-        },
-      ),
-    );
+
+  Widget _buildTopBannerCarousel() {
+    final adService = Get.find<AdService>();
+    final ads = adService.getSponsoredForSlot(AdSlot.homeHeaderBanner, limit: 5);
+    if (ads.isEmpty) return const SliverToBoxAdapter(child: SizedBox.shrink());
+    // If only one ad, show banner tile; else carousel
+    final widgetToShow = ads.length == 1
+        ? BannerAdTile(
+            ad: ads.first,
+            onTap: () {
+              final ad = ads.first;
+              if (ad.deeplinkRoute != null) {
+                Get.toNamed(ad.deeplinkRoute!, arguments: ad.payload);
+              }
+            },
+          )
+        : RotatingBannerCarousel(
+            items: ads,
+            height: 150,
+            onTap: (ad) {
+              if (ad.deeplinkRoute != null) {
+                Get.toNamed(ad.deeplinkRoute!, arguments: ad.payload);
+              }
+            },
+          );
+
+    return SliverToBoxAdapter(child: widgetToShow);
+  }
+
+  Widget _buildBelowSearchBannerCarousel() {
+    final adService = Get.find<AdService>();
+    final ads = adService.getSponsoredForSlot(AdSlot.homeBelowSearchBanner, limit: 5);
+    if (ads.isEmpty) return const SliverToBoxAdapter(child: SizedBox.shrink());
+    final widgetToShow = ads.length == 1
+        ? BannerAdTile(
+            ad: ads.first,
+            onTap: () {
+              final ad = ads.first;
+              if (ad.deeplinkRoute != null) {
+                Get.toNamed(ad.deeplinkRoute!, arguments: ad.payload);
+              }
+            },
+          )
+        : RotatingBannerCarousel(
+            items: ads,
+            height: 150,
+            onTap: (ad) {
+              if (ad.deeplinkRoute != null) {
+                Get.toNamed(ad.deeplinkRoute!, arguments: ad.payload);
+              }
+            },
+          );
+    return SliverToBoxAdapter(child: widgetToShow);
   }
   Widget _buildAppBar() {
     return SliverAppBar(

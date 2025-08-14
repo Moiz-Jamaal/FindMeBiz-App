@@ -6,6 +6,7 @@ enum SponsoredType { seller, product, banner }
 /// Logical placement slots for subtle ad insertions
 enum AdSlot {
   homeHeaderBanner,
+  homeBelowSearchBanner,
   homeFeatured,
   homeNewSellers,
   searchSellers,
