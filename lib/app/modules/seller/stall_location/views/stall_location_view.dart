@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../../core/theme/app_theme.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart' as ll;
 import '../../../../core/constants/app_constants.dart';
 import '../controllers/stall_location_controller.dart';
 
@@ -59,13 +61,67 @@ class StallLocationView extends GetView<StallLocationController> {
         children: [
           // Search Field
           TextFormField(
-            decoration: const InputDecoration(
+            controller: controller.searchTextController,
+            decoration: InputDecoration(
               hintText: 'Search for location or area...',
-              prefixIcon: Icon(Icons.search),
-              suffixIcon: Icon(Icons.my_location),
+              prefixIcon: const Icon(Icons.search),
+              suffixIcon: Obx(() {
+                if (controller.isLoading.value) {
+                  return const SizedBox(
+                    height: 18,
+                    width: 18,
+                    child: Padding(
+                      padding: EdgeInsets.all(8.0),
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  );
+                }
+                if (controller.searchResults.isNotEmpty || controller.searchTextController.text.isNotEmpty) {
+                  return IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () {
+                      controller.clearSearch();
+                    },
+                  );
+                }
+                return const SizedBox.shrink();
+              }),
             ),
-            onFieldSubmitted: controller.searchLocation,
+            onChanged: (q) => controller.locationSearchQuery.value = q,
+            onFieldSubmitted: (q) => controller.searchLocation(q, showToast: true),
           ),
+          // Results List
+          Obx(() {
+            final results = controller.searchResults;
+            if (results.isEmpty) return const SizedBox.shrink();
+            return Container(
+              margin: const EdgeInsets.only(top: 8),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border.all(color: Colors.grey.shade200),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              constraints: const BoxConstraints(maxHeight: 200),
+              child: ListView.separated(
+                shrinkWrap: true,
+                itemCount: results.length,
+                separatorBuilder: (_, __) => Divider(height: 1, color: Colors.grey.shade200),
+                itemBuilder: (context, index) {
+                  final item = results[index];
+                  return ListTile(
+                    dense: true,
+                    leading: const Icon(Icons.place, color: AppTheme.sellerPrimary),
+                    title: Text(
+                      (item['display_name'] ?? '').toString(),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    onTap: () => controller.selectSearchResult(item),
+                  );
+                },
+              ),
+            );
+          }),
           
           const SizedBox(height: 12),
           
@@ -100,20 +156,67 @@ class StallLocationView extends GetView<StallLocationController> {
     );
   }
   Widget _buildMapArea() {
-    return Container(
-      color: Colors.white,
-      child: Stack(
+    return Obx(() {
+      final center = ll.LatLng(
+        controller.selectedLatitude.value,
+        controller.selectedLongitude.value,
+      );
+      final zoom = controller.currentZoom.value;
+      return Stack(
         children: [
-          // Map Container (Placeholder)
-          _buildMapPlaceholder(),
-          
+          FlutterMap(
+            options: MapOptions(
+              initialCenter: center,
+              initialZoom: zoom,
+              onTap: (tapPosition, latLng) {
+                controller.onMapTap(latLng.latitude, latLng.longitude);
+              },
+              onMapEvent: (evt) {
+                if (evt is MapEventMoveEnd) {
+                  // Keep zoom value in sync when user pinches
+                  controller.currentZoom.value = evt.camera.zoom;
+                }
+              },
+            ),
+            mapController: controller.mapController,
+            children: [
+              TileLayer(
+                urlTemplate: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                subdomains: const ['a','b','c'],
+                userAgentPackageName: 'com.findmebiz.app',
+              ),
+              MarkerLayer(
+                markers: [
+                  if (controller.hasLocationSelected.value)
+                    Marker(
+                      point: center,
+                      width: 40,
+                      height: 40,
+                      child: const Icon(
+                        Icons.location_on,
+                        color: AppTheme.sellerPrimary,
+                        size: 40,
+                      ),
+                    ),
+                ],
+              ),
+            ],
+          ),
+
+          // Quick location buttons
+          Positioned(
+            top: 16,
+            left: 16,
+            child: _buildQuickLocations(),
+          ),
+
           // Zoom Controls
           Positioned(
             right: 16,
             top: 16,
             child: _buildZoomControls(),
           ),
-          
+
           // Location Info Overlay
           Positioned(
             bottom: 16,
@@ -122,79 +225,8 @@ class StallLocationView extends GetView<StallLocationController> {
             child: _buildLocationInfoCard(),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildMapPlaceholder() {
-    return Obx(() => GestureDetector(
-      onTapUp: (details) {
-        // Convert tap position to coordinates (simplified)
-        final size = Size(400, 300); // Mock map size
-        final localPosition = details.localPosition;
-        
-        // Mock coordinate calculation
-        final lat = AppConstants.defaultLatitude + 
-                   (0.01 * (localPosition.dy / size.height - 0.5));
-        final lng = AppConstants.defaultLongitude + 
-                   (0.01 * (localPosition.dx / size.width - 0.5));
-        
-        controller.onMapTap(lat, lng);
-      },
-      child: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Colors.green.shade100,
-              Colors.green.shade200,
-              Colors.green.shade100,
-            ],
-          ),
-        ),
-        child: Stack(
-          children: [
-            // Grid pattern to simulate map
-            CustomPaint(
-              size: Size.infinite,
-              painter: MapGridPainter(),
-            ),
-            
-            // Center marker (default location)
-            if (!controller.hasLocationSelected.value)
-              const Center(
-                child: Icon(
-                  Icons.location_on,
-                  size: 40,
-                  color: Colors.grey,
-                ),
-              ),
-            
-            // Selected location marker
-            if (controller.hasLocationSelected.value)
-              Positioned(
-                left: 200, // Mock position based on selected coordinates
-                top: 150,  // Would be calculated from actual coordinates
-                child: const Icon(
-                  Icons.location_on,
-                  size: 40,
-                  color: AppTheme.sellerPrimary,
-                ),
-              ),
-            
-            // Quick location buttons
-            Positioned(
-              top: 16,
-              left: 16,
-              child: _buildQuickLocations(),
-            ),
-          ],
-        ),
-      ),
-    ));
+      );
+    });
   }
 
   Widget _buildQuickLocations() {
@@ -461,54 +493,4 @@ class StallLocationView extends GetView<StallLocationController> {
   }
 }
 
-// Custom painter for map grid pattern
-class MapGridPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.white.withOpacity(0.3)
-      ..strokeWidth = 1;
-
-    const gridSize = 30.0;
-    
-    // Draw vertical lines
-    for (double x = 0; x < size.width; x += gridSize) {
-      canvas.drawLine(
-        Offset(x, 0),
-        Offset(x, size.height),
-        paint,
-      );
-    }
-    
-    // Draw horizontal lines
-    for (double y = 0; y < size.height; y += gridSize) {
-      canvas.drawLine(
-        Offset(0, y),
-        Offset(size.width, y),
-        paint,
-      );
-    }
-    
-    // Add some "road" lines
-    final roadPaint = Paint()
-      ..color = Colors.white.withOpacity(0.6)
-      ..strokeWidth = 3;
-    
-    // Vertical "road"
-    canvas.drawLine(
-      Offset(size.width * 0.5, 0),
-      Offset(size.width * 0.5, size.height),
-      roadPaint,
-    );
-    
-    // Horizontal "road"
-    canvas.drawLine(
-      Offset(0, size.height * 0.5),
-      Offset(size.width, size.height * 0.5),
-      roadPaint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
+// removed placeholder painter, using real map now
