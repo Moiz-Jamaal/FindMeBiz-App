@@ -4,6 +4,7 @@ import '../../../../data/models/seller.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../services/communication_service.dart';
+import '../../../../services/analytics_service.dart';
 
 class BuyerMapController extends GetxController {
   // Map state
@@ -113,7 +114,7 @@ class BuyerMapController extends GetxController {
       final seller = selectedSeller.value!;
       
       CommunicationService.to.showContactOptionsDialog(
-        businessName: seller.businessName ?? 'Business',
+        businessName: seller.businessName,
         phoneNumber: seller.whatsappNumber,
         whatsappNumber: seller.whatsappNumber,
         email: seller.email,
@@ -210,6 +211,11 @@ class BuyerMapController extends GetxController {
       businessName: seller.businessName,
       address: seller.stallLocation!.address,
     );
+    AnalyticsService.to.logEvent('buyer_get_directions', parameters: {
+      'seller_id': seller.id,
+      'lat': seller.stallLocation!.latitude,
+      'lng': seller.stallLocation!.longitude,
+    });
   }
 
   // Mock sellers data with locations

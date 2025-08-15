@@ -3,6 +3,7 @@ plugins {
     id("kotlin-android")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
+    id("com.google.firebase.crashlytics")
 }
 
 android {
@@ -36,6 +37,10 @@ android {
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")
+            // Enable Crashlytics mapping file upload for release
+            firebaseCrashlytics {
+                mappingFileUploadEnabled = true
+            }
         }
     }
 }
@@ -48,8 +53,5 @@ dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }
 
-// Conditionally apply Google Services plugin if google-services.json is present
-val googleServicesJson = file("${projectDir}/google-services.json")
-if (googleServicesJson.exists()) {
-    apply(plugin = "com.google.gms.google-services")
-}
+// Apply Google Services plugin (required for Analytics/Crashlytics)
+apply(plugin = "com.google.gms.google-services")

@@ -11,14 +11,28 @@ import 'app/services/performance_service.dart';
 import 'app/services/role_service.dart';
 import 'app/services/push_notification_service.dart';
 import 'package:get_storage/get_storage.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'firebase_options.dart';
+import 'app/services/analytics_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await GetStorage.init();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  // Crashlytics: capture Flutter errors
+  FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
+  // Capture zone errors
+  PlatformDispatcher.instance.onError = (error, stack) {
+    FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+    return true;
+  };
   
   // Initialize services
   Get.put(CommunicationService());
   Get.put(PerformanceService());
+  Get.put(AnalyticsService(FirebaseAnalytics.instance));
   await Get.putAsync<RoleService>(() async => RoleService().init());
   await Get.putAsync<PushNotificationService>(() async => PushNotificationService().init());
   
@@ -47,6 +61,9 @@ Future<void> main() async {
       initialRoute: AppPages.INITIAL,
       getPages: AppPages.routes,
       debugShowCheckedModeBanner: false,
+      navigatorObservers: [
+        FirebaseAnalyticsObserver(analytics: FirebaseAnalytics.instance),
+      ],
       
       // Global settings
       defaultTransition: Transition.cupertino,

@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart' as ll;
+import '../../../../services/analytics_service.dart';
 import '../../../../data/models/seller.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -90,6 +91,11 @@ class StallLocationController extends GetxController {
       snackPosition: SnackPosition.BOTTOM,
       duration: const Duration(seconds: 2),
     );
+    // Analytics
+    AnalyticsService.to.logEvent('seller_select_location', parameters: {
+      'lat': latitude,
+      'lng': longitude,
+    });
   }
 
   Future<void> _updateAddressFromCoordinates(double lat, double lng) async {
@@ -191,6 +197,7 @@ class StallLocationController extends GetxController {
         backgroundColor: AppTheme.successColor,
         colorText: Colors.white,
       );
+  AnalyticsService.to.logEvent('seller_use_current_location');
     } catch (e) {
       Get.snackbar(
         'Error',
@@ -322,6 +329,10 @@ class StallLocationController extends GetxController {
         backgroundColor: AppTheme.successColor,
         colorText: Colors.white,
       );
+      AnalyticsService.to.logEvent('seller_save_location', parameters: {
+        'lat': selectedLatitude.value,
+        'lng': selectedLongitude.value,
+      });
       
       // Return to previous screen
       Get.back(result: stallLocation);
