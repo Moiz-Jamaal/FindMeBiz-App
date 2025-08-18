@@ -10,6 +10,11 @@ import 'app/services/communication_service.dart';
 import 'app/services/performance_service.dart';
 import 'app/services/role_service.dart';
 import 'app/services/push_notification_service.dart';
+import 'app/services/api/api_client.dart';
+import 'app/services/auth_service.dart';
+import 'app/services/seller_service.dart';
+import 'app/services/category_service.dart';
+import 'app/services/subscription_service.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
@@ -33,6 +38,14 @@ Future<void> main() async {
   Get.put(CommunicationService());
   Get.put(PerformanceService());
   Get.put(AnalyticsService(FirebaseAnalytics.instance));
+  
+  // Initialize API services
+  Get.put<ApiClient>(ApiClient(), permanent: true);
+  Get.put<AuthService>(AuthService(), permanent: true);
+  Get.put<SellerService>(SellerService(), permanent: true);
+  Get.put<CategoryService>(CategoryService(), permanent: true);
+  Get.put<SubscriptionService>(SubscriptionService(), permanent: true);
+  
   await Get.putAsync<RoleService>(() async => RoleService().init());
   await Get.putAsync<PushNotificationService>(() async => PushNotificationService().init());
   

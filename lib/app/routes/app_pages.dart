@@ -5,6 +5,8 @@ import '../data/models/user_role.dart';
 // Core modules
 import '../modules/home/bindings/home_binding.dart';
 import '../modules/home/views/home_view.dart';
+import '../modules/auth/bindings/auth_binding.dart';
+import '../modules/auth/views/auth_view.dart';
 import '../modules/seller/customers/bindings/customer_inquiries_binding.dart';
 import '../modules/seller/customers/views/customer_inquiries_view.dart';
 import '../modules/seller/enquiries/bindings/seller_enquiry_binding.dart';
@@ -88,6 +90,11 @@ class AppPages {
       name: _Paths.WELCOME,
       page: () => const WelcomeView(),
       binding: WelcomeBinding(),
+    ),
+    GetPage(
+      name: _Paths.AUTH,
+      page: () => const AuthView(),
+      binding: AuthBinding(),
     ),
     
     // Seller routes

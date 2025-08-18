@@ -7,6 +7,7 @@ abstract class Routes {
   // Core routes
   static const WELCOME = _Paths.WELCOME;
   static const HOME = _Paths.HOME;
+  static const AUTH = _Paths.AUTH;
   
   // Seller routes
   static const SELLER_ONBOARDING = _Paths.SELLER_ONBOARDING;
@@ -43,6 +44,7 @@ abstract class _Paths {
   // Core paths
   static const WELCOME = '/welcome';
   static const HOME = '/home';
+  static const AUTH = '/auth';
   
   // Seller paths
   static const SELLER_ONBOARDING = '/seller-onboarding';

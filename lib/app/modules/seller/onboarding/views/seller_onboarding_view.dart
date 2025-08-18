@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/constants/app_constants.dart';
+import '../../../../data/models/api/category_master.dart';
 import '../controllers/seller_onboarding_controller.dart';
 
 class SellerOnboardingView extends GetView<SellerOnboardingController> {
@@ -25,15 +26,46 @@ class SellerOnboardingView extends GetView<SellerOnboardingController> {
       body: Column(
         children: [
           // Progress Indicator
-          Obx(() => _buildProgressIndicator()),
+          _buildProgressIndicator(),
           
           // Content
           Expanded(
-            child: Obx(() => _buildStepContent()),
+            child: Obx(() {
+              // Explicitly access all observables that might be used in child widgets
+              final currentStep = controller.currentStep.value;
+              final isLoading = controller.isLoading.value;
+              final availableCategories = controller.availableCategories.toList();
+              final selectedCategories = controller.selectedCategories.toList();
+              // Also read lengths to guarantee dependency tracking on RxList
+              final _ = controller.availableCategories.length + controller.selectedCategories.length;
+
+              Widget content;
+              switch (currentStep) {
+                case 0:
+                  content = _buildBasicInfoStep();
+                  break;
+                case 1:
+                  content = _buildContactStep();
+                  break;
+                case 2:
+                  content = _buildBioStep(isLoading, availableCategories, selectedCategories);
+                  break;
+                case 3:
+                  content = _buildCompletionStep();
+                  break;
+                default:
+                  content = const SizedBox();
+              }
+
+              return SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                child: content,
+              );
+            }),
           ),
           
           // Bottom Navigation
-          Obx(() => _buildBottomNavigation()),
+          _buildBottomNavigation(),
         ],
       ),
     );
@@ -43,10 +75,9 @@ class SellerOnboardingView extends GetView<SellerOnboardingController> {
     return Container(
       padding: const EdgeInsets.all(AppConstants.defaultPadding),
       color: Colors.white,
-      child: Row(
+      child: Obx(() => Row(
         children: List.generate(4, (index) {
           final isActive = index <= controller.currentStep.value;
-          final isCompleted = index < controller.currentStep.value;
           
           return Expanded(
             child: Container(
@@ -61,65 +92,55 @@ class SellerOnboardingView extends GetView<SellerOnboardingController> {
             ),
           );
         }),
-      ),
+      )),
     );
-  }
-
-  Widget _buildStepContent() {
-    switch (controller.currentStep.value) {
-      case 0:
-        return _buildBasicInfoStep();
-      case 1:
-        return _buildContactStep();
-      case 2:
-        return _buildBioStep();
-      case 3:
-        return _buildCompletionStep();
-      default:
-        return const SizedBox();
-    }
   }
 
   Widget _buildBasicInfoStep() {
     return Padding(
       padding: const EdgeInsets.all(AppConstants.defaultPadding),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Tell us about your business',
-            style: Get.textTheme.headlineMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: AppTheme.textPrimary,
+      child: Form(
+        key: controller.basicInfoFormKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Tell us about your business',
+              style: Get.textTheme.headlineMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: AppTheme.textPrimary,
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'This information will help buyers find and connect with you',
-            style: Get.textTheme.bodyMedium?.copyWith(
-              color: AppTheme.textSecondary,
+            const SizedBox(height: 8),
+            Text(
+              'This information will help buyers find and connect with you',
+              style: Get.textTheme.bodyMedium?.copyWith(
+                color: AppTheme.textSecondary,
+              ),
             ),
-          ),
-          const SizedBox(height: 32),
-          
-          TextFormField(
-            decoration: const InputDecoration(
-              labelText: 'Business Name *',
-              hintText: 'Enter your business name',
+            const SizedBox(height: 32),
+            
+            TextFormField(
+              controller: controller.businessNameController,
+              decoration: const InputDecoration(
+                labelText: 'Business Name *',
+                hintText: 'Enter your business name',
+              ),
+              validator: controller.businessNameValidator,
             ),
-            onChanged: controller.updateBusinessName,
-          ),
-          
-          const SizedBox(height: 16),
-          
-          TextFormField(
-            decoration: const InputDecoration(
-              labelText: 'Your Full Name *',
-              hintText: 'Enter your full name',
+            
+            const SizedBox(height: 16),
+            
+            TextFormField(
+              controller: controller.profileNameController,
+              decoration: const InputDecoration(
+                labelText: 'Profile Name *',
+                hintText: 'Enter a unique profile name',
+              ),
+              validator: controller.profileNameValidator,
             ),
-            onChanged: controller.updateFullName,
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -127,72 +148,125 @@ class SellerOnboardingView extends GetView<SellerOnboardingController> {
   Widget _buildContactStep() {
     return Padding(
       padding: const EdgeInsets.all(AppConstants.defaultPadding),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Contact Information',
-            style: Get.textTheme.headlineMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: AppTheme.textPrimary,
+      child: Form(
+        key: controller.contactInfoFormKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Contact Information',
+              style: Get.textTheme.headlineMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: AppTheme.textPrimary,
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Buyers will use this to reach out to you',
-            style: Get.textTheme.bodyMedium?.copyWith(
-              color: AppTheme.textSecondary,
+            const SizedBox(height: 8),
+            Text(
+              'Buyers will use this to reach out to you',
+              style: Get.textTheme.bodyMedium?.copyWith(
+                color: AppTheme.textSecondary,
+              ),
             ),
-          ),
-          const SizedBox(height: 32),
-          
-          TextFormField(
-            decoration: const InputDecoration(
-              labelText: 'Email Address *',
-              hintText: 'Enter your email',
+            const SizedBox(height: 32),
+            
+            TextFormField(
+              controller: controller.contactController,
+              decoration: const InputDecoration(
+                labelText: 'Contact Number',
+                hintText: 'Enter your contact number',
+              ),
+              keyboardType: TextInputType.phone,
+              validator: controller.contactValidator,
             ),
-            keyboardType: TextInputType.emailAddress,
-            onChanged: controller.updateEmail,
-          ),
-        ],
+            
+            const SizedBox(height: 16),
+            
+            TextFormField(
+              controller: controller.addressController,
+              decoration: const InputDecoration(
+                labelText: 'Business Address',
+                hintText: 'Enter your business address',
+              ),
+              maxLines: 2,
+            ),
+            
+            const SizedBox(height: 16),
+            
+            TextFormField(
+              controller: controller.cityController,
+              decoration: const InputDecoration(
+                labelText: 'City',
+                hintText: 'Enter your city',
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildBioStep() {
+  Widget _buildBioStep(bool isLoading, List<CategoryMaster> availableCategories, List<CategoryMaster> selectedCategories) {
     return Padding(
       padding: const EdgeInsets.all(AppConstants.defaultPadding),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'About Your Business',
-            style: Get.textTheme.headlineMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: AppTheme.textPrimary,
+      child: Form(
+        key: controller.businessInfoFormKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Business Categories',
+              style: Get.textTheme.headlineMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: AppTheme.textPrimary,
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Tell buyers what makes your business special (optional)',
-            style: Get.textTheme.bodyMedium?.copyWith(
-              color: AppTheme.textSecondary,
+            const SizedBox(height: 8),
+            Text(
+              'Select categories that best describe your business',
+              style: Get.textTheme.bodyMedium?.copyWith(
+                color: AppTheme.textSecondary,
+              ),
             ),
-          ),
-          const SizedBox(height: 32),
-          
-          TextFormField(
-            decoration: const InputDecoration(
-              labelText: 'Business Description',
-              hintText: 'Describe your products, story, what makes you unique...',
-              alignLabelWithHint: true,
+            const SizedBox(height: 24),
+            
+            // Categories selection - Use passed parameters instead of accessing controller
+            isLoading 
+                ? const Center(child: CircularProgressIndicator())
+                : availableCategories.isEmpty
+                    ? const Text('No categories available')
+                    : _buildCategoriesGrid(availableCategories, selectedCategories),
+            
+            const SizedBox(height: 24),
+            
+            TextFormField(
+              controller: controller.bioController,
+              decoration: const InputDecoration(
+                labelText: 'Business Description (Optional)',
+                hintText: 'Describe your products, story, what makes you unique...',
+                alignLabelWithHint: true,
+              ),
+              maxLines: 4,
+              maxLength: AppConstants.maxBioLength,
             ),
-            maxLines: 5,
-            maxLength: AppConstants.maxBioLength,
-            onChanged: controller.updateBio,
-          ),
-        ],
+          ],
+        ),
       ),
+    );
+  }
+
+  Widget _buildCategoriesGrid(List<CategoryMaster> availableCategories, List<CategoryMaster> selectedCategories) {
+    return Wrap(
+      spacing: 12,
+      runSpacing: 12,
+      children: availableCategories.map((category) {
+        return FilterChip(
+          label: Text(category.catname),
+          selected: selectedCategories.contains(category),
+          onSelected: (_) => controller.toggleCategory(category),
+          selectedColor: const Color(0xFF0EA5A4).withOpacity(0.2),
+          checkmarkColor: const Color(0xFF0EA5A4),
+        );
+      }).toList(),
     );
   }
 
@@ -253,35 +327,61 @@ class SellerOnboardingView extends GetView<SellerOnboardingController> {
         child: SizedBox(
           width: double.infinity,
           height: 50,
-          child: ElevatedButton(
-            onPressed: controller.canProceed
-                ? (controller.currentStep.value == 3
-                    ? controller.completeOnboarding
-                    : controller.nextStep)
-                : null,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.sellerPrimary,
-            ),
-            child: controller.isLoading.value
-                ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+          child: Obx(() {
+            // Ensure Obx depends on all needed observables
+            final currentStep = controller.currentStep.value;
+            final isSubmitting = controller.isSubmitting.value;
+            
+            // Compute canProceed directly here to ensure reactive dependencies
+            bool canProceed;
+            switch (currentStep) {
+              case 0:
+                canProceed = controller.businessName.value.trim().isNotEmpty && 
+                           controller.profileName.value.trim().isNotEmpty;
+                break;
+              case 1:
+                canProceed = true; // Contact info is optional
+                break;
+              case 2:
+                canProceed = controller.selectedCategories.isNotEmpty;
+                break;
+              case 3:
+                canProceed = true; // Final step - review
+                break;
+              default:
+                canProceed = false;
+            }
+
+            return ElevatedButton(
+              onPressed: canProceed
+                  ? (currentStep == 3
+                      ? controller.completeOnboarding
+                      : controller.nextStep)
+                  : null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.sellerPrimary,
+              ),
+              child: isSubmitting
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : Text(
+                      currentStep == 3 
+                          ? 'Get Started' 
+                          : 'Continue',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
                     ),
-                  )
-                : Text(
-                    controller.currentStep.value == 3 
-                        ? 'Get Started' 
-                        : 'Continue',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
-                  ),
-          ),
+            );
+          }),
         ),
       ),
     );

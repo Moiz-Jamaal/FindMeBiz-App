@@ -36,11 +36,16 @@ class WelcomeController extends GetxController {
     Future.delayed(const Duration(milliseconds: 800), () {
       isLoading.value = false;
       final roleService = Get.find<RoleService>();
+      // Set the role temporarily but don't persist yet
+      roleService.currentRole.value = selectedRole.value!;
+      
       // If picking seller first time, ensure we mark sellerOnboarded=false
       if (selectedRole.value == UserRole.seller) {
         roleService.sellerOnboarded = false;
       }
-      roleService.switchTo(selectedRole.value!);
+      
+      // Navigate to auth screen
+      Get.toNamed('/auth');
     });
   }
 
