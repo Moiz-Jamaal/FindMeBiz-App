@@ -12,14 +12,20 @@ class ImageUploadService extends GetxService {
   /// Pick image from gallery
   Future<XFile?> pickImageFromGallery() async {
     try {
+      print('🖼️ Opening gallery picker...');
       final XFile? image = await _picker.pickImage(
         source: ImageSource.gallery,
         maxWidth: 1024,
         maxHeight: 1024,
         imageQuality: 85,
       );
+      print('📷 Gallery picker result: ${image?.path ?? 'null'}');
+      if (image != null) {
+        print('📝 Image details - Name: ${image.name}, Size: ${await image.length()} bytes');
+      }
       return image;
     } catch (e) {
+      print('❌ Gallery picker error: $e');
       Get.snackbar('Error', 'Failed to pick image from gallery');
       return null;
     }
@@ -28,185 +34,321 @@ class ImageUploadService extends GetxService {
   /// Pick image from camera
   Future<XFile?> pickImageFromCamera() async {
     try {
+      print('📸 Opening camera...');
       final XFile? image = await _picker.pickImage(
         source: ImageSource.camera,
         maxWidth: 1024,
         maxHeight: 1024,
         imageQuality: 85,
       );
+      print('📷 Camera result: ${image?.path ?? 'null'}');
+      if (image != null) {
+        print('📝 Image details - Name: ${image.name}, Size: ${await image.length()} bytes');
+      }
       return image;
     } catch (e) {
+      print('❌ Camera error: $e');
       Get.snackbar('Error', 'Failed to capture image from camera');
       return null;
     }
   }
 
-  /// Upload image to backend API (which then uploads to S3)
+  /// Upload image to backend API using the new base64 endpoint
   Future<String?> uploadImage(XFile imageFile, {String? folder}) async {
     try {
-      // Prepare multipart request
-      var request = http.MultipartRequest(
-        'POST',
-        Uri.parse('${ApiClient.baseUrl}${ApiClient.apiPath}/UploadImage'),
-      );
-
-      // Add headers (without Content-Type as it's set automatically for multipart)
-      request.headers.addAll({
-        'Accept': 'application/json',
-      });
-
-      // Add file
-      request.files.add(
-        await http.MultipartFile.fromPath(
-          'file',
-          imageFile.path,
-          filename: imageFile.name,
-        ),
-      );
-
-      // Add folder parameter if provided
-      if (folder != null) {
-        request.fields['folder'] = folder;
+      print('🚀 Starting image upload...');
+      
+      // Validate image first
+      if (!await validateImageForUpload(imageFile)) {
+        return null;
       }
+      
+      // Read file as bytes and convert to base64
+      print('📖 Reading image file...');
+      final bytes = await imageFile.readAsBytes();
+      final base64Content = base64Encode(bytes);
+      
+      print('📊 File size: ${bytes.length} bytes');
+      print('📊 Base64 length: ${base64Content.length} characters');
+      
+      // Prepare request body for new API
+      final requestBody = {
+        'base64Content': base64Content,
+        'fileName': imageFile.name,
+        'folderName': folder ?? 'general', // Default to general folder
+        'contentType': 'image/jpeg', // Default content type
+      };
+      
+      print('🌐 Uploading to: ${ApiClient.baseUrl}${ApiClient.apiPath}/UploadFile');
+      
+      // Send POST request with JSON body
+      final response = await http.post(
+        Uri.parse('${ApiClient.baseUrl}${ApiClient.apiPath}/UploadFile'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: jsonEncode(requestBody),
+      );
 
-      print('🚀 Uploading to: ${request.url}'); // Debug log
-
-      // Send request
-      final response = await request.send();
-      final responseBody = await response.stream.bytesToString();
-
-      print('📥 Upload response: ${response.statusCode} - $responseBody'); // Debug log
+      print('📥 Upload response: ${response.statusCode} - ${response.body}');
 
       if (response.statusCode == 200) {
-        final jsonResponse = jsonDecode(responseBody);
-        if (jsonResponse['success'] == true) {
-          return jsonResponse['url'] as String?;
+        final jsonResponse = jsonDecode(response.body);
+        // Handle both lowercase 'success' and uppercase 'Success'
+        final isSuccess = jsonResponse['success'] == true || jsonResponse['Success'] == true;
+        
+        if (isSuccess) {
+          // Get the FileKey from upload response
+          final fileKey = jsonResponse['FileKey'] as String?;
+          final bucketName = jsonResponse['BucketName'] as String?;
+          
+          if (fileKey != null) {
+            // Use API to get presigned URL for the uploaded file
+            final presignedUrl = await getPresignedUrl(fileKey);
+            if (presignedUrl != null) {
+              print('✅ Upload successful with presigned URL: $presignedUrl');
+              return presignedUrl;
+            } else {
+              // Fallback to direct S3 URL if presigned URL fails
+              if (bucketName != null) {
+                final fallbackUrl = 'https://$bucketName.s3.amazonaws.com/$fileKey';
+                print('✅ Upload successful with fallback URL: $fallbackUrl');
+                return fallbackUrl;
+              }
+            }
+          }
+          
+          // Try direct fileUrl if available
+          final directUrl = jsonResponse['fileUrl'] as String?;
+          if (directUrl != null) {
+            print('✅ Upload successful with direct URL: $directUrl');
+            return directUrl;
+          }
+          
+          print('❌ No valid URL found in response');
+          return null;
         } else {
-          Get.snackbar('Error', jsonResponse['error'] ?? 'Upload failed');
+          final error = jsonResponse['errorMessage'] ?? jsonResponse['ErrorMessage'] ?? 'Upload failed';
+          print('❌ Upload failed: $error');
+          Get.snackbar('Error', error);
           return null;
         }
       } else {
         try {
-          final errorResponse = jsonDecode(responseBody);
-          Get.snackbar('Error', errorResponse['error'] ?? 'Upload failed');
+          final errorResponse = jsonDecode(response.body);
+          final error = errorResponse['errorMessage'] ?? 'Upload failed';
+          print('❌ Upload failed: $error');
+          Get.snackbar('Error', error);
         } catch (e) {
+          print('❌ Upload failed with status ${response.statusCode}');
           Get.snackbar('Error', 'Upload failed with status ${response.statusCode}');
         }
         return null;
       }
     } catch (e) {
+      print('💥 Upload error: $e');
       Get.snackbar('Error', 'Failed to upload image: ${e.toString()}');
-      print('❌ Upload error: $e'); // Debug log
       return null;
     }
   }
 
-  /// Upload profile image
+  /// Upload profile image using the new base64 API endpoint
   Future<String?> uploadProfileImage(XFile imageFile) async {
     try {
-      // Prepare multipart request
-      var request = http.MultipartRequest(
-        'POST',
-        Uri.parse('${ApiClient.baseUrl}${ApiClient.apiPath}/UploadProfileImage'),
+      print('🚀 Starting profile image upload...');
+      
+      // Validate image first
+      if (!await validateImageForUpload(imageFile)) {
+        return null;
+      }
+      
+      // Read file as bytes and convert to base64
+      print('📖 Reading image file...');
+      final bytes = await imageFile.readAsBytes();
+      final base64Content = base64Encode(bytes);
+      
+      print('📊 File size: ${bytes.length} bytes');
+      print('📊 Base64 length: ${base64Content.length} characters');
+      
+      // Prepare request body for new API
+      final requestBody = {
+        'base64Content': base64Content,
+        'fileName': imageFile.name,
+        'folderName': 'profiles', // Profile images folder
+        'contentType': 'image/jpeg', // Default content type
+      };
+      
+      print('🌐 Uploading to: ${ApiClient.baseUrl}${ApiClient.apiPath}/UploadFile');
+      
+      // Send POST request with JSON body
+      final response = await http.post(
+        Uri.parse('${ApiClient.baseUrl}${ApiClient.apiPath}/UploadFile'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: jsonEncode(requestBody),
       );
 
-      // Add headers (without Content-Type as it's set automatically for multipart)
-      request.headers.addAll({
-        'Accept': 'application/json',
-      });
-
-      // Add file
-      request.files.add(
-        await http.MultipartFile.fromPath(
-          'file',
-          imageFile.path,
-          filename: imageFile.name,
-        ),
-      );
-
-      print('🚀 Uploading to: ${request.url}'); // Debug log
-
-      // Send request
-      final response = await request.send();
-      final responseBody = await response.stream.bytesToString();
-
-      print('📥 Upload response: ${response.statusCode} - $responseBody'); // Debug log
+      print('📥 Upload response: ${response.statusCode} - ${response.body}');
 
       if (response.statusCode == 200) {
-        final jsonResponse = jsonDecode(responseBody);
-        if (jsonResponse['success'] == true) {
-          return jsonResponse['url'] as String?;
+        final jsonResponse = jsonDecode(response.body);
+        // Handle both lowercase 'success' and uppercase 'Success'
+        final isSuccess = jsonResponse['success'] == true || jsonResponse['Success'] == true;
+        
+        if (isSuccess) {
+          // Get the FileKey from upload response
+          final fileKey = jsonResponse['FileKey'] as String?;
+          final bucketName = jsonResponse['BucketName'] as String?;
+          
+          if (fileKey != null) {
+            // Use API to get presigned URL for the uploaded file
+            final presignedUrl = await getPresignedUrl(fileKey);
+            if (presignedUrl != null) {
+              print('✅ Upload successful with presigned URL: $presignedUrl');
+              return presignedUrl;
+            } else {
+              // Fallback to direct S3 URL if presigned URL fails
+              if (bucketName != null) {
+                final fallbackUrl = 'https://$bucketName.s3.amazonaws.com/$fileKey';
+                print('✅ Upload successful with fallback URL: $fallbackUrl');
+                return fallbackUrl;
+              }
+            }
+          }
+          
+          // Try direct fileUrl if available
+          final directUrl = jsonResponse['fileUrl'] as String?;
+          if (directUrl != null) {
+            print('✅ Upload successful with direct URL: $directUrl');
+            return directUrl;
+          }
+          
+          print('❌ No valid URL found in response');
+          return null;
         } else {
-          Get.snackbar('Error', jsonResponse['error'] ?? 'Profile image upload failed');
+          final error = jsonResponse['errorMessage'] ?? jsonResponse['ErrorMessage'] ?? 'Profile image upload failed';
+          print('❌ Upload failed: $error');
+          Get.snackbar('Error', error);
           return null;
         }
       } else {
         try {
-          final errorResponse = jsonDecode(responseBody);
-          Get.snackbar('Error', errorResponse['error'] ?? 'Profile image upload failed');
+          final errorResponse = jsonDecode(response.body);
+          final error = errorResponse['errorMessage'] ?? 'Profile image upload failed';
+          print('❌ Upload failed: $error');
+          Get.snackbar('Error', error);
         } catch (e) {
+          print('❌ Upload failed with status ${response.statusCode}');
           Get.snackbar('Error', 'Profile image upload failed with status ${response.statusCode}');
         }
         return null;
       }
     } catch (e) {
+      print('💥 Upload error: $e');
       Get.snackbar('Error', 'Failed to upload profile image: ${e.toString()}');
-      print('❌ Upload error: $e'); // Debug log
       return null;
     }
   }
 
-  /// Upload business logo
+  /// Upload business logo using the new base64 API endpoint
   Future<String?> uploadBusinessLogo(XFile imageFile) async {
     try {
-      // Prepare multipart request
-      var request = http.MultipartRequest(
-        'POST',
-        Uri.parse('${ApiClient.baseUrl}${ApiClient.apiPath}/UploadBusinessLogo'),
+      print('🚀 Starting business logo upload...');
+      
+      // Validate image first
+      if (!await validateImageForUpload(imageFile)) {
+        return null;
+      }
+      
+      // Read file as bytes and convert to base64
+      print('📖 Reading image file...');
+      final bytes = await imageFile.readAsBytes();
+      final base64Content = base64Encode(bytes);
+      
+      print('📊 File size: ${bytes.length} bytes');
+      print('📊 Base64 length: ${base64Content.length} characters');
+      
+      // Prepare request body for new API
+      final requestBody = {
+        'base64Content': base64Content,
+        'fileName': imageFile.name,
+        'folderName': 'logos', // Business logos folder
+        'contentType': 'image/jpeg', // Default content type
+      };
+      
+      print('🌐 Uploading to: ${ApiClient.baseUrl}${ApiClient.apiPath}/UploadFile');
+      
+      // Send POST request with JSON body
+      final response = await http.post(
+        Uri.parse('${ApiClient.baseUrl}${ApiClient.apiPath}/UploadFile'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: jsonEncode(requestBody),
       );
 
-      // Add headers (without Content-Type as it's set automatically for multipart)
-      request.headers.addAll({
-        'Accept': 'application/json',
-      });
-
-      // Add file
-      request.files.add(
-        await http.MultipartFile.fromPath(
-          'file',
-          imageFile.path,
-          filename: imageFile.name,
-        ),
-      );
-
-      print('🚀 Uploading to: ${request.url}'); // Debug log
-
-      // Send request
-      final response = await request.send();
-      final responseBody = await response.stream.bytesToString();
-
-      print('📥 Upload response: ${response.statusCode} - $responseBody'); // Debug log
+      print('📥 Upload response: ${response.statusCode} - ${response.body}');
 
       if (response.statusCode == 200) {
-        final jsonResponse = jsonDecode(responseBody);
-        if (jsonResponse['success'] == true) {
-          return jsonResponse['url'] as String?;
+        final jsonResponse = jsonDecode(response.body);
+        // Handle both lowercase 'success' and uppercase 'Success'
+        final isSuccess = jsonResponse['success'] == true || jsonResponse['Success'] == true;
+        
+        if (isSuccess) {
+          // Get the FileKey from upload response
+          final fileKey = jsonResponse['FileKey'] as String?;
+          final bucketName = jsonResponse['BucketName'] as String?;
+          
+          if (fileKey != null) {
+            // Use API to get presigned URL for the uploaded file
+            final presignedUrl = await getPresignedUrl(fileKey);
+            if (presignedUrl != null) {
+              print('✅ Upload successful with presigned URL: $presignedUrl');
+              return presignedUrl;
+            } else {
+              // Fallback to direct S3 URL if presigned URL fails
+              if (bucketName != null) {
+                final fallbackUrl = 'https://$bucketName.s3.amazonaws.com/$fileKey';
+                print('✅ Upload successful with fallback URL: $fallbackUrl');
+                return fallbackUrl;
+              }
+            }
+          }
+          
+          // Try direct fileUrl if available
+          final directUrl = jsonResponse['fileUrl'] as String?;
+          if (directUrl != null) {
+            print('✅ Upload successful with direct URL: $directUrl');
+            return directUrl;
+          }
+          
+          print('❌ No valid URL found in response');
+          return null;
         } else {
-          Get.snackbar('Error', jsonResponse['error'] ?? 'Business logo upload failed');
+          final error = jsonResponse['errorMessage'] ?? jsonResponse['ErrorMessage'] ?? 'Business logo upload failed';
+          print('❌ Upload failed: $error');
+          Get.snackbar('Error', error);
           return null;
         }
       } else {
         try {
-          final errorResponse = jsonDecode(responseBody);
-          Get.snackbar('Error', errorResponse['error'] ?? 'Business logo upload failed');
+          final errorResponse = jsonDecode(response.body);
+          final error = errorResponse['errorMessage'] ?? 'Business logo upload failed';
+          print('❌ Upload failed: $error');
+          Get.snackbar('Error', error);
         } catch (e) {
+          print('❌ Upload failed with status ${response.statusCode}');
           Get.snackbar('Error', 'Business logo upload failed with status ${response.statusCode}');
         }
         return null;
       }
     } catch (e) {
+      print('💥 Upload error: $e');
       Get.snackbar('Error', 'Failed to upload business logo: ${e.toString()}');
-      print('❌ Upload error: $e'); // Debug log
       return null;
     }
   }
@@ -302,5 +444,57 @@ class ImageUploadService extends GetxService {
     if (!validateImageFile(file)) return false;
     if (!await validateFileSize(file)) return false;
     return true;
+  }
+
+  /// Get presigned URL for a file using the API
+  Future<String?> getPresignedUrl(String fileKey) async {
+    try {
+      print('🔗 Getting presigned URL for: $fileKey');
+      
+      // Prepare request body for presigned URL API
+      final requestBody = {
+        'folderName': fileKey.contains('/') ? fileKey.split('/').first : 'general',
+        'fileKeys': [fileKey],
+        'expirationHours': 24, // 24 hours expiration
+      };
+      
+      final response = await http.post(
+        Uri.parse('${ApiClient.baseUrl}${ApiClient.apiPath}/GetPresignedUrls'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: jsonEncode(requestBody),
+      );
+
+      print('📥 Presigned URL response: ${response.statusCode} - ${response.body}');
+
+      if (response.statusCode == 200) {
+        final jsonResponse = jsonDecode(response.body);
+        final isSuccess = jsonResponse['success'] == true || jsonResponse['Success'] == true;
+        
+        if (isSuccess) {
+          // Handle both lowercase and uppercase field names
+          final fileUrls = jsonResponse['fileUrls'] as List? ?? jsonResponse['FileUrls'] as List?;
+          if (fileUrls != null && fileUrls.isNotEmpty) {
+            final firstFile = fileUrls.first as Map<String, dynamic>;
+            // Handle both lowercase and uppercase field names
+            final presignedUrl = firstFile['presignedUrl'] as String? ?? firstFile['PresignedUrl'] as String?;
+            final isAvailable = firstFile['isAvailable'] as bool? ?? firstFile['IsAvailable'] as bool? ?? false;
+            
+            if (isAvailable && presignedUrl != null) {
+              print('✅ Presigned URL obtained: $presignedUrl');
+              return presignedUrl;
+            }
+          }
+        }
+      }
+      
+      print('❌ Failed to get presigned URL');
+      return null;
+    } catch (e) {
+      print('💥 Presigned URL error: $e');
+      return null;
+    }
   }
 }

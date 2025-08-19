@@ -12,8 +12,14 @@ class SellerDashboardBinding extends Bindings {
     Get.lazyPut<ProductsController>(
       () => ProductsController(),
     );
-    Get.lazyPut<SellerProfileEditController>(
-      () => SellerProfileEditController(),
-    );
+    // Use Get.find to get existing instance or create if not exists
+    try {
+      Get.find<SellerProfileEditController>();
+    } catch (e) {
+      Get.put<SellerProfileEditController>(
+        SellerProfileEditController(),
+        permanent: true,
+      );
+    }
   }
 }

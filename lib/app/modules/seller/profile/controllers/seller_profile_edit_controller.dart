@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
+import 'dart:async';
 import '../../../../services/auth_service.dart';
 import '../../../../services/seller_service.dart';
 import '../../../../services/image_upload_service.dart';
@@ -37,6 +38,7 @@ class SellerProfileEditController extends GetxController {
   
   // Profile images - only business logo
   final RxString businessLogoUrl = ''.obs;
+  final RxString tempLogoPath = ''.obs; // For immediate local preview
   
   // Geolocation
   final RxString currentGeoLocation = ''.obs; // Format: "latitude,longitude"
@@ -107,7 +109,14 @@ class SellerProfileEditController extends GetxController {
     pincodeController.text = seller.pincode ?? '';
     establishedYearController.text = seller.establishedyear?.toString() ?? '';
     
-    businessLogoUrl.value = seller.logo ?? '';
+    // Handle business logo - get presigned URL if it's a file key
+    final logoValue = seller.logo ?? '';
+    if (logoValue.isNotEmpty) {
+      _loadExistingBusinessLogo(logoValue);
+    } else {
+      businessLogoUrl.value = '';
+    }
+    
     currentGeoLocation.value = seller.geolocation ?? '';
   }
 
@@ -168,34 +177,190 @@ class SellerProfileEditController extends GetxController {
   }
 
   // Image handling methods - only business logo
-  Future<void> updateBusinessLogo() async {
+  Future<void> _loadExistingBusinessLogo(String logoValue) async {
     try {
-      isUploadingLogo.value = true;
+      print('🖼️ Loading existing business logo: $logoValue');
       
-      final XFile? imageFile = await _imageUploadService.showImagePickerDialog();
-      if (imageFile == null) return;
-      
-      // Validate image before upload
-      if (!await _imageUploadService.validateImageForUpload(imageFile)) {
+      // Check if it's already a full URL (presigned URL or direct URL)
+      if (logoValue.startsWith('http://') || logoValue.startsWith('https://')) {
+        // It's already a full URL, use it directly
+        businessLogoUrl.value = logoValue;
+        print('✅ Using existing full URL: $logoValue');
         return;
       }
       
-      final String? uploadedUrl = await _imageUploadService.uploadBusinessLogo(imageFile);
+      // It might be a file key, try to get presigned URL
+      final presignedUrl = await _imageUploadService.getPresignedUrl(logoValue);
+      if (presignedUrl != null) {
+        businessLogoUrl.value = presignedUrl;
+        print('✅ Got presigned URL for existing logo: $presignedUrl');
+      } else {
+        // Fallback: construct direct S3 URL (might give 403 but better than nothing)
+        if (logoValue.contains('/')) {
+          // Assume it's a file key like "logos/filename.jpg"
+          businessLogoUrl.value = 'https://findmebiz.s3.amazonaws.com/$logoValue';
+          print('⚠️ Using fallback S3 URL: ${businessLogoUrl.value}');
+        } else {
+          // It's something else, use as is
+          businessLogoUrl.value = logoValue;
+          print('⚠️ Using logo value as is: $logoValue');
+        }
+      }
+      
+    } catch (e) {
+      print('❌ Error loading existing business logo: $e');
+      // Still set the original value as fallback
+      businessLogoUrl.value = logoValue;
+    }
+  }
+
+  Future<void> updateBusinessLogo() async {
+    print('🖼️ Starting business logo update...');
+    
+    try {
+      isUploadingLogo.value = true;
+      
+      // Get image selection directly using the service's built-in dialog
+      print('📱 Opening image picker...');
+      final XFile? selectedImage = await _showImagePickerBottomSheet();
+      
+      print('📷 Final image picker result: ${selectedImage?.path ?? 'null'}');
+      
+      if (selectedImage == null) {
+        print('❌ No image selected');
+        isUploadingLogo.value = false;
+        return;
+      }
+      
+      // IMMEDIATE UI UPDATE - Set temporary path for immediate preview
+      print('✅ Setting temp path: ${selectedImage.path}');
+      tempLogoPath.value = selectedImage.path;
+      hasChanges.value = true;
+      
+      // Force UI update
+      update();
+      
+      print('🔄 UI should now show selected image');
+      print('🔄 tempLogoPath is now: ${tempLogoPath.value}');
+      
+      // Show immediate feedback that image is selected
+      Get.snackbar(
+        'Image Selected', 
+        'Uploading business logo...',
+        backgroundColor: AppTheme.sellerPrimary.withOpacity(0.1),
+        colorText: AppTheme.sellerPrimary,
+        duration: const Duration(seconds: 2),
+      );
+      
+      // Validate image before upload
+      print('🔍 Validating image...');
+      if (!await _imageUploadService.validateImageForUpload(selectedImage)) {
+        print('❌ Image validation failed');
+        tempLogoPath.value = ''; // Clear temp path on validation failure
+        isUploadingLogo.value = false;
+        return;
+      }
+      
+      print('🚀 Starting upload...');
+      final String? uploadedUrl = await _imageUploadService.uploadBusinessLogo(selectedImage);
+      print('📤 Upload result: ${uploadedUrl ?? 'null'}');
+      
       if (uploadedUrl != null) {
         businessLogoUrl.value = uploadedUrl;
+        tempLogoPath.value = ''; // Clear temp path once uploaded
         hasChanges.value = true;
-        Get.snackbar('Success', 'Business logo updated successfully');
+        print('✅ Upload successful: $uploadedUrl');
+        Get.snackbar(
+          'Success', 
+          'Business logo updated successfully!',
+          backgroundColor: AppTheme.successColor.withOpacity(0.1),
+          colorText: AppTheme.successColor,
+          duration: const Duration(seconds: 3),
+        );
+      } else {
+        tempLogoPath.value = ''; // Clear temp path on upload failure
+        print('❌ Upload failed');
+        Get.snackbar(
+          'Upload Failed', 
+          'Failed to upload business logo. Please try again.',
+          backgroundColor: AppTheme.errorColor.withOpacity(0.1),
+          colorText: AppTheme.errorColor,
+        );
       }
     } catch (e) {
-      Get.snackbar('Error', 'Failed to upload business logo');
-      print('Logo upload error: $e');
+      tempLogoPath.value = ''; // Clear temp path on error
+      print('💥 Upload error: $e');
+      Get.snackbar(
+        'Error', 
+        'Failed to upload business logo: ${e.toString()}',
+        backgroundColor: AppTheme.errorColor.withOpacity(0.1),
+        colorText: AppTheme.errorColor,
+      );
     } finally {
       isUploadingLogo.value = false;
+      print('🏁 Upload process finished');
     }
+  }
+  
+  Future<XFile?> _showImagePickerBottomSheet() async {
+    final Completer<XFile?> completer = Completer<XFile?>();
+    
+    Get.bottomSheet(
+      Container(
+        padding: const EdgeInsets.all(16),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Select Business Logo',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            ListTile(
+              leading: const Icon(Icons.photo_library),
+              title: const Text('Gallery'),
+              onTap: () async {
+                Get.back();
+                print('📱 Opening gallery...');
+                final XFile? image = await _imageUploadService.pickImageFromGallery();
+                print('📷 Gallery result: ${image?.path ?? 'null'}');
+                completer.complete(image);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.camera_alt),
+              title: const Text('Camera'),
+              onTap: () async {
+                Get.back();
+                print('📸 Opening camera...');
+                final XFile? image = await _imageUploadService.pickImageFromCamera();
+                print('📷 Camera result: ${image?.path ?? 'null'}');
+                completer.complete(image);
+              },
+            ),
+            const SizedBox(height: 16),
+            TextButton(
+              onPressed: () {
+                Get.back();
+                completer.complete(null);
+              },
+              child: const Text('Cancel'),
+            ),
+          ],
+        ),
+      ),
+    );
+    
+    return completer.future;
   }
 
   void removeBusinessLogo() {
     businessLogoUrl.value = '';
+    tempLogoPath.value = '';
     hasChanges.value = true;
   }
 

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'dart:io';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../controllers/seller_profile_edit_controller.dart';
@@ -182,15 +183,22 @@ class SellerProfileEditView extends GetView<SellerProfileEditController> {
             ),
             const SizedBox(height: 8),
             Center(
-              child: Text(
-                controller.businessLogoUrl.value.isNotEmpty
-                    ? 'Tap to change your business logo'
-                    : 'Upload your business logo to build trust with buyers',
+              child: Obx(() => Text(
+                controller.tempLogoPath.value.isNotEmpty 
+                    ? 'Selected! Image is being uploaded...'
+                    : controller.businessLogoUrl.value.isNotEmpty
+                        ? 'Tap to change your business logo'
+                        : 'Upload your business logo to build trust with buyers',
                 style: Get.textTheme.bodySmall?.copyWith(
-                  color: AppTheme.textSecondary,
+                  color: controller.tempLogoPath.value.isNotEmpty 
+                      ? AppTheme.sellerPrimary
+                      : AppTheme.textSecondary,
+                  fontWeight: controller.tempLogoPath.value.isNotEmpty 
+                      ? FontWeight.w600 
+                      : FontWeight.normal,
                 ),
                 textAlign: TextAlign.center,
-              ),
+              )),
             ),
             if (controller.isUploadingLogo.value) ...[
               const SizedBox(height: 12),
@@ -228,6 +236,20 @@ class SellerProfileEditView extends GetView<SellerProfileEditController> {
                 ),
               ),
             ],
+            // Debug info (remove in production)
+            if (Get.isLogEnable) ...[
+              const SizedBox(height: 8),
+              Obx(() => Text(
+                'Debug: Logo URL: ${controller.businessLogoUrl.value.isEmpty ? 'empty' : 'set'}, '
+                'Temp: ${controller.tempLogoPath.value.isEmpty ? 'empty' : 'set'}, '
+                'Uploading: ${controller.isUploadingLogo.value}',
+                style: Get.textTheme.bodySmall?.copyWith(
+                  color: Colors.grey,
+                  fontSize: 10,
+                ),
+                textAlign: TextAlign.center,
+              )),
+            ],
           ],
         ),
       ),
@@ -241,132 +263,192 @@ class SellerProfileEditView extends GetView<SellerProfileEditController> {
     required VoidCallback onImageRemoved,
     required IconData icon,
   }) {
-    return Obx(() => GestureDetector(
-      onTap: onImageSelected,
-      child: Container(
-        width: 120,
-        height: 120,
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: imagePath.value.isNotEmpty 
-                ? AppTheme.sellerPrimary 
-                : AppTheme.textHint,
-            width: 2,
-            style: imagePath.value.isEmpty 
-                ? BorderStyle.solid 
-                : BorderStyle.solid,
+    return Obx(() {
+      // Check if we have a temp local image or a network URL
+      final hasImage = imagePath.value.isNotEmpty || controller.tempLogoPath.value.isNotEmpty;
+      final isLocalImage = controller.tempLogoPath.value.isNotEmpty;
+      final imageToShow = isLocalImage ? controller.tempLogoPath.value : imagePath.value;
+      
+      // Debug logging
+      print('🎨 UI Update - hasImage: $hasImage, isLocalImage: $isLocalImage, imageToShow: $imageToShow');
+      print('🎨 tempLogoPath: ${controller.tempLogoPath.value}');
+      print('🎨 businessLogoUrl: ${imagePath.value}');
+      
+      return GestureDetector(
+        onTap: onImageSelected,
+        child: Container(
+          width: 120,
+          height: 120,
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: hasImage 
+                  ? AppTheme.sellerPrimary 
+                  : AppTheme.textHint,
+              width: 2,
+              style: BorderStyle.solid,
+            ),
+            borderRadius: BorderRadius.circular(12),
+            color: !hasImage 
+                ? AppTheme.sellerPrimary.withOpacity(0.1) 
+                : Colors.grey.shade200,
           ),
-          borderRadius: BorderRadius.circular(12),
-          color: imagePath.value.isEmpty 
-              ? AppTheme.sellerPrimary.withOpacity(0.1) 
-              : Colors.grey.shade200,
-        ),
-        child: imagePath.value.isEmpty
-            ? Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    icon,
-                    size: 32,
-                    color: AppTheme.sellerPrimary,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Add Photo',
-                    style: Get.textTheme.bodySmall?.copyWith(
+          child: !hasImage
+              ? Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      icon,
+                      size: 32,
                       color: AppTheme.sellerPrimary,
-                      fontWeight: FontWeight.w500,
                     ),
-                  ),
-                ],
-              )
-            : Stack(
-                children: [
-                  // Display the actual image
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: Container(
-                      width: double.infinity,
-                      height: double.infinity,
-                      child: Image.network(
-                        imagePath.value,
-                        fit: BoxFit.cover,
-                        loadingBuilder: (context, child, loadingProgress) {
-                          if (loadingProgress == null) return child;
-                          return Center(
-                            child: CircularProgressIndicator(
-                              value: loadingProgress.expectedTotalBytes != null
-                                  ? loadingProgress.cumulativeBytesLoaded /
-                                      loadingProgress.expectedTotalBytes!
-                                  : null,
-                              strokeWidth: 2,
-                              color: AppTheme.sellerPrimary,
-                            ),
-                          );
-                        },
-                        errorBuilder: (context, error, stackTrace) {
-                          return Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.error,
-                                size: 32,
-                                color: Colors.red,
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'Load Error',
-                                style: Get.textTheme.bodySmall?.copyWith(
-                                  color: Colors.red,
-                                ),
-                              ),
-                            ],
-                          );
-                        },
+                    const SizedBox(height: 8),
+                    Text(
+                      'Add Photo',
+                      style: Get.textTheme.bodySmall?.copyWith(
+                        color: AppTheme.sellerPrimary,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
-                  ),
-                  // Remove button
-                  Positioned(
-                    top: 4,
-                    right: 4,
-                    child: GestureDetector(
-                      onTap: onImageRemoved,
+                  ],
+                )
+              : Stack(
+                  children: [
+                    // Display the actual image (local or network)
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
                       child: Container(
-                        width: 24,
-                        height: 24,
-                        decoration: const BoxDecoration(
-                          color: Colors.red,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.close,
-                          size: 16,
-                          color: Colors.white,
-                        ),
+                        width: double.infinity,
+                        height: double.infinity,
+                        child: isLocalImage
+                            ? Image.file(
+                                File(imageToShow),
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  print('❌ Local image load error: $error');
+                                  return Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.error,
+                                        size: 32,
+                                        color: Colors.red,
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        'Load Error',
+                                        style: Get.textTheme.bodySmall?.copyWith(
+                                          color: Colors.red,
+                                        ),
+                                      ),
+                                    ],
+                                  );
+                                },
+                              )
+                            : Image.network(
+                                imageToShow,
+                                fit: BoxFit.cover,
+                                loadingBuilder: (context, child, loadingProgress) {
+                                  if (loadingProgress == null) return child;
+                                  return Center(
+                                    child: CircularProgressIndicator(
+                                      value: loadingProgress.expectedTotalBytes != null
+                                          ? loadingProgress.cumulativeBytesLoaded /
+                                              loadingProgress.expectedTotalBytes!
+                                          : null,
+                                      strokeWidth: 2,
+                                      color: AppTheme.sellerPrimary,
+                                    ),
+                                  );
+                                },
+                                errorBuilder: (context, error, stackTrace) {
+                                  print('❌ Network image load error: $error');
+                                  return Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.error,
+                                        size: 32,
+                                        color: Colors.red,
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        'Load Error',
+                                        style: Get.textTheme.bodySmall?.copyWith(
+                                          color: Colors.red,
+                                        ),
+                                      ),
+                                    ],
+                                  );
+                                },
+                              ),
                       ),
                     ),
-                  ),
-                  // Upload indicator overlay
-                  if (controller.isUploadingLogo.value)
-                    Positioned.fill(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.5),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: const Center(
-                          child: CircularProgressIndicator(
+                    // Remove button
+                    Positioned(
+                      top: 4,
+                      right: 4,
+                      child: GestureDetector(
+                        onTap: onImageRemoved,
+                        child: Container(
+                          width: 24,
+                          height: 24,
+                          decoration: const BoxDecoration(
+                            color: Colors.red,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.close,
+                            size: 16,
                             color: Colors.white,
-                            strokeWidth: 2,
                           ),
                         ),
                       ),
                     ),
-                ],
-              ),
-      ),
-    ));
+                    // Upload indicator overlay
+                    if (controller.isUploadingLogo.value)
+                      Positioned.fill(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.5),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Center(
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          ),
+                        ),
+                      ),
+                    // Local image indicator
+                    if (isLocalImage && !controller.isUploadingLogo.value)
+                      Positioned(
+                        bottom: 4,
+                        left: 4,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.orange,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            'Selected',
+                            style: Get.textTheme.bodySmall?.copyWith(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+        ),
+      );
+    });
   }
 
   Widget _buildGeolocationSection() {
