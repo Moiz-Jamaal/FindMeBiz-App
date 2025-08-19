@@ -55,7 +55,7 @@ class SellerDetails {
       city: json['City'] as String?,
       state: json['State'] as String?,
       pincode: json['Pincode'] as String?,
-      geolocation: json['Geolocation'] as String?,
+      geolocation: json['GeoLocation'] as String?,
       establishedyear: json['EstablishedYear'] as int?,
       ispublished: json['IsPublished'] as bool? ?? false,
       publishedat: json['PublishedAt'] != null 
