@@ -175,11 +175,8 @@ class SellerOnboardingController extends GetxController {
       
       final locationData = await _locationService.getCurrentLocationWithAddress();
       if (locationData != null) {
-        addressController.text = locationData['address'] ?? '';
-        currentLocation.value = _locationService.formatLocationForStorage(
-          locationData['latitude'],
-          locationData['longitude'],
-        );
+        addressController.text = locationData.formattedAddress;
+        currentLocation.value = locationData.geoLocationString;
         
         Get.snackbar(
           'Location Found',
@@ -201,7 +198,7 @@ class SellerOnboardingController extends GetxController {
   }
 
   Future<void> requestLocationPermission() async {
-    hasLocationPermission.value = await _locationService.showLocationPermissionDialog();
+    hasLocationPermission.value = await _locationService.checkAndRequestPermissions();
     if (hasLocationPermission.value) {
       await getCurrentLocation();
     }
@@ -292,7 +289,7 @@ class SellerOnboardingController extends GetxController {
       await _sellerService.createSellerSettings(sellerSettings);
 
       // Mark seller as onboarded
-      _roleService.sellerOnboarded = true;
+      _roleService.markSellerOnboarded();
       
       Get.snackbar(
         'Success',

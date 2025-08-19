@@ -47,7 +47,7 @@ class ImageUploadService extends GetxService {
       // Prepare multipart request
       var request = http.MultipartRequest(
         'POST',
-        Uri.parse('${ApiClient.baseUrl}${ApiClient.apiPath}/FMB/UploadImage'),
+        Uri.parse('${ApiClient.baseUrl}${ApiClient.apiPath}/UploadImage'),
       );
 
       // Add headers (without Content-Type as it's set automatically for multipart)
@@ -69,9 +69,13 @@ class ImageUploadService extends GetxService {
         request.fields['folder'] = folder;
       }
 
+      print('🚀 Uploading to: ${request.url}'); // Debug log
+
       // Send request
       final response = await request.send();
       final responseBody = await response.stream.bytesToString();
+
+      print('📥 Upload response: ${response.statusCode} - $responseBody'); // Debug log
 
       if (response.statusCode == 200) {
         final jsonResponse = jsonDecode(responseBody);
@@ -92,6 +96,7 @@ class ImageUploadService extends GetxService {
       }
     } catch (e) {
       Get.snackbar('Error', 'Failed to upload image: ${e.toString()}');
+      print('❌ Upload error: $e'); // Debug log
       return null;
     }
   }
@@ -102,7 +107,7 @@ class ImageUploadService extends GetxService {
       // Prepare multipart request
       var request = http.MultipartRequest(
         'POST',
-        Uri.parse('${ApiClient.baseUrl}${ApiClient.apiPath}/FMB/UploadProfileImage'),
+        Uri.parse('${ApiClient.baseUrl}${ApiClient.apiPath}/UploadProfileImage'),
       );
 
       // Add headers (without Content-Type as it's set automatically for multipart)
@@ -119,9 +124,13 @@ class ImageUploadService extends GetxService {
         ),
       );
 
+      print('🚀 Uploading to: ${request.url}'); // Debug log
+
       // Send request
       final response = await request.send();
       final responseBody = await response.stream.bytesToString();
+
+      print('📥 Upload response: ${response.statusCode} - $responseBody'); // Debug log
 
       if (response.statusCode == 200) {
         final jsonResponse = jsonDecode(responseBody);
@@ -142,6 +151,7 @@ class ImageUploadService extends GetxService {
       }
     } catch (e) {
       Get.snackbar('Error', 'Failed to upload profile image: ${e.toString()}');
+      print('❌ Upload error: $e'); // Debug log
       return null;
     }
   }
@@ -152,7 +162,7 @@ class ImageUploadService extends GetxService {
       // Prepare multipart request
       var request = http.MultipartRequest(
         'POST',
-        Uri.parse('${ApiClient.baseUrl}${ApiClient.apiPath}/FMB/UploadBusinessLogo'),
+        Uri.parse('${ApiClient.baseUrl}${ApiClient.apiPath}/UploadBusinessLogo'),
       );
 
       // Add headers (without Content-Type as it's set automatically for multipart)
@@ -169,9 +179,13 @@ class ImageUploadService extends GetxService {
         ),
       );
 
+      print('🚀 Uploading to: ${request.url}'); // Debug log
+
       // Send request
       final response = await request.send();
       final responseBody = await response.stream.bytesToString();
+
+      print('📥 Upload response: ${response.statusCode} - $responseBody'); // Debug log
 
       if (response.statusCode == 200) {
         final jsonResponse = jsonDecode(responseBody);
@@ -192,6 +206,7 @@ class ImageUploadService extends GetxService {
       }
     } catch (e) {
       Get.snackbar('Error', 'Failed to upload business logo: ${e.toString()}');
+      print('❌ Upload error: $e'); // Debug log
       return null;
     }
   }

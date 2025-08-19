@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../../../services/auth_service.dart';
 import '../../../../services/seller_service.dart';
 import '../../../../services/image_upload_service.dart';
+import '../../../../services/location_service.dart';
 import '../../../../data/models/api/index.dart';
 import '../../../../core/theme/app_theme.dart';
 
@@ -11,6 +12,7 @@ class SellerProfileEditController extends GetxController {
   final AuthService _authService = Get.find<AuthService>();
   final SellerService _sellerService = Get.find<SellerService>();
   final ImageUploadService _imageUploadService = Get.find<ImageUploadService>();
+  final LocationService _locationService = Get.find<LocationService>();
   
   // Current seller data
   final Rx<SellerDetailsExtended?> currentSeller = Rx<SellerDetailsExtended?>(null);
@@ -33,14 +35,17 @@ class SellerProfileEditController extends GetxController {
   final RxList<SellerUrl> socialUrls = <SellerUrl>[].obs;
   final Map<String, TextEditingController> socialControllers = {};
   
-  // Profile images
-  final RxString profileImageUrl = ''.obs;
+  // Profile images - only business logo
   final RxString businessLogoUrl = ''.obs;
+  
+  // Geolocation
+  final RxString currentGeoLocation = ''.obs; // Format: "latitude,longitude"
+  final RxBool isGettingLocation = false.obs;
   
   // UI state
   final RxBool isLoading = false.obs;
   final RxBool isSaving = false.obs;
-  final RxBool isUploadingImage = false.obs;
+  final RxBool isUploadingLogo = false.obs;
   final RxBool hasChanges = false.obs;
   
   // Form key
@@ -102,8 +107,8 @@ class SellerProfileEditController extends GetxController {
     pincodeController.text = seller.pincode ?? '';
     establishedYearController.text = seller.establishedyear?.toString() ?? '';
     
-    profileImageUrl.value = ''; // No profile image field in current model
     businessLogoUrl.value = seller.logo ?? '';
+    currentGeoLocation.value = seller.geolocation ?? '';
   }
 
   Future<void> _loadSocialUrls(int sellerId) async {
@@ -162,35 +167,10 @@ class SellerProfileEditController extends GetxController {
     }
   }
 
-  // Image handling methods
-  Future<void> updateProfileImage() async {
-    try {
-      isUploadingImage.value = true;
-      
-      final XFile? imageFile = await _imageUploadService.showImagePickerDialog();
-      if (imageFile == null) return;
-      
-      // Validate image before upload
-      if (!await _imageUploadService.validateImageForUpload(imageFile)) {
-        return;
-      }
-      
-      final String? uploadedUrl = await _imageUploadService.uploadProfileImage(imageFile);
-      if (uploadedUrl != null) {
-        profileImageUrl.value = uploadedUrl;
-        hasChanges.value = true;
-        Get.snackbar('Success', 'Profile image updated successfully');
-      }
-    } catch (e) {
-      Get.snackbar('Error', 'Failed to upload profile image');
-    } finally {
-      isUploadingImage.value = false;
-    }
-  }
-
+  // Image handling methods - only business logo
   Future<void> updateBusinessLogo() async {
     try {
-      isUploadingImage.value = true;
+      isUploadingLogo.value = true;
       
       final XFile? imageFile = await _imageUploadService.showImagePickerDialog();
       if (imageFile == null) return;
@@ -208,20 +188,90 @@ class SellerProfileEditController extends GetxController {
       }
     } catch (e) {
       Get.snackbar('Error', 'Failed to upload business logo');
+      print('Logo upload error: $e');
     } finally {
-      isUploadingImage.value = false;
+      isUploadingLogo.value = false;
     }
-  }
-
-  void removeProfileImage() {
-    profileImageUrl.value = '';
-    hasChanges.value = true;
   }
 
   void removeBusinessLogo() {
     businessLogoUrl.value = '';
     hasChanges.value = true;
   }
+
+  // Geolocation methods
+  Future<void> getCurrentLocation() async {
+    try {
+      isGettingLocation.value = true;
+      
+      Get.snackbar(
+        'Getting Location',
+        'Please wait while we get your current location...',
+        backgroundColor: Colors.blue.withOpacity(0.1),
+        colorText: Colors.blue,
+        duration: const Duration(seconds: 3),
+      );
+
+      final locationDetails = await _locationService.getCurrentLocationWithAddress();
+      
+      if (locationDetails != null) {
+        // Auto-fill address fields from location
+        if (locationDetails.area.isNotEmpty) {
+          areaController.text = locationDetails.area;
+        }
+        if (locationDetails.city.isNotEmpty) {
+          cityController.text = locationDetails.city;
+        }
+        if (locationDetails.state.isNotEmpty) {
+          stateController.text = locationDetails.state;
+        }
+        if (locationDetails.pincode.isNotEmpty) {
+          pincodeController.text = locationDetails.pincode;
+        }
+        if (addressController.text.isEmpty && locationDetails.formattedAddress.isNotEmpty) {
+          // Only set address if it's empty, don't overwrite existing address
+          addressController.text = locationDetails.formattedAddress;
+        }
+        
+        // Save geolocation coordinates
+        currentGeoLocation.value = locationDetails.geoLocationString;
+        hasChanges.value = true;
+        
+        Get.snackbar(
+          'Location Updated',
+          'Address fields have been filled with your current location.',
+          backgroundColor: Colors.green.withOpacity(0.1),
+          colorText: Colors.green,
+          duration: const Duration(seconds: 3),
+        );
+      }
+    } catch (e) {
+      Get.snackbar(
+        'Location Error',
+        'Failed to get current location. Please try again.',
+        backgroundColor: Colors.red.withOpacity(0.1),
+        colorText: Colors.red,
+      );
+      print('Location error: $e');
+    } finally {
+      isGettingLocation.value = false;
+    }
+  }
+
+  // Get formatted location display
+  String get currentLocationDisplay {
+    if (currentGeoLocation.value.isEmpty) return 'No location set';
+    
+    final coords = _locationService.parseGeoLocation(currentGeoLocation.value);
+    if (coords != null) {
+      return 'Lat: ${coords['latitude']!.toStringAsFixed(6)}, Lng: ${coords['longitude']!.toStringAsFixed(6)}';
+    }
+    
+    return 'No location set';
+  }
+
+  // Check if location is set
+  bool get hasLocationSet => currentGeoLocation.value.isNotEmpty;
 
   Future<void> saveProfile() async {
     if (!formKey.currentState!.validate()) {
@@ -253,6 +303,7 @@ class SellerProfileEditController extends GetxController {
         city: cityController.text.trim().isNotEmpty ? cityController.text.trim() : null,
         state: stateController.text.trim().isNotEmpty ? stateController.text.trim() : null,
         pincode: pincodeController.text.trim().isNotEmpty ? pincodeController.text.trim() : null,
+        geolocation: currentGeoLocation.value.isNotEmpty ? currentGeoLocation.value : null, // Save geolocation
         establishedyear: establishedYearController.text.trim().isNotEmpty 
             ? int.tryParse(establishedYearController.text.trim()) : null,
         ispublished: seller.ispublished,
@@ -356,7 +407,7 @@ class SellerProfileEditController extends GetxController {
 
   double get profileCompletionPercentage {
     int completedFields = 0;
-    int totalFields = 12; // Total important fields
+    int totalFields = 13; // Total important fields (added geolocation)
 
     if (businessNameController.text.trim().isNotEmpty) completedFields++;
     if (profileNameController.text.trim().isNotEmpty) completedFields++;
@@ -370,6 +421,7 @@ class SellerProfileEditController extends GetxController {
     if (businessLogoUrl.value.isNotEmpty) completedFields++;
     if (socialControllers.values.any((c) => c.text.trim().isNotEmpty)) completedFields++;
     if (establishedYearController.text.trim().isNotEmpty) completedFields++;
+    if (currentGeoLocation.value.isNotEmpty) completedFields++; // Added geolocation check
 
     return completedFields / totalFields;
   }

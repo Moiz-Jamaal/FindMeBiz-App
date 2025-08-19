@@ -4,6 +4,9 @@ part of 'app_pages.dart';
 abstract class Routes {
   Routes._();
   
+  // Startup route
+  static const STARTUP = _Paths.STARTUP;
+  
   // Core routes
   static const WELCOME = _Paths.WELCOME;
   static const HOME = _Paths.HOME;
@@ -40,6 +43,9 @@ abstract class Routes {
 
 abstract class _Paths {
   _Paths._();
+  
+  // Startup path
+  static const STARTUP = '/startup';
   
   // Core paths
   static const WELCOME = '/welcome';

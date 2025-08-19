@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'api/base_api_service.dart';
 import 'api/api_exception.dart';
+import 'role_service.dart';
 import '../data/models/api/index.dart';
 
 class AuthService extends BaseApiService {
@@ -15,6 +16,7 @@ class AuthService extends BaseApiService {
   // Getters
   UsersProfile? get currentUser => _currentUser.value;
   bool get isLoggedIn => _currentUser.value != null;
+  RxBool get isLoggedInReactive => (_currentUser.value != null).obs;
   
   @override
   void onInit() {
@@ -28,10 +30,13 @@ class AuthService extends BaseApiService {
     if (userData != null) {
       try {
         _currentUser.value = UsersProfile.fromJson(Map<String, dynamic>.from(userData));
+        print('✅ Loaded saved user: ${_currentUser.value?.username}');
       } catch (e) {
-        print('Error loading saved user: $e');
+        print('❌ Error loading saved user: $e');
         _clearUserData();
       }
+    } else {
+      print('ℹ️ No saved user found');
     }
   }
 
@@ -106,6 +111,11 @@ class AuthService extends BaseApiService {
     
     if (response.success && response.data != null) {
       _saveUser(response.data!);
+      
+      // After successful login, check seller data
+      if (Get.isRegistered<RoleService>()) {
+        await Get.find<RoleService>().checkSellerData();
+      }
     }
     
     return response;
@@ -142,6 +152,12 @@ class AuthService extends BaseApiService {
   // Logout
   Future<void> logout() async {
     _clearUserData();
+    
+    // Clear seller data from role service
+    if (Get.isRegistered<RoleService>()) {
+      Get.find<RoleService>().clearSellerData();
+    }
+    
     // Navigate to welcome screen
     Get.offAllNamed('/welcome');
   }

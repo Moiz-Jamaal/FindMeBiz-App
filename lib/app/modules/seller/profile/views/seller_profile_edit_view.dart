@@ -128,65 +128,106 @@ class SellerProfileEditView extends GetView<SellerProfileEditController> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Profile Images',
-              style: Get.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
+            Row(
+              children: [
+                Text(
+                  'Business Logo',
+                  style: Get.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const Spacer(),
+                if (controller.businessLogoUrl.value.isNotEmpty)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppTheme.successColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.check_circle,
+                          size: 14,
+                          color: AppTheme.successColor,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Uploaded',
+                          style: Get.textTheme.bodySmall?.copyWith(
+                            color: AppTheme.successColor,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
             ),
             const SizedBox(height: 16),
             
-            Row(
-              children: [
-                // Profile Photo
-                Expanded(
-                  child: Column(
-                    children: [
-                      _buildImagePicker(
-                        title: 'Profile Photo',
-                        imagePath: controller.profileImageUrl,
-                        onImageSelected: controller.updateProfileImage,
-                        onImageRemoved: controller.removeProfileImage,
-                        icon: Icons.person,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Your Photo',
-                        style: Get.textTheme.bodySmall?.copyWith(
-                          color: AppTheme.textSecondary,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
-                ),
-                
-                const SizedBox(width: 16),
-                
-                // Business Logo
-                Expanded(
-                  child: Column(
-                    children: [
-                      _buildImagePicker(
-                        title: 'Business Logo',
-                        imagePath: controller.businessLogoUrl,
-                        onImageSelected: controller.updateBusinessLogo,
-                        onImageRemoved: controller.removeBusinessLogo,
-                        icon: Icons.business,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Business Logo',
-                        style: Get.textTheme.bodySmall?.copyWith(
-                          color: AppTheme.textSecondary,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+            // Business Logo only
+            Center(
+              child: _buildImagePicker(
+                title: 'Business Logo',
+                imagePath: controller.businessLogoUrl,
+                onImageSelected: controller.updateBusinessLogo,
+                onImageRemoved: controller.removeBusinessLogo,
+                icon: Icons.business,
+              ),
             ),
+            const SizedBox(height: 8),
+            Center(
+              child: Text(
+                controller.businessLogoUrl.value.isNotEmpty
+                    ? 'Tap to change your business logo'
+                    : 'Upload your business logo to build trust with buyers',
+                style: Get.textTheme.bodySmall?.copyWith(
+                  color: AppTheme.textSecondary,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+            if (controller.isUploadingLogo.value) ...[
+              const SizedBox(height: 12),
+              Center(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppTheme.sellerPrimary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: AppTheme.sellerPrimary,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Uploading logo...',
+                        style: Get.textTheme.bodySmall?.copyWith(
+                          color: AppTheme.sellerPrimary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -241,25 +282,51 @@ class SellerProfileEditView extends GetView<SellerProfileEditController> {
               )
             : Stack(
                 children: [
-                  Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.image,
-                          size: 40,
-                          color: AppTheme.textHint,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Image Added',
-                          style: Get.textTheme.bodySmall?.copyWith(
-                            color: AppTheme.textSecondary,
-                          ),
-                        ),
-                      ],
+                  // Display the actual image
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: Container(
+                      width: double.infinity,
+                      height: double.infinity,
+                      child: Image.network(
+                        imagePath.value,
+                        fit: BoxFit.cover,
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return Center(
+                            child: CircularProgressIndicator(
+                              value: loadingProgress.expectedTotalBytes != null
+                                  ? loadingProgress.cumulativeBytesLoaded /
+                                      loadingProgress.expectedTotalBytes!
+                                  : null,
+                              strokeWidth: 2,
+                              color: AppTheme.sellerPrimary,
+                            ),
+                          );
+                        },
+                        errorBuilder: (context, error, stackTrace) {
+                          return Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.error,
+                                size: 32,
+                                color: Colors.red,
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Load Error',
+                                style: Get.textTheme.bodySmall?.copyWith(
+                                  color: Colors.red,
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                      ),
                     ),
                   ),
+                  // Remove button
                   Positioned(
                     top: 4,
                     right: 4,
@@ -280,10 +347,163 @@ class SellerProfileEditView extends GetView<SellerProfileEditController> {
                       ),
                     ),
                   ),
+                  // Upload indicator overlay
+                  if (controller.isUploadingLogo.value)
+                    Positioned.fill(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.5),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Center(
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        ),
+                      ),
+                    ),
                 ],
               ),
       ),
     ));
+  }
+
+  Widget _buildGeolocationSection() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.sellerPrimary.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: AppTheme.sellerPrimary.withOpacity(0.2),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.my_location,
+                color: AppTheme.sellerPrimary,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Current Location',
+                style: Get.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.sellerPrimary,
+                ),
+              ),
+              const Spacer(),
+              Obx(() => controller.isGettingLocation.value
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AppTheme.sellerPrimary,
+                      ),
+                    )
+                  : GestureDetector(
+                      onTap: controller.getCurrentLocation,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppTheme.sellerPrimary,
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.location_searching,
+                              size: 16,
+                              color: Colors.white,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Get Location',
+                              style: Get.textTheme.bodySmall?.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Obx(() => Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: controller.hasLocationSet
+                    ? AppTheme.sellerPrimary.withOpacity(0.3)
+                    : AppTheme.textHint.withOpacity(0.3),
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      controller.hasLocationSet
+                          ? Icons.location_on
+                          : Icons.location_off,
+                      size: 16,
+                      color: controller.hasLocationSet
+                          ? AppTheme.sellerPrimary
+                          : AppTheme.textHint,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      controller.hasLocationSet
+                          ? 'Location Set'
+                          : 'No location set',
+                      style: Get.textTheme.bodySmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: controller.hasLocationSet
+                            ? AppTheme.sellerPrimary
+                            : AppTheme.textHint,
+                      ),
+                    ),
+                  ],
+                ),
+                if (controller.hasLocationSet) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    controller.currentLocationDisplay,
+                    style: Get.textTheme.bodySmall?.copyWith(
+                      color: AppTheme.textSecondary,
+                      fontFamily: 'monospace',
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          )),
+          const SizedBox(height: 8),
+          Text(
+            'Get your current location to auto-fill address fields and help buyers find you on the map.',
+            style: Get.textTheme.bodySmall?.copyWith(
+              color: AppTheme.textSecondary,
+            ),
+          ),
+        ],
+      ),
+    );
   }
   Widget _buildBasicInfoSection() {
     return Card(
@@ -424,6 +644,11 @@ class SellerProfileEditView extends GetView<SellerProfileEditController> {
                 fontWeight: FontWeight.w600,
               ),
             ),
+            const SizedBox(height: 16),
+            
+            // Geolocation Section
+            _buildGeolocationSection(),
+            
             const SizedBox(height: 16),
             
             TextFormField(
