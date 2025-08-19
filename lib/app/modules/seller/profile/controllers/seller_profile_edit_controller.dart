@@ -6,6 +6,7 @@ import '../../../../services/auth_service.dart';
 import '../../../../services/seller_service.dart';
 import '../../../../services/image_upload_service.dart';
 import '../../../../services/location_service.dart';
+import '../../../../services/category_service.dart';
 import '../../../../data/models/api/index.dart';
 import '../../../../core/theme/app_theme.dart';
 
@@ -14,6 +15,11 @@ class SellerProfileEditController extends GetxController {
   final SellerService _sellerService = Get.find<SellerService>();
   final ImageUploadService _imageUploadService = Get.find<ImageUploadService>();
   final LocationService _locationService = Get.find<LocationService>();
+  final CategoryService _categoryService = Get.find<CategoryService>();
+  
+  // Disposal flag to prevent using disposed controllers
+  bool _isDisposed = false;
+  bool get isDisposed => _isDisposed;
   
   // Current seller data
   final Rx<SellerDetailsExtended?> currentSeller = Rx<SellerDetailsExtended?>(null);
@@ -34,7 +40,9 @@ class SellerProfileEditController extends GetxController {
   
   // Social media controllers
   final RxList<SellerUrl> socialUrls = <SellerUrl>[].obs;
+  final RxList<SocialMediaPlatform> socialMediaPlatforms = <SocialMediaPlatform>[].obs;
   final Map<String, TextEditingController> socialControllers = {};
+  final RxBool isLoadingSocialMedia = false.obs;
   
   // Profile images - only business logo
   final RxString businessLogoUrl = ''.obs;
@@ -57,11 +65,13 @@ class SellerProfileEditController extends GetxController {
   void onInit() {
     super.onInit();
     _loadCurrentProfile();
+    // Social media platforms will be loaded after URLs are loaded
     _setupListeners();
   }
 
   @override
   void onClose() {
+    _isDisposed = true;
     _disposeControllers();
     super.onClose();
   }
@@ -83,6 +93,9 @@ class SellerProfileEditController extends GetxController {
         currentSeller.value = response.data;
         _populateFields(response.data!);
         await _loadSocialUrls(response.data!.sellerid!);
+        
+        // Load social media platforms after loading URLs
+        await _loadSocialMediaPlatforms();
       } else {
         Get.snackbar('Info', 'No seller profile found. Please complete onboarding first.');
       }
@@ -125,19 +138,94 @@ class SellerProfileEditController extends GetxController {
       final response = await _sellerService.getSellerUrls(sellerId);
       if (response.success && response.data != null) {
         socialUrls.value = response.data!;
+        print('🔗 Loaded ${socialUrls.length} social URLs: ${socialUrls.map((url) => 'SmId: ${url.smid}, URL: ${url.urllink}').join(', ')}');
         
-        // Setup controllers for each social media
-        for (var url in socialUrls) {
-          if (url.smid != null) {
-            final key = url.smid.toString();
-            socialControllers[key] = TextEditingController(text: url.urllink);
-            socialControllers[key]!.addListener(_onFieldChanged);
-          }
+        // Re-initialize controllers if platforms are already loaded
+        if (socialMediaPlatforms.isNotEmpty) {
+          print('🔄 Re-initializing social controllers after loading URLs');
+          _initializeSocialControllers();
         }
       }
     } catch (e) {
       print('Error loading social URLs: $e');
     }
+  }
+
+  Future<void> _loadSocialMediaPlatforms() async {
+    try {
+      isLoadingSocialMedia.value = true;
+      
+      // Ensure defaults exist first
+      await _categoryService.ensureSocialMediaDefaults();
+      
+      // Load social media platforms
+      final response = await _categoryService.getSocialMediaList();
+      
+      if (response.success && response.data != null) {
+        // Remove duplicates by platform name and ensure unique IDs
+        final uniquePlatforms = <String, SocialMediaPlatform>{};
+        var currentId = 1;
+        
+        for (var platform in response.data!) {
+          final name = platform.sname.toLowerCase();
+          if (!uniquePlatforms.containsKey(name)) {
+            // Create platform with unique ID if needed
+            uniquePlatforms[name] = SocialMediaPlatform(
+              smid: platform.smid == 1 ? currentId++ : platform.smid,
+              sname: platform.sname,
+            );
+          }
+        }
+        
+        socialMediaPlatforms.value = uniquePlatforms.values.toList();
+        print('📱 Loaded ${socialMediaPlatforms.length} social media platforms');
+        
+        // Initialize controllers for all platforms if URLs are already loaded
+        if (socialUrls.isNotEmpty || socialMediaPlatforms.isNotEmpty) {
+          print('🔄 Initializing social controllers after loading platforms');
+          _initializeSocialControllers();
+        }
+      } else {
+        Get.snackbar('Error', 'Failed to load social media platforms');
+      }
+      
+    } catch (e) {
+      print('Error loading social media platforms: $e');
+    } finally {
+      isLoadingSocialMedia.value = false;
+    }
+  }
+
+  void _initializeSocialControllers() {
+    print('🎮 Initializing social controllers...');
+    print('📱 Available platforms: ${socialMediaPlatforms.map((p) => 'SmId: ${p.smid}, Name: ${p.sname}').join(', ')}');
+    print('🔗 Available URLs: ${socialUrls.map((url) => 'SmId: ${url.smid}, URL: ${url.urllink}').join(', ')}');
+    
+    // Clear existing controllers
+    for (var controller in socialControllers.values) {
+      controller.dispose();
+    }
+    socialControllers.clear();
+    
+    // Create controllers for each platform
+    for (var platform in socialMediaPlatforms) {
+      if (platform.smid != null) {
+        final key = platform.smid.toString();
+        
+        // Find existing URL for this platform
+        final existingUrl = socialUrls.firstWhereOrNull(
+          (url) => url.smid == platform.smid,
+        );
+        
+        print('🔍 Platform ${platform.sname} (SmId: ${platform.smid}): ${existingUrl != null ? 'Found URL: ${existingUrl.urllink}' : 'No URL found'}');
+        
+        final controller = TextEditingController(text: existingUrl?.urllink ?? '');
+        controller.addListener(_onFieldChanged);
+        socialControllers[key] = controller;
+      }
+    }
+    
+    print('🎮 Created ${socialControllers.length} controllers');
   }
 
   void _setupListeners() {
@@ -157,6 +245,26 @@ class SellerProfileEditController extends GetxController {
   }
 
   void _disposeControllers() {
+    // Remove listeners before disposing to prevent errors
+    businessNameController.removeListener(_onFieldChanged);
+    profileNameController.removeListener(_onFieldChanged);
+    bioController.removeListener(_onFieldChanged);
+    contactController.removeListener(_onFieldChanged);
+    mobileController.removeListener(_onFieldChanged);
+    whatsappController.removeListener(_onFieldChanged);
+    addressController.removeListener(_onFieldChanged);
+    areaController.removeListener(_onFieldChanged);
+    cityController.removeListener(_onFieldChanged);
+    stateController.removeListener(_onFieldChanged);
+    pincodeController.removeListener(_onFieldChanged);
+    establishedYearController.removeListener(_onFieldChanged);
+    
+    // Remove listeners from social media controllers
+    for (var controller in socialControllers.values) {
+      controller.removeListener(_onFieldChanged);
+    }
+    
+    // Now dispose all controllers
     businessNameController.dispose();
     profileNameController.dispose();
     bioController.dispose();
@@ -174,6 +282,7 @@ class SellerProfileEditController extends GetxController {
     for (var controller in socialControllers.values) {
       controller.dispose();
     }
+    socialControllers.clear();
   }
 
   // Image handling methods - only business logo
@@ -508,33 +617,45 @@ class SellerProfileEditController extends GetxController {
         final smId = int.tryParse(entry.key);
         final url = entry.value.text.trim();
         
-        if (smId != null && url.isNotEmpty) {
-          final sellerUrl = SellerUrl(
-            sellerid: sellerId,
-            smid: smId,
-            urllink: url,
-          );
-          
+        if (smId != null) {
           // Check if URL already exists
           final existingUrl = socialUrls.firstWhereOrNull(
             (u) => u.smid == smId,
           );
           
-          if (existingUrl != null) {
-            // Update existing URL
-            await _sellerService.updateSellerUrl(sellerUrl);
-          } else {
-            // Create new URL
-            await _sellerService.addSellerUrl(sellerUrl);
+          if (url.isNotEmpty) {
+            // URL has content - create or update
+            final sellerUrl = SellerUrl(
+              sellerid: sellerId,
+              smid: smId,
+              urllink: url,
+            );
+            
+            if (existingUrl != null) {
+              // Update existing URL
+              await _sellerService.updateSellerUrl(sellerUrl);
+            } else {
+              // Create new URL
+              await _sellerService.addSellerUrl(sellerUrl);
+            }
+          } else if (existingUrl != null) {
+            // URL was cleared - delete existing URL
+            await _sellerService.deleteSellerUrl(existingUrl);
           }
         }
       }
+      
+      // Reload social URLs to refresh the list
+      await _loadSocialUrls(sellerId);
+      
     } catch (e) {
       print('Error saving social URLs: $e');
     }
   }
 
   void _onFieldChanged() {
+    // Safety check to prevent errors after disposal
+    if (_isDisposed) return;
     hasChanges.value = true;
   }
 

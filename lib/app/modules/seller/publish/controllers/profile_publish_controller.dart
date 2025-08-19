@@ -357,17 +357,20 @@ class ProfilePublishController extends GetxController {
     if (profile == null) return 0.0;
     
     int completedFields = 0;
-    int totalFields = 10;
+    int totalFields = 13; // Matching edit controller fields
     
     if (profile.businessname?.isNotEmpty == true) completedFields++;
     if (profile.profilename?.isNotEmpty == true) completedFields++;
     if (profile.bio?.isNotEmpty == true) completedFields++;
     if (profile.logo?.isNotEmpty == true) completedFields++;
     if (profile.contactno?.isNotEmpty == true) completedFields++;
+    if (profile.mobileno?.isNotEmpty == true) completedFields++;
+    if (profile.whatsappno?.isNotEmpty == true) completedFields++;
     if (profile.address?.isNotEmpty == true) completedFields++;
     if (profile.city?.isNotEmpty == true) completedFields++;
     if (profile.state?.isNotEmpty == true) completedFields++;
-    if (profile.categories?.isNotEmpty == true) completedFields++;
+    if (profile.establishedyear != null) completedFields++;
+    if (profile.geolocation?.isNotEmpty == true) completedFields++;
     if (profile.urls?.isNotEmpty == true) completedFields++;
     
     return completedFields / totalFields;
@@ -392,10 +395,13 @@ class ProfilePublishController extends GetxController {
     if (profile.bio?.isEmpty != false) missing.add('Business Description');
     if (profile.logo?.isEmpty != false) missing.add('Business Logo');
     if (profile.contactno?.isEmpty != false) missing.add('Contact Number');
+    if (profile.mobileno?.isEmpty != false) missing.add('Mobile Number');
+    if (profile.whatsappno?.isEmpty != false) missing.add('WhatsApp Number');
     if (profile.address?.isEmpty != false) missing.add('Business Address');
     if (profile.city?.isEmpty != false) missing.add('City');
     if (profile.state?.isEmpty != false) missing.add('State');
-    if (profile.categories?.isEmpty != false) missing.add('Business Categories');
+    if (profile.establishedyear == null) missing.add('Established Year');
+    if (profile.geolocation?.isEmpty != false) missing.add('Location');
     if (profile.urls?.isEmpty != false) missing.add('Social Media Links');
     
     return missing;

@@ -88,17 +88,20 @@ class SellerDashboardController extends GetxController {
 
   double _calculateProfileCompletion(SellerDetailsExtended seller) {
     int completedFields = 0;
-    int totalFields = 10;
+    int totalFields = 13; // Matching edit controller fields
 
     if (seller.businessname?.isNotEmpty == true) completedFields++;
     if (seller.profilename?.isNotEmpty == true) completedFields++;
     if (seller.bio?.isNotEmpty == true) completedFields++;
     if (seller.logo?.isNotEmpty == true) completedFields++;
     if (seller.contactno?.isNotEmpty == true) completedFields++;
+    if (seller.mobileno?.isNotEmpty == true) completedFields++;
+    if (seller.whatsappno?.isNotEmpty == true) completedFields++;
     if (seller.address?.isNotEmpty == true) completedFields++;
     if (seller.city?.isNotEmpty == true) completedFields++;
     if (seller.state?.isNotEmpty == true) completedFields++;
-    if (seller.categories?.isNotEmpty == true) completedFields++;
+    if (seller.establishedyear != null) completedFields++;
+    if (seller.geolocation?.isNotEmpty == true) completedFields++;
     if (seller.urls?.isNotEmpty == true) completedFields++;
 
     return completedFields / totalFields;

@@ -60,8 +60,8 @@ class SocialMediaPlatform {
 
   factory SocialMediaPlatform.fromJson(Map<String, dynamic> json) {
     return SocialMediaPlatform(
-      smid: json['SmId'] as int?,
-      sname: json['SName'] as String,
+      smid: json['smid'] as int?,
+      sname: json['sname'] as String,
     );
   }
 

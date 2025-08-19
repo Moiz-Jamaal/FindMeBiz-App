@@ -835,51 +835,132 @@ class SellerProfileEditView extends GetView<SellerProfileEditController> {
             ),
             const SizedBox(height: 16),
             
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppTheme.sellerPrimary.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: AppTheme.sellerPrimary.withOpacity(0.3),
-                ),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.link,
-                    color: AppTheme.sellerPrimary,
-                    size: 20,
+            Obx(() {
+              if (controller.isLoadingSocialMedia.value) {
+                return const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(16.0),
+                    child: CircularProgressIndicator(),
                   ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Social Media Links',
-                          style: Get.textTheme.bodyMedium?.copyWith(
-                            color: AppTheme.sellerPrimary,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'Social media management will be available in the next update',
-                          style: Get.textTheme.bodySmall?.copyWith(
-                            color: AppTheme.textSecondary,
-                          ),
-                        ),
-                      ],
+                );
+              }
+              
+              if (controller.socialMediaPlatforms.isEmpty) {
+                return Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppTheme.sellerPrimary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: AppTheme.sellerPrimary.withOpacity(0.3),
                     ),
                   ),
-                ],
-              ),
-            ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.link,
+                        color: AppTheme.sellerPrimary,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'No social media platforms available',
+                          style: Get.textTheme.bodyMedium?.copyWith(
+                            color: AppTheme.sellerPrimary,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }
+              
+              return Column(
+                children: controller.isDisposed ? [] : controller.socialMediaPlatforms.map((platform) {
+                  final key = platform.smid.toString();
+                  final controllerText = controller.socialControllers[key];
+                  
+                  // Safety check - don't render if controller is disposed
+                  if (controller.isDisposed || controllerText == null) {
+                    return const SizedBox.shrink();
+                  }
+                  
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: _buildSocialMediaField(
+                      platform.sname,
+                      controllerText,
+                      _getIconForPlatform(platform.sname),
+                      _getHintForPlatform(platform.sname),
+                    ),
+                  );
+                }).toList(),
+              );
+            }),
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildSocialMediaField(
+    String platformName,
+    TextEditingController? textController,
+    IconData icon,
+    String hint,
+  ) {
+    return TextFormField(
+      controller: textController,
+      decoration: InputDecoration(
+        labelText: platformName.toUpperCase(),
+        hintText: hint,
+        prefixIcon: Icon(icon, color: AppTheme.sellerPrimary),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: AppTheme.sellerPrimary),
+        ),
+      ),
+      keyboardType: TextInputType.url,
+      textCapitalization: TextCapitalization.none,
+    );
+  }
+
+  IconData _getIconForPlatform(String platformName) {
+    switch (platformName.toLowerCase()) {
+      case 'instagram':
+        return Icons.camera_alt;
+      case 'facebook':
+        return Icons.facebook;
+      case 'twitter':
+        return Icons.alternate_email;
+      case 'youtube':
+        return Icons.play_circle;
+      case 'website':
+        return Icons.language;
+      default:
+        return Icons.link;
+    }
+  }
+
+  String _getHintForPlatform(String platformName) {
+    switch (platformName.toLowerCase()) {
+      case 'instagram':
+        return 'https://instagram.com/yourbusiness';
+      case 'facebook':
+        return 'https://facebook.com/yourbusiness';
+      case 'twitter':
+        return 'https://twitter.com/yourbusiness';
+      case 'youtube':
+        return 'https://youtube.com/c/yourbusiness';
+      case 'website':
+        return 'https://yourbusiness.com';
+      default:
+        return 'Enter your ${platformName.toLowerCase()} URL';
+    }
   }
 
   Widget _buildSaveButton() {
