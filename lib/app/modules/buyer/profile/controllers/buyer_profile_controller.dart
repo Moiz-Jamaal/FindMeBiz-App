@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../../data/models/buyer.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../services/auth_service.dart';
 
 class BuyerProfileController extends GetxController {
+  final AuthService _authService = Get.find<AuthService>();
+  
   // User profile data
   final Rx<Buyer?> buyer = Rx<Buyer?>(null);
   
@@ -389,12 +392,9 @@ class BuyerProfileController extends GetxController {
     );
   }
   
-  void _performLogout() {
-    // Clear user data
-    buyer.value = null;
-    
-    // Navigate to welcome screen
-    Get.offAllNamed('/welcome');
+  void _performLogout() async {
+    // Use AuthService logout which properly clears all data including role
+    await _authService.logout();
     
     Get.snackbar(
       'Logged Out',

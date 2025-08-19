@@ -39,6 +39,21 @@ class WelcomeView extends GetView<WelcomeController> {
               Obx(() => _buildContinueButton()),
               
               const SizedBox(height: 20),
+              
+              // Debug button (for development only)
+              if (true) // Change to false for production
+                TextButton(
+                  onPressed: controller.clearAllAppData,
+                  child: Text(
+                    'Clear All Data (Debug)',
+                    style: Get.textTheme.bodySmall?.copyWith(
+                      color: Colors.grey[600],
+                      decoration: TextDecoration.underline,
+                    ),
+                  ),
+                ),
+              
+              const SizedBox(height: 20),
             ],
           ),
         ),
@@ -47,16 +62,18 @@ class WelcomeView extends GetView<WelcomeController> {
   }
 
   Widget _buildHeader() {
-    return Column(
+    return Obx(() => Column(
       children: [
-  // App Icon
-  const AppLogo(size: 100, radius: 20, padding: EdgeInsets.all(6)),
+        // App Icon
+        const AppLogo(size: 100, radius: 20, padding: EdgeInsets.all(6)),
         
         const SizedBox(height: 24),
         
-        // Welcome Text
+        // Welcome Text - different for logged in users
         Text(
-          AppStrings.welcome,
+          controller.userAlreadyLoggedIn.value 
+              ? 'Welcome Back!' 
+              : AppStrings.welcome,
           style: Get.textTheme.displayMedium?.copyWith(
             fontWeight: FontWeight.bold,
             color: AppTheme.textPrimary,
@@ -67,22 +84,26 @@ class WelcomeView extends GetView<WelcomeController> {
         const SizedBox(height: 8),
         
         Text(
-          AppStrings.welcomeSubtitle,
+          controller.userAlreadyLoggedIn.value 
+              ? 'Choose your preferred mode to continue'
+              : AppStrings.welcomeSubtitle,
           style: Get.textTheme.bodyLarge?.copyWith(
             color: AppTheme.textSecondary,
           ),
           textAlign: TextAlign.center,
         ),
       ],
-    );
+    ));
   }
 
   Widget _buildRoleSelection() {
-    return Column(
+    return Obx(() => Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
-          AppStrings.chooseRole,
+          controller.userAlreadyLoggedIn.value 
+              ? 'Select Your Mode'
+              : AppStrings.chooseRole,
           style: Get.textTheme.headlineMedium?.copyWith(
             fontWeight: FontWeight.w600,
             color: AppTheme.textPrimary,
@@ -114,7 +135,7 @@ class WelcomeView extends GetView<WelcomeController> {
           color: AppTheme.buyerPrimary,
         ),
       ],
-    );
+    ));
   }
 
   Widget _buildRoleCard({
@@ -231,7 +252,7 @@ class WelcomeView extends GetView<WelcomeController> {
     final hasSelection = controller.selectedRole.value != null;
     final isLoading = controller.isLoading.value;
     
-    return AnimatedOpacity(
+    return Obx(() => AnimatedOpacity(
       opacity: hasSelection ? 1.0 : 0.5,
       duration: AppConstants.shortAnimation,
       child: SizedBox(
@@ -260,7 +281,9 @@ class WelcomeView extends GetView<WelcomeController> {
                   ),
                 )
               : Text(
-                  AppStrings.next,
+                  controller.userAlreadyLoggedIn.value 
+                      ? 'Continue'
+                      : AppStrings.next,
                   style: Get.textTheme.titleLarge?.copyWith(
                     color: Colors.white,
                     fontWeight: FontWeight.w600,
@@ -268,6 +291,6 @@ class WelcomeView extends GetView<WelcomeController> {
                 ),
         ),
       ),
-    );
+    ));
   }
 }

@@ -17,7 +17,6 @@ import 'app/services/category_service.dart';
 import 'app/services/subscription_service.dart';
 import 'app/services/image_upload_service.dart';
 import 'app/services/location_service.dart';
-import 'app/services/location_service.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
@@ -44,12 +43,14 @@ Future<void> main() async {
   
   // Initialize API services
   Get.put<ApiClient>(ApiClient(), permanent: true);
-  Get.put<AuthService>(AuthService(), permanent: true);
+  
+  // Initialize AuthService asynchronously and wait for it to load saved user data
+  await Get.putAsync<AuthService>(() async => AuthService().init(), permanent: true);
+  
   Get.put<SellerService>(SellerService(), permanent: true);
   Get.put<CategoryService>(CategoryService(), permanent: true);
   Get.put<SubscriptionService>(SubscriptionService(), permanent: true);
   Get.put<ImageUploadService>(ImageUploadService(), permanent: true);
-  Get.put<LocationService>(LocationService(), permanent: true);
   Get.put<LocationService>(LocationService(), permanent: true);
   
   await Get.putAsync<RoleService>(() async => RoleService().init());

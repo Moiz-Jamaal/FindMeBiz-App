@@ -1,5 +1,4 @@
 import 'package:get/get.dart';
-import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import '../services/role_service.dart';
 import '../data/models/user_role.dart';
@@ -19,17 +18,19 @@ class StartupController extends GetxController {
     try {
       print('🚀 Initializing app...');
       
-      // Wait a bit for services to be ready
-      await Future.delayed(const Duration(milliseconds: 500));
+      // Services should be ready now, but give a small delay for UI
+      await Future.delayed(const Duration(milliseconds: 300));
       
-      // Check authentication status
+      // Check authentication and role status
       final authService = Get.find<AuthService>();
-      print('🔐 Auth status: ${authService.isLoggedIn}');
+      final roleService = Get.find<RoleService>();
       
-      if (authService.isLoggedIn) {
-        // User is logged in, check their role and seller data
-        final roleService = Get.find<RoleService>();
-        
+      print('🔐 Auth status: ${authService.isLoggedIn}');
+      print('📋 Has saved role: ${roleService.hasSavedRole}');
+      print('👤 Current role: ${roleService.currentRole.value}');
+      
+      if (authService.isLoggedIn && roleService.hasSavedRole) {
+        // User is logged in and has a saved role preference
         // Re-check seller data from backend
         await roleService.checkSellerData();
         
@@ -37,15 +38,19 @@ class StartupController extends GetxController {
           initialRoute.value = Routes.BUYER_HOME;
           print('👤 Routing to buyer home');
         } else {
-          // Seller role - check if data exists
+          // Seller role - check if data exists to determine the correct route
           final route = roleService.getSellerRoute();
           initialRoute.value = route;
           print('🏪 Routing to seller: $route');
         }
+      } else if (authService.isLoggedIn && !roleService.hasSavedRole) {
+        // User is logged in but hasn't selected a role yet - go to welcome to select role
+        initialRoute.value = Routes.WELCOME;
+        print('❓ User logged in but no role selected - routing to welcome');
       } else {
         // User not logged in
         initialRoute.value = Routes.WELCOME;
-        print('👋 Routing to welcome');
+        print('👋 User not logged in - routing to welcome');
       }
       
       isInitialized.value = true;

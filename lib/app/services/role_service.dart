@@ -78,8 +78,11 @@ class RoleService extends GetxService {
 
   Future<void> switchTo(UserRole role) async {
     if (currentRole.value == role) return;
+    
     currentRole.value = role;
     await box.write(_storageKey, role.value);
+    
+    print('💾 Role saved to storage: ${role.value}');
 
     // Navigate to the correct root for the role
     if (role == UserRole.buyer) {
@@ -89,6 +92,19 @@ class RoleService extends GetxService {
       await _checkSellerData();
       Get.offAllNamed(getSellerRoute());
     }
+  }
+
+  /// Set role without navigation (for temporary role setting)
+  Future<void> setRoleTemporary(UserRole role) async {
+    currentRole.value = role;
+    // Don't persist to storage yet
+    print('🔄 Role set temporarily: ${role.value}');
+  }
+
+  /// Persist the current role to storage
+  Future<void> persistCurrentRole() async {
+    await box.write(_storageKey, currentRole.value.value);
+    print('💾 Role persisted to storage: ${currentRole.value.value}');
   }
 
   Future<void> toggle() => switchTo(
@@ -106,5 +122,13 @@ class RoleService extends GetxService {
     sellerOnboarded = false;
     sellerDataExists.value = false;
     box.remove(_sellerOnboardedKey);
+  }
+
+  /// Clear all role data (when switching accounts or resetting)
+  void clearAllRoleData() {
+    currentRole.value = UserRole.buyer; // Reset to default
+    box.remove(_storageKey);
+    clearSellerData();
+    print('🧹 All role data cleared');
   }
 }

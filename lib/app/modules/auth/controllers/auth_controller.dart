@@ -221,15 +221,17 @@ class AuthController extends GetxController {
   }
   
   // Navigate after successful authentication
-  void _navigateAfterAuth() {
+  void _navigateAfterAuth() async {
     final currentRole = _roleService.currentRole.value;
     
+    // Persist the role selection after successful authentication
+    await _roleService.persistCurrentRole();
+    
+    // Navigate based on role and check seller data for sellers
     if (currentRole == UserRole.seller) {
-      if (_roleService.sellerOnboarded) {
-        Get.offAllNamed('/seller-dashboard');
-      } else {
-        Get.offAllNamed('/seller-onboarding');
-      }
+      await _roleService.checkSellerData();
+      final route = _roleService.getSellerRoute();
+      Get.offAllNamed(route);
     } else {
       Get.offAllNamed('/buyer-home');
     }

@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'api/base_api_service.dart';
@@ -24,15 +23,57 @@ class AuthService extends BaseApiService {
     _loadSavedUser();
   }
 
+  // Initialize service and load saved user data
+  Future<AuthService> init() async {
+    _loadSavedUser();
+    // Give it a moment to load
+    await Future.delayed(const Duration(milliseconds: 100));
+    return this;
+  }
+
   // Load saved user from storage
   void _loadSavedUser() {
     final userData = _box.read(_userKey);
+    print('🔍 Checking saved user data: ${userData != null ? 'Found' : 'Not found'}');
+    
     if (userData != null) {
       try {
-        _currentUser.value = UsersProfile.fromJson(Map<String, dynamic>.from(userData));
+        // Ensure userData is a Map<String, dynamic>
+        Map<String, dynamic> userMap;
+        if (userData is Map<String, dynamic>) {
+          userMap = userData;
+        } else if (userData is Map) {
+          userMap = Map<String, dynamic>.from(userData);
+        } else {
+          throw Exception('Invalid user data format: ${userData.runtimeType}');
+        }
+        
+        // Debug: Print the actual data structure
+        print('📊 User data structure: ${userMap.keys.toList()}');
+        
+        // Handle both old format (userid) and new format (UserId)
+        if (userMap.containsKey('userid') && !userMap.containsKey('UserId')) {
+          // Convert old format to new format
+          userMap = _convertToNewFormat(userMap);
+          print('🔄 Converted old data format to new format');
+        }
+        
+        // Validate required fields before creating UsersProfile
+        if (userMap['UserId'] == null) {
+          throw Exception('Missing UserId field');
+        }
+        if (userMap['Username'] == null) {
+          throw Exception('Missing Username field');
+        }
+        if (userMap['EmailId'] == null) {
+          throw Exception('Missing EmailId field');
+        }
+        
+        _currentUser.value = UsersProfile.fromJson(userMap);
         print('✅ Loaded saved user: ${_currentUser.value?.username}');
       } catch (e) {
         print('❌ Error loading saved user: $e');
+        print('🧹 Clearing corrupted user data');
         _clearUserData();
       }
     } else {
@@ -40,10 +81,31 @@ class AuthService extends BaseApiService {
     }
   }
 
+  // Convert old field names to new field names
+  Map<String, dynamic> _convertToNewFormat(Map<String, dynamic> oldData) {
+    return {
+      'UserId': oldData['userid'],
+      'Username': oldData['username'],
+      'FullName': oldData['fullname'],
+      'EmailId': oldData['emailid'],
+      'UPassword': oldData['upassword'],
+      'Dob': oldData['dob'],
+      'Sex': oldData['sex'],
+      'MobileNo': oldData['mobileno'],
+      'WhatsappNo': oldData['whatsappno'],
+      'Active': oldData['active'],
+      'CreatedDt': oldData['createddt'],
+      'UpdatedDt': oldData['updateddt'],
+    };
+  }
+
   // Save user to storage
   void _saveUser(UsersProfile user) {
     _currentUser.value = user;
-    _box.write(_userKey, user.toJson());
+    // Always save in the new format with proper field names
+    final userData = user.toJson();
+    _box.write(_userKey, userData);
+    print('💾 User saved to storage: ${user.username}');
   }
 
   // Clear user data
@@ -51,6 +113,18 @@ class AuthService extends BaseApiService {
     _currentUser.value = null;
     _box.remove(_userKey);
     _box.remove(_tokenKey);
+  }
+
+  // Clear all app data (for debugging or reset)
+  Future<void> clearAllData() async {
+    _clearUserData();
+    
+    // Clear all role and seller data from role service
+    if (Get.isRegistered<RoleService>()) {
+      Get.find<RoleService>().clearAllRoleData();
+    }
+    
+    print('🧹 All app data cleared');
   }
 
   // Check if email is available
@@ -153,9 +227,9 @@ class AuthService extends BaseApiService {
   Future<void> logout() async {
     _clearUserData();
     
-    // Clear seller data from role service
+    // Clear all role and seller data from role service
     if (Get.isRegistered<RoleService>()) {
-      Get.find<RoleService>().clearSellerData();
+      Get.find<RoleService>().clearAllRoleData();
     }
     
     // Navigate to welcome screen

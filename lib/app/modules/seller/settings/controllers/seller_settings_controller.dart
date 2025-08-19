@@ -380,10 +380,16 @@ class SellerSettingsController extends GetxController {
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               Get.back();
-              // In real app, clear session and navigate to login
-              Get.offAllNamed('/welcome');
+              // Use AuthService logout which properly clears all data including role
+              await _authService.logout();
+              
+              Get.snackbar(
+                'Logged Out',
+                'You have been logged out successfully',
+                snackPosition: SnackPosition.BOTTOM,
+              );
             },
             child: const Text('Logout'),
           ),

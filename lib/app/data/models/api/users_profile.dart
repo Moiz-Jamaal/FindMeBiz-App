@@ -50,18 +50,18 @@ class UsersProfile {
 
   Map<String, dynamic> toJson() {
     return {
-      if (userid != null) 'userid': userid,
-      'username': username,
-      'fullname': fullname,
-      'emailid': emailid,
-      if (upassword != null) 'upassword': upassword,
-      'dob': dob,
-      'sex': sex,
-      'mobileno': mobileno,
-      'whatsappno': whatsappno,
-      'active': active,
-      'createddt': createddt?.toIso8601String(),
-      'updateddt': updateddt?.toIso8601String(),
+      if (userid != null) 'UserId': userid,
+      'Username': username,
+      'FullName': fullname,
+      'EmailId': emailid,
+      if (upassword != null) 'UPassword': upassword,
+      'Dob': dob,
+      'Sex': sex,
+      'MobileNo': mobileno,
+      'WhatsappNo': whatsappno,
+      'Active': active,
+      'CreatedDt': createddt?.toIso8601String(),
+      'UpdatedDt': updateddt?.toIso8601String(),
     };
   }
 
