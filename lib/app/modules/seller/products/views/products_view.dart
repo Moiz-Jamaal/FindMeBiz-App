@@ -98,36 +98,42 @@ class ProductsView extends GetView<ProductsController> {
   }
 
   Widget _buildCategoryList() {
-    return Obx(() => ListView.builder(
-      scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppConstants.defaultPadding,
+    return SizedBox(
+      height: 50,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppConstants.defaultPadding,
+        ),
+        itemCount: controller.categories.length,
+        itemBuilder: (context, index) {
+          final category = controller.categories[index];
+          
+          return Obx(() {
+            final isSelected = controller.selectedCategory.value == category;
+            
+            return Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: FilterChip(
+                label: Text(category),
+                selected: isSelected,
+                onSelected: (_) => controller.filterByCategory(category),
+                selectedColor: AppTheme.sellerPrimary.withOpacity(0.2),
+                checkmarkColor: AppTheme.sellerPrimary,
+                labelStyle: TextStyle(
+                  color: isSelected 
+                      ? AppTheme.sellerPrimary 
+                      : AppTheme.textSecondary,
+                  fontWeight: isSelected 
+                      ? FontWeight.w600 
+                      : FontWeight.normal,
+                ),
+              ),
+            );
+          });
+        },
       ),
-      itemCount: controller.categories.length,
-      itemBuilder: (context, index) {
-        final category = controller.categories[index];
-        final isSelected = controller.selectedCategory.value == category;
-        
-        return Padding(
-          padding: const EdgeInsets.only(right: 8),
-          child: FilterChip(
-            label: Text(category),
-            selected: isSelected,
-            onSelected: (_) => controller.filterByCategory(category),
-            selectedColor: AppTheme.sellerPrimary.withOpacity(0.2),
-            checkmarkColor: AppTheme.sellerPrimary,
-            labelStyle: TextStyle(
-              color: isSelected 
-                  ? AppTheme.sellerPrimary 
-                  : AppTheme.textSecondary,
-              fontWeight: isSelected 
-                  ? FontWeight.w600 
-                  : FontWeight.normal,
-            ),
-          ),
-        );
-      },
-    ));
+    );
   }
 
   Widget _buildProductsGrid() {

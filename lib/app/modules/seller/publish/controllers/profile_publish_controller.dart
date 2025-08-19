@@ -1,19 +1,48 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../../../data/models/seller.dart';
-import '../../../../data/models/product.dart';
-import '../../../../core/constants/app_constants.dart';
+import 'dart:convert';
+import '../../../../services/auth_service.dart';
+import '../../../../services/seller_service.dart';
+import '../../../../services/subscription_service.dart';
+import '../../../../data/models/api/index.dart';
 import '../../../../core/theme/app_theme.dart';
 
 class ProfilePublishController extends GetxController {
+  final AuthService _authService = Get.find<AuthService>();
+  final SellerService _sellerService = Get.find<SellerService>();
+  final SubscriptionService _subscriptionService = Get.find<SubscriptionService>();
+  
   // Profile data
-  final Rx<Seller?> sellerProfile = Rx<Seller?>(null);
-  final RxList<Product> products = <Product>[].obs;
+  final Rx<SellerDetailsExtended?> sellerProfile = Rx<SellerDetailsExtended?>(null);
+  final RxList<SubscriptionMaster> availableSubscriptions = <SubscriptionMaster>[].obs;
+  final Rx<SubscriptionMaster?> selectedSubscription = Rx<SubscriptionMaster?>(null);
+  
+  // Mock products list (since products module is skipped)
+  final RxList<dynamic> products = <dynamic>[].obs;
+  
+  // Payment methods
+  final List<Map<String, dynamic>> paymentMethods = [
+    {
+      'id': 'razorpay',
+      'name': 'Razorpay',
+      'description': 'Pay with cards, UPI, wallets & more',
+      'icon': Icons.payment,
+      'recommended': true,
+    },
+    {
+      'id': 'upi',
+      'name': 'UPI',
+      'description': 'Pay directly with UPI apps',
+      'icon': Icons.account_balance_wallet,
+      'recommended': false,
+    },
+  ];
   
   // Payment state
   final RxString selectedPaymentMethod = 'razorpay'.obs;
   final RxBool isProcessingPayment = false.obs;
   final RxBool paymentCompleted = false.obs;
+  final RxString paymentId = ''.obs;
   
   // Publishing state
   final RxBool isPublishing = false.obs;
@@ -27,128 +56,263 @@ class ProfilePublishController extends GetxController {
   void onInit() {
     super.onInit();
     _loadProfileData();
+    _loadSubscriptions();
   }
 
-  void _loadProfileData() {
-    isLoading.value = true;
-    
-    // Simulate loading seller profile and products
-    Future.delayed(const Duration(seconds: 1), () {
-      // Mock seller data
-      sellerProfile.value = Seller(
-        id: 'seller_1',
-        email: 'rajesh@suratsik.com',
-        fullName: 'Rajesh Patel',
-        createdAt: DateTime.now().subtract(const Duration(days: 30)),
-        updatedAt: DateTime.now(),
-        businessName: 'Surat Silk Emporium',
-        bio: 'Premium silk sarees and traditional wear from Surat. Family business since 1985 with authentic designs.',
-        socialMediaLinks: ['instagram:@suratsik_emporium'],
-        whatsappNumber: '+91 98765 43210',
-        profileCompletionScore: 0.85,
-      );
+  Future<void> _loadProfileData() async {
+    try {
+      isLoading.value = true;
       
-      // Mock products
-      products.addAll([
-        Product(
-          id: '1',
-          sellerId: 'seller_1',
-          name: 'Beautiful Silk Saree',
-          description: 'Traditional Surat silk saree with intricate designs.',
-          price: 2500.0,
-          categories: ['Apparel'],
-          images: ['mock_image_1'],
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-        ),
-        Product(
-          id: '2',
-          sellerId: 'seller_1',
-          name: 'Handcrafted Jewelry Set',
-          description: 'Elegant jewelry set with matching earrings.',
-          price: 1800.0,
-          categories: ['Jewelry'],
-          images: ['mock_image_2'],
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-        ),
-      ]);
+      final currentUser = _authService.currentUser;
+      if (currentUser?.userid == null) {
+        Get.snackbar('Error', 'No user found. Please login again.');
+        return;
+      }
+
+      // Load seller profile
+      final response = await _sellerService.getSellerByUserId(currentUser!.userid!);
       
+      if (response.success && response.data != null) {
+        sellerProfile.value = response.data;
+        isPublished.value = response.data!.ispublished ?? false;
+        
+        if (isPublished.value) {
+          currentStep.value = 2; // Already published, show success
+        }
+      } else {
+        Get.snackbar('Error', 'No seller profile found. Please complete onboarding first.');
+        Get.back(); // Go back if no profile
+      }
+      
+    } catch (e) {
+      Get.snackbar('Error', 'Failed to load profile data');
+      print('Profile loading error: $e');
+    } finally {
       isLoading.value = false;
-    });
+    }
   }
 
-  void proceedToPayment() {
-    if (currentStep.value == 0) {
-      currentStep.value = 1;
+  Future<void> _loadSubscriptions() async {
+    try {
+      final response = await _subscriptionService.getSubscriptions();
+      
+      if (response.success && response.data != null) {
+        availableSubscriptions.value = response.data!;
+        
+        // Set default subscription to 'basic' if available
+        final basicSubscription = availableSubscriptions.firstWhereOrNull(
+          (sub) => sub.subname?.toLowerCase() == 'basic',
+        );
+        
+        if (basicSubscription != null) {
+          selectedSubscription.value = basicSubscription;
+        } else if (availableSubscriptions.isNotEmpty) {
+          selectedSubscription.value = availableSubscriptions.first;
+        }
+      } else {
+        // Create basic subscription if none exist
+        await _createBasicSubscription();
+      }
+      
+    } catch (e) {
+      Get.snackbar('Error', 'Failed to load subscription plans');
+      print('Subscriptions loading error: $e');
     }
+  }
+
+  Future<void> _createBasicSubscription() async {
+    try {
+      final response = await _subscriptionService.ensureBasicSubscription();
+      if (response.success && response.data != null) {
+        selectedSubscription.value = response.data;
+        availableSubscriptions.add(response.data!);
+      }
+    } catch (e) {
+      print('Error creating basic subscription: $e');
+    }
+  }
+
+  void selectSubscription(SubscriptionMaster subscription) {
+    selectedSubscription.value = subscription;
   }
 
   void selectPaymentMethod(String method) {
     selectedPaymentMethod.value = method;
   }
 
-  void processPayment() {
-    if (selectedPaymentMethod.value.isEmpty) {
-      Get.snackbar(
-        'Payment Method Required',
-        'Please select a payment method',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.orange,
-        colorText: Colors.white,
-      );
+  void nextStep() {
+    if (currentStep.value < 2) {
+      currentStep.value++;
+    }
+  }
+
+  void previousStep() {
+    if (currentStep.value > 0) {
+      currentStep.value--;
+    }
+  }
+
+  Future<void> processPayment() async {
+    if (selectedSubscription.value == null) {
+      Get.snackbar('Error', 'Please select a subscription plan');
       return;
     }
 
-    isProcessingPayment.value = true;
-
-    // Simulate payment processing
-    Future.delayed(const Duration(seconds: 3), () {
-      isProcessingPayment.value = false;
-      paymentCompleted.value = true;
+    try {
+      isProcessingPayment.value = true;
       
-      // Auto proceed to publishing
-      _publishProfile();
-    });
-  }
-
-  void _publishProfile() {
-    isPublishing.value = true;
-    
-    // Simulate profile publishing
-    Future.delayed(const Duration(seconds: 2), () {
-      isPublishing.value = false;
-      isPublished.value = true;
-      currentStep.value = 2;
+      // Simulate payment processing with Razorpay
+      // In real implementation, integrate with Razorpay SDK
+      await Future.delayed(const Duration(seconds: 3));
+      
+      // Mock successful payment
+      paymentCompleted.value = true;
+      paymentId.value = 'pay_${DateTime.now().millisecondsSinceEpoch}';
       
       Get.snackbar(
-        'Success!',
-        'Your profile is now live and visible to buyers',
-        snackPosition: SnackPosition.BOTTOM,
+        'Payment Successful',
+        'Your payment has been processed successfully',
         backgroundColor: AppTheme.successColor,
         colorText: Colors.white,
-        duration: const Duration(seconds: 4),
       );
-    });
+      
+      // Proceed to publish profile
+      await publishProfile();
+      
+    } catch (e) {
+      Get.snackbar('Payment Failed', 'Failed to process payment. Please try again.');
+      print('Payment error: $e');
+    } finally {
+      isProcessingPayment.value = false;
+    }
+  }
+
+  Future<void> publishProfile() async {
+    if (sellerProfile.value?.sellerid == null || selectedSubscription.value == null) {
+      Get.snackbar('Error', 'Profile or subscription data missing');
+      return;
+    }
+
+    try {
+      isPublishing.value = true;
+      
+      // Parse subscription config to get amount details
+      Map<String, dynamic> subscriptionConfig = {};
+      try {
+        subscriptionConfig = jsonDecode(selectedSubscription.value!.subconfig ?? '{}');
+      } catch (e) {
+        subscriptionConfig = {'amount': 250, 'currency': 'INR'};
+      }
+      
+      // Set seller subscription
+      final response = await _sellerService.setSellerSubscription(
+        sellerId: sellerProfile.value!.sellerid!,
+        planName: selectedSubscription.value!.subname,
+        amount: (subscriptionConfig['amount'] as num?)?.toDouble(),
+        currency: subscriptionConfig['currency'] as String?,
+        razorpayPaymentId: paymentId.value.isNotEmpty ? paymentId.value : null,
+        startDate: DateTime.now(),
+        endDate: DateTime.now().add(const Duration(days: 365)), // 1 year
+      );
+      
+      if (response.success) {
+        isPublished.value = true;
+        currentStep.value = 2; // Success step
+        
+        Get.snackbar(
+          'Profile Published!',
+          'Your seller profile is now live and visible to customers',
+          backgroundColor: AppTheme.successColor,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 5),
+        );
+        
+        // Refresh profile data
+        await _loadProfileData();
+        
+      } else {
+        Get.snackbar('Publishing Failed', response.message ?? 'Failed to publish profile');
+      }
+      
+    } catch (e) {
+      Get.snackbar('Error', 'Failed to publish profile');
+      print('Publishing error: $e');
+    } finally {
+      isPublishing.value = false;
+    }
   }
 
   void goToDashboard() {
     Get.offAllNamed('/seller-dashboard');
   }
 
-  void previewAsbuyer() {
-    Get.toNamed('/seller-profile-preview', arguments: sellerProfile.value);
+  void retryPayment() {
+    paymentCompleted.value = false;
+    paymentId.value = '';
+    currentStep.value = 1; // Back to payment step
   }
 
   void editProfile() {
     Get.toNamed('/seller-profile-edit');
   }
 
-  void addMoreProducts() {
-    Get.toNamed('/seller-add-product');
+  void previewProfile() {
+    Get.toNamed('/seller-profile-preview', arguments: sellerProfile.value);
   }
 
-  // Getters for UI
+  // Add missing methods for the view
+  void previewAsbuyer() {
+    previewProfile();
+  }
+
+  void addMoreProducts() {
+    // Since products module is skipped, show info message
+    Get.snackbar(
+      'Coming Soon',
+      'Product management will be available in the next update',
+      backgroundColor: Colors.blue.withOpacity(0.1),
+      colorText: Colors.blue,
+    );
+  }
+
+  void proceedToPayment() {
+    nextStep();
+  }
+
+  // Payment status message getter
+  String get paymentStatusMessage {
+    if (isProcessingPayment.value) {
+      return 'Processing payment...';
+    } else if (paymentCompleted.value) {
+      return 'Payment completed successfully!';
+    } else {
+      return 'Ready to process payment';
+    }
+  }
+
+  // Getters
+  double get subscriptionAmount {
+    if (selectedSubscription.value?.subconfig == null) return 250.0;
+    
+    try {
+      final config = jsonDecode(selectedSubscription.value!.subconfig!);
+      return (config['amount'] as num?)?.toDouble() ?? 250.0;
+    } catch (e) {
+      return 250.0;
+    }
+  }
+
+  String get subscriptionCurrency {
+    if (selectedSubscription.value?.subconfig == null) return 'INR';
+    
+    try {
+      final config = jsonDecode(selectedSubscription.value!.subconfig!);
+      return config['currency'] as String? ?? 'INR';
+    } catch (e) {
+      return 'INR';
+    }
+  }
+
   String get stepTitle {
     switch (currentStep.value) {
       case 0:
@@ -167,7 +331,7 @@ class ProfilePublishController extends GetxController {
       case 0:
         return 'Review your profile before publishing';
       case 1:
-        return 'Pay ${AppConstants.currency}${AppConstants.sellerEntryFee.toStringAsFixed(0)} to make your profile visible';
+        return 'Pay ${subscriptionCurrency} ${subscriptionAmount.toStringAsFixed(0)} to make your profile visible';
       case 2:
         return 'Your profile is now live and visible to buyers';
       default:
@@ -178,7 +342,7 @@ class ProfilePublishController extends GetxController {
   bool get canProceed {
     switch (currentStep.value) {
       case 0:
-        return sellerProfile.value != null && products.isNotEmpty;
+        return sellerProfile.value != null && profileCompletionScore >= 0.6; // At least 60% complete
       case 1:
         return selectedPaymentMethod.value.isNotEmpty && !isProcessingPayment.value;
       case 2:
@@ -189,65 +353,51 @@ class ProfilePublishController extends GetxController {
   }
 
   double get profileCompletionScore {
-    if (sellerProfile.value == null) return 0.0;
+    final profile = sellerProfile.value;
+    if (profile == null) return 0.0;
     
-    double score = 0.0;
-    int totalChecks = 8;
+    int completedFields = 0;
+    int totalFields = 10;
     
-    // Basic info checks
-    if (sellerProfile.value!.businessName.isNotEmpty) score += 1;
-    if (sellerProfile.value!.fullName.isNotEmpty) score += 1;
-    if (sellerProfile.value!.email.isNotEmpty) score += 1;
-    if (sellerProfile.value!.bio?.isNotEmpty == true) score += 1;
+    if (profile.businessname?.isNotEmpty == true) completedFields++;
+    if (profile.profilename?.isNotEmpty == true) completedFields++;
+    if (profile.bio?.isNotEmpty == true) completedFields++;
+    if (profile.logo?.isNotEmpty == true) completedFields++;
+    if (profile.contactno?.isNotEmpty == true) completedFields++;
+    if (profile.address?.isNotEmpty == true) completedFields++;
+    if (profile.city?.isNotEmpty == true) completedFields++;
+    if (profile.state?.isNotEmpty == true) completedFields++;
+    if (profile.categories?.isNotEmpty == true) completedFields++;
+    if (profile.urls?.isNotEmpty == true) completedFields++;
     
-    // Contact checks
-    if (sellerProfile.value!.whatsappNumber?.isNotEmpty == true) score += 1;
-    
-    // Products check
-    if (products.isNotEmpty) score += 1;
-    
-    // Social media check
-    if (sellerProfile.value!.socialMediaLinks.isNotEmpty) score += 1;
-    
-    // Images check (placeholder)
-    score += 1; // Always count as having images in mock
-    
-    return score / totalChecks;
+    return completedFields / totalFields;
   }
 
-  List<Map<String, dynamic>> get paymentMethods {
-    return [
-      {
-        'id': 'razorpay',
-        'name': 'Razorpay',
-        'description': 'Credit/Debit Card, UPI, Net Banking',
-        'icon': Icons.payment,
-        'recommended': true,
-      },
-      {
-        'id': 'upi',
-        'name': 'UPI',
-        'description': 'Google Pay, PhonePe, Paytm',
-        'icon': Icons.account_balance_wallet,
-        'recommended': false,
-      },
-      {
-        'id': 'netbanking',
-        'name': 'Net Banking',
-        'description': 'All major banks supported',
-        'icon': Icons.account_balance,
-        'recommended': false,
-      },
-    ];
+  String get profileCompletionMessage {
+    final score = profileCompletionScore;
+    if (score >= 0.8) return 'Excellent! Your profile is well-detailed.';
+    if (score >= 0.6) return 'Good! Your profile is ready to publish.';
+    if (score >= 0.4) return 'Consider adding more details to improve visibility.';
+    return 'Please complete more fields before publishing.';
   }
 
-  String get paymentStatusMessage {
-    if (isProcessingPayment.value) {
-      return 'Processing your payment...';
-    } else if (paymentCompleted.value) {
-      return 'Payment completed successfully!';
-    } else {
-      return 'Complete payment to publish your profile';
-    }
+  List<String> get missingFields {
+    final profile = sellerProfile.value;
+    if (profile == null) return ['Complete seller onboarding first'];
+    
+    List<String> missing = [];
+    
+    if (profile.businessname?.isEmpty != false) missing.add('Business Name');
+    if (profile.profilename?.isEmpty != false) missing.add('Profile Name');
+    if (profile.bio?.isEmpty != false) missing.add('Business Description');
+    if (profile.logo?.isEmpty != false) missing.add('Business Logo');
+    if (profile.contactno?.isEmpty != false) missing.add('Contact Number');
+    if (profile.address?.isEmpty != false) missing.add('Business Address');
+    if (profile.city?.isEmpty != false) missing.add('City');
+    if (profile.state?.isEmpty != false) missing.add('State');
+    if (profile.categories?.isEmpty != false) missing.add('Business Categories');
+    if (profile.urls?.isEmpty != false) missing.add('Social Media Links');
+    
+    return missing;
   }
 }

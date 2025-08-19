@@ -238,14 +238,14 @@ class ProfilePublishView extends GetView<ProfilePublishController> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          seller.businessName,
+                          seller.businessname ?? 'Business Name',
                           style: Get.textTheme.titleLarge?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          seller.fullName,
+                          seller.profilename ?? 'Profile Name',
                           style: Get.textTheme.bodyMedium?.copyWith(
                             color: AppTheme.textSecondary,
                           ),
@@ -269,7 +269,7 @@ class ProfilePublishView extends GetView<ProfilePublishController> {
               const SizedBox(height: 12),
               
               // Contact info
-              if (seller.whatsappNumber?.isNotEmpty == true)
+              if (seller.whatsappno?.isNotEmpty == true)
                 Row(
                   children: [
                     Icon(
@@ -279,7 +279,7 @@ class ProfilePublishView extends GetView<ProfilePublishController> {
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      seller.whatsappNumber!,
+                      seller.whatsappno!,
                       style: Get.textTheme.bodySmall?.copyWith(
                         color: AppTheme.textSecondary,
                       ),
@@ -514,7 +514,7 @@ class ProfilePublishView extends GetView<ProfilePublishController> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '${AppConstants.currency}${AppConstants.sellerEntryFee.toStringAsFixed(0)}',
+                    '${controller.subscriptionCurrency} ${controller.subscriptionAmount.toStringAsFixed(0)}',
                     style: Get.textTheme.displayMedium?.copyWith(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
@@ -901,7 +901,7 @@ class ProfilePublishView extends GetView<ProfilePublishController> {
                         ? 'Proceed to Payment'
                         : controller.paymentCompleted.value
                             ? 'Publishing...'
-                            : 'Pay ${AppConstants.currency}${AppConstants.sellerEntryFee.toStringAsFixed(0)}',
+                            : 'Pay ${controller.subscriptionCurrency} ${controller.subscriptionAmount.toStringAsFixed(0)}',
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,

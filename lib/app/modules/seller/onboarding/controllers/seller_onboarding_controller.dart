@@ -4,12 +4,14 @@ import '../../../../services/role_service.dart';
 import '../../../../services/auth_service.dart';
 import '../../../../services/seller_service.dart';
 import '../../../../services/category_service.dart';
+import '../../../../services/location_service.dart';
 import '../../../../data/models/api/index.dart';
 
 class SellerOnboardingController extends GetxController {
   final AuthService _authService = Get.find<AuthService>();
   final SellerService _sellerService = Get.find<SellerService>();
   final CategoryService _categoryService = Get.find<CategoryService>();
+  final LocationService _locationService = Get.find<LocationService>();
   final RoleService _roleService = Get.find<RoleService>();
   
   // Current step in onboarding process
@@ -40,6 +42,11 @@ class SellerOnboardingController extends GetxController {
   final RxList<CategoryMaster> availableCategories = <CategoryMaster>[].obs;
   final RxList<CategoryMaster> selectedCategories = <CategoryMaster>[].obs;
   final RxString logoPath = ''.obs;
+  
+  // Location data
+  final RxString currentLocation = ''.obs;
+  final RxBool isLoadingLocation = false.obs;
+  final RxBool hasLocationPermission = false.obs;
   
   // UI state
   final RxBool isLoading = false.obs;
@@ -161,6 +168,45 @@ class SellerOnboardingController extends GetxController {
     logoPath.value = '';
   }
 
+  // Location management
+  Future<void> getCurrentLocation() async {
+    try {
+      isLoadingLocation.value = true;
+      
+      final locationData = await _locationService.getCurrentLocationWithAddress();
+      if (locationData != null) {
+        addressController.text = locationData['address'] ?? '';
+        currentLocation.value = _locationService.formatLocationForStorage(
+          locationData['latitude'],
+          locationData['longitude'],
+        );
+        
+        Get.snackbar(
+          'Location Found',
+          'Address updated with your current location',
+          backgroundColor: Colors.green.withOpacity(0.1),
+          colorText: Colors.green,
+        );
+      }
+    } catch (e) {
+      Get.snackbar(
+        'Location Error',
+        'Failed to get current location',
+        backgroundColor: Colors.red.withOpacity(0.1),
+        colorText: Colors.red,
+      );
+    } finally {
+      isLoadingLocation.value = false;
+    }
+  }
+
+  Future<void> requestLocationPermission() async {
+    hasLocationPermission.value = await _locationService.showLocationPermissionDialog();
+    if (hasLocationPermission.value) {
+      await getCurrentLocation();
+    }
+  }
+
   // Complete onboarding process
   Future<void> completeOnboarding() async {
     if (!_validateCurrentStep()) return;
@@ -194,6 +240,7 @@ class SellerOnboardingController extends GetxController {
         city: cityController.text.trim().isNotEmpty ? cityController.text.trim() : null,
         state: stateController.text.trim().isNotEmpty ? stateController.text.trim() : null,
         pincode: pincodeController.text.trim().isNotEmpty ? pincodeController.text.trim() : null,
+        geolocation: currentLocation.value.isNotEmpty ? currentLocation.value : null,
         establishedyear: establishedYearController.text.trim().isNotEmpty ? int.tryParse(establishedYearController.text.trim()) : null,
         ispublished: false,
       );

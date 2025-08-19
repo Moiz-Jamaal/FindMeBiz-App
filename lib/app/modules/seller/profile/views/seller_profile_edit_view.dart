@@ -9,41 +9,33 @@ class SellerProfileEditView extends GetView<SellerProfileEditController> {
 
   @override
   Widget build(BuildContext context) {
-    return PopScope(
-      canPop: !controller.hasChanges.value,
-      onPopInvoked: (didPop) {
-        if (!didPop && controller.hasChanges.value) {
-          controller.discardChanges();
-        }
-      },
-      child: Scaffold(
-        backgroundColor: AppTheme.backgroundColor,
-        appBar: _buildAppBar(),
-        body: Form(
-          key: controller.formKey,
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(AppConstants.defaultPadding),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _buildProfileCompletionCard(),
-                const SizedBox(height: 20),
-                _buildProfileImagesSection(),
-                const SizedBox(height: 20),
-                _buildBasicInfoSection(),
-                const SizedBox(height: 20),
-                _buildContactInfoSection(),
-                const SizedBox(height: 20),
-                _buildBusinessInfoSection(),
-                const SizedBox(height: 20),
-                _buildSocialMediaSection(),
-                const SizedBox(height: 80), // Space for FAB
-              ],
-            ),
+    return Scaffold(
+      backgroundColor: AppTheme.backgroundColor,
+      appBar: _buildAppBar(),
+      body: Form(
+        key: controller.formKey,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(AppConstants.defaultPadding),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _buildProfileCompletionCard(),
+              const SizedBox(height: 20),
+              _buildProfileImagesSection(),
+              const SizedBox(height: 20),
+              _buildBasicInfoSection(),
+              const SizedBox(height: 20),
+              _buildContactInfoSection(),
+              const SizedBox(height: 20),
+              _buildBusinessInfoSection(),
+              const SizedBox(height: 20),
+              _buildSocialMediaSection(),
+              const SizedBox(height: 80), // Space for FAB
+            ],
           ),
         ),
-        floatingActionButton: _buildSaveButton(),
       ),
+      floatingActionButton: _buildSaveButton(),
     );
   }
 
@@ -152,7 +144,7 @@ class SellerProfileEditView extends GetView<SellerProfileEditController> {
                     children: [
                       _buildImagePicker(
                         title: 'Profile Photo',
-                        imagePath: controller.profileImage,
+                        imagePath: controller.profileImageUrl,
                         onImageSelected: controller.updateProfileImage,
                         onImageRemoved: controller.removeProfileImage,
                         icon: Icons.person,
@@ -177,7 +169,7 @@ class SellerProfileEditView extends GetView<SellerProfileEditController> {
                     children: [
                       _buildImagePicker(
                         title: 'Business Logo',
-                        imagePath: controller.businessLogo,
+                        imagePath: controller.businessLogoUrl,
                         onImageSelected: controller.updateBusinessLogo,
                         onImageRemoved: controller.removeBusinessLogo,
                         icon: Icons.business,
@@ -204,12 +196,12 @@ class SellerProfileEditView extends GetView<SellerProfileEditController> {
   Widget _buildImagePicker({
     required String title,
     required RxString imagePath,
-    required Function(String) onImageSelected,
+    required VoidCallback onImageSelected,
     required VoidCallback onImageRemoved,
     required IconData icon,
   }) {
     return Obx(() => GestureDetector(
-      onTap: () => _showImageSourceDialog(onImageSelected),
+      onTap: onImageSelected,
       child: Container(
         width: 120,
         height: 120,
@@ -326,15 +318,18 @@ class SellerProfileEditView extends GetView<SellerProfileEditController> {
             const SizedBox(height: 16),
             
             TextFormField(
-              controller: controller.fullNameController,
+              controller: controller.profileNameController,
               decoration: const InputDecoration(
-                labelText: 'Your Full Name *',
+                labelText: 'Profile Name *',
                 prefixIcon: Icon(Icons.person),
+                helperText: 'This will be your display name (no spaces)',
               ),
-              textCapitalization: TextCapitalization.words,
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
-                  return 'Full name is required';
+                  return 'Profile name is required';
+                }
+                if (value.trim().contains(' ')) {
+                  return 'Profile name cannot contain spaces';
                 }
                 return null;
               },
@@ -379,30 +374,21 @@ class SellerProfileEditView extends GetView<SellerProfileEditController> {
             const SizedBox(height: 16),
             
             TextFormField(
-              controller: controller.emailController,
+              controller: controller.contactController,
               decoration: const InputDecoration(
-                labelText: 'Email Address *',
-                prefixIcon: Icon(Icons.email),
+                labelText: 'Contact Number',
+                prefixIcon: Icon(Icons.phone),
               ),
-              keyboardType: TextInputType.emailAddress,
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return 'Email is required';
-                }
-                if (!RegExp(AppConstants.emailPattern).hasMatch(value)) {
-                  return 'Please enter a valid email';
-                }
-                return null;
-              },
+              keyboardType: TextInputType.phone,
             ),
             
             const SizedBox(height: 16),
             
             TextFormField(
-              controller: controller.phoneController,
+              controller: controller.mobileController,
               decoration: const InputDecoration(
-                labelText: 'Phone Number',
-                prefixIcon: Icon(Icons.phone),
+                labelText: 'Mobile Number',
+                prefixIcon: Icon(Icons.phone_android),
               ),
               keyboardType: TextInputType.phone,
             ),
@@ -432,72 +418,88 @@ class SellerProfileEditView extends GetView<SellerProfileEditController> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Text(
+              'Business Location',
+              style: Get.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 16),
+            
+            TextFormField(
+              controller: controller.addressController,
+              decoration: const InputDecoration(
+                labelText: 'Business Address',
+                prefixIcon: Icon(Icons.location_on),
+              ),
+              maxLines: 2,
+            ),
+            
+            const SizedBox(height: 16),
+            
             Row(
               children: [
-                Text(
-                  'Business Location',
-                  style: Get.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w600,
+                Expanded(
+                  child: TextFormField(
+                    controller: controller.areaController,
+                    decoration: const InputDecoration(
+                      labelText: 'Area',
+                      prefixIcon: Icon(Icons.location_city),
+                    ),
                   ),
                 ),
-                const Spacer(),
-                TextButton.icon(
-                  onPressed: () => Get.toNamed('/seller-stall-location'),
-                  icon: const Icon(Icons.location_on, size: 18),
-                  label: const Text('Set Location'),
-                  style: TextButton.styleFrom(
-                    foregroundColor: AppTheme.sellerPrimary,
+                const SizedBox(width: 16),
+                Expanded(
+                  child: TextFormField(
+                    controller: controller.cityController,
+                    decoration: const InputDecoration(
+                      labelText: 'City',
+                      prefixIcon: Icon(Icons.location_city),
+                    ),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
             
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppTheme.sellerPrimary.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: AppTheme.sellerPrimary.withOpacity(0.3),
-                ),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.location_on,
-                    color: AppTheme.sellerPrimary,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Stall Location',
-                          style: Get.textTheme.bodySmall?.copyWith(
-                            color: AppTheme.sellerPrimary,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'Not set - Tap to add your stall location',
-                          style: Get.textTheme.bodySmall?.copyWith(
-                            color: AppTheme.textSecondary,
-                          ),
-                        ),
-                      ],
+            const SizedBox(height: 16),
+            
+            Row(
+              children: [
+                Expanded(
+                  child: TextFormField(
+                    controller: controller.stateController,
+                    decoration: const InputDecoration(
+                      labelText: 'State',
+                      prefixIcon: Icon(Icons.map),
                     ),
                   ),
-                  Icon(
-                    Icons.arrow_forward_ios,
-                    color: AppTheme.sellerPrimary,
-                    size: 16,
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: TextFormField(
+                    controller: controller.pincodeController,
+                    decoration: const InputDecoration(
+                      labelText: 'Pincode',
+                      prefixIcon: Icon(Icons.pin_drop),
+                    ),
+                    keyboardType: TextInputType.number,
+                    maxLength: 6,
                   ),
-                ],
+                ),
+              ],
+            ),
+            
+            const SizedBox(height: 16),
+            
+            TextFormField(
+              controller: controller.establishedYearController,
+              decoration: const InputDecoration(
+                labelText: 'Established Year',
+                prefixIcon: Icon(Icons.calendar_today),
+                helperText: 'When was your business established?',
               ),
+              keyboardType: TextInputType.number,
+              maxLength: 4,
             ),
           ],
         ),
@@ -526,36 +528,46 @@ class SellerProfileEditView extends GetView<SellerProfileEditController> {
             ),
             const SizedBox(height: 16),
             
-            TextFormField(
-              controller: controller.instagramController,
-              decoration: const InputDecoration(
-                labelText: 'Instagram Handle',
-                hintText: '@yourbusiness',
-                prefixIcon: Icon(Icons.camera_alt),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppTheme.sellerPrimary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: AppTheme.sellerPrimary.withOpacity(0.3),
+                ),
               ),
-            ),
-            
-            const SizedBox(height: 16),
-            
-            TextFormField(
-              controller: controller.facebookController,
-              decoration: const InputDecoration(
-                labelText: 'Facebook Page',
-                hintText: 'Your Facebook page name',
-                prefixIcon: Icon(Icons.facebook),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.link,
+                    color: AppTheme.sellerPrimary,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Social Media Links',
+                          style: Get.textTheme.bodyMedium?.copyWith(
+                            color: AppTheme.sellerPrimary,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Social media management will be available in the next update',
+                          style: Get.textTheme.bodySmall?.copyWith(
+                            color: AppTheme.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-            ),
-            
-            const SizedBox(height: 16),
-            
-            TextFormField(
-              controller: controller.websiteController,
-              decoration: const InputDecoration(
-                labelText: 'Website',
-                hintText: 'https://yourwebsite.com',
-                prefixIcon: Icon(Icons.language),
-              ),
-              keyboardType: TextInputType.url,
             ),
           ],
         ),
@@ -570,7 +582,7 @@ class SellerProfileEditView extends GetView<SellerProfileEditController> {
             backgroundColor: controller.canSave 
                 ? AppTheme.sellerPrimary 
                 : AppTheme.textHint,
-            icon: controller.isLoading.value
+            icon: controller.isSaving.value
                 ? const SizedBox(
                     width: 20,
                     height: 20,
@@ -581,7 +593,7 @@ class SellerProfileEditView extends GetView<SellerProfileEditController> {
                   )
                 : const Icon(Icons.save, color: Colors.white),
             label: Text(
-              controller.isLoading.value ? 'Saving...' : 'Save Changes',
+              controller.isSaving.value ? 'Saving...' : 'Save Changes',
               style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.w600,
@@ -589,104 +601,5 @@ class SellerProfileEditView extends GetView<SellerProfileEditController> {
             ),
           )
         : const SizedBox());
-  }
-
-  void _showImageSourceDialog(Function(String) onImageSelected) {
-    Get.bottomSheet(
-      Container(
-        padding: const EdgeInsets.all(20),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade300,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Select Image Source',
-              style: Get.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 20),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildSourceOption(
-                    'Camera',
-                    Icons.camera_alt,
-                    () => _pickImage('camera', onImageSelected),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: _buildSourceOption(
-                    'Gallery',
-                    Icons.photo_library,
-                    () => _pickImage('gallery', onImageSelected),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSourceOption(String title, IconData icon, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey.shade300),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-          children: [
-            Icon(
-              icon,
-              size: 40,
-              color: AppTheme.sellerPrimary,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              title,
-              style: Get.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _pickImage(String source, Function(String) onImageSelected) {
-    Get.back(); // Close bottom sheet
-    
-    // Placeholder for actual image picking
-    // In a real app, this would use image_picker package
-    String mockImagePath = 'mock_image_${DateTime.now().millisecondsSinceEpoch}';
-    onImageSelected(mockImagePath);
-    
-    Get.snackbar(
-      'Image Selected',
-      'Image from $source selected successfully',
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: AppTheme.successColor,
-      colorText: Colors.white,
-    );
   }
 }

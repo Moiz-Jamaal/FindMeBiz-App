@@ -1,16 +1,24 @@
 import 'package:get/get.dart';
+import 'package:flutter/material.dart';
+import '../../../../services/auth_service.dart';
+import '../../../../services/seller_service.dart';
+import '../../../../data/models/api/index.dart';
 
 class SellerDashboardController extends GetxController {
+  final AuthService _authService = Get.find<AuthService>();
+  final SellerService _sellerService = Get.find<SellerService>();
+  
   // Current navigation index
   final RxInt currentIndex = 0.obs;
   
-  // Dashboard statistics
+  // Dashboard statistics (keeping as dummy for now as requested)
   final RxInt totalProducts = 0.obs;
   final RxInt totalViews = 0.obs;
   final RxInt totalContacts = 0.obs;
   final RxDouble profileCompletion = 0.75.obs;
   
   // Profile data
+  final Rx<SellerDetailsExtended?> sellerProfile = Rx<SellerDetailsExtended?>(null);
   final RxString businessName = 'My Business'.obs;
   final RxBool isProfilePublished = false.obs;
   
@@ -23,19 +31,77 @@ class SellerDashboardController extends GetxController {
     _loadDashboardData();
   }
 
-  void _loadDashboardData() {
-    isLoading.value = true;
-    
-    // Simulate API call
-    Future.delayed(const Duration(seconds: 1), () {
-      // Mock data
-      totalProducts.value = 5;
-      totalViews.value = 120;
-      totalContacts.value = 8;
-      businessName.value = 'Surat Silk Emporium';
+  Future<void> _loadDashboardData() async {
+    try {
+      isLoading.value = true;
       
+      final currentUser = _authService.currentUser;
+      if (currentUser?.userid == null) {
+        Get.snackbar(
+          'Error',
+          'No user found. Please login again.',
+          backgroundColor: Colors.red.withOpacity(0.1),
+          colorText: Colors.red,
+        );
+        return;
+      }
+
+      // Load seller profile data
+      final response = await _sellerService.getSellerByUserId(currentUser!.userid!);
+      
+      if (response.success && response.data != null) {
+        sellerProfile.value = response.data;
+        businessName.value = response.data!.businessname ?? 'My Business';
+        isProfilePublished.value = response.data!.ispublished ?? false;
+        
+        // Calculate profile completion based on filled fields
+        profileCompletion.value = _calculateProfileCompletion(response.data!);
+      } else {
+        // If no seller profile exists yet, user needs to complete onboarding
+        businessName.value = currentUser.fullname ?? 'My Business';
+        isProfilePublished.value = false;
+        profileCompletion.value = 0.0;
+      }
+      
+      // Load dummy statistics (as requested)
+      _loadDummyStatistics();
+      
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        'Failed to load dashboard data',
+        backgroundColor: Colors.red.withOpacity(0.1),
+        colorText: Colors.red,
+      );
+      print('Dashboard loading error: $e');
+    } finally {
       isLoading.value = false;
-    });
+    }
+  }
+
+  void _loadDummyStatistics() {
+    // Mock data as requested
+    totalProducts.value = 5;
+    totalViews.value = 120;
+    totalContacts.value = 8;
+  }
+
+  double _calculateProfileCompletion(SellerDetailsExtended seller) {
+    int completedFields = 0;
+    int totalFields = 10;
+
+    if (seller.businessname?.isNotEmpty == true) completedFields++;
+    if (seller.profilename?.isNotEmpty == true) completedFields++;
+    if (seller.bio?.isNotEmpty == true) completedFields++;
+    if (seller.logo?.isNotEmpty == true) completedFields++;
+    if (seller.contactno?.isNotEmpty == true) completedFields++;
+    if (seller.address?.isNotEmpty == true) completedFields++;
+    if (seller.city?.isNotEmpty == true) completedFields++;
+    if (seller.state?.isNotEmpty == true) completedFields++;
+    if (seller.categories?.isNotEmpty == true) completedFields++;
+    if (seller.urls?.isNotEmpty == true) completedFields++;
+
+    return completedFields / totalFields;
   }
 
   void changeTab(int index) {

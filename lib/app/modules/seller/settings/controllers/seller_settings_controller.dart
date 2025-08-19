@@ -1,8 +1,19 @@
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
+import 'dart:convert';
+import '../../../../services/auth_service.dart';
+import '../../../../services/seller_service.dart';
+import '../../../../data/models/api/index.dart';
 import '../../../../core/theme/app_theme.dart';
 
 class SellerSettingsController extends GetxController {
+  final AuthService _authService = Get.find<AuthService>();
+  final SellerService _sellerService = Get.find<SellerService>();
+  
+  // Current seller settings
+  final Rx<SellerSettings?> currentSettings = Rx<SellerSettings?>(null);
+  final RxInt sellerId = 0.obs;
+  
   // Business Settings
   final RxBool isBusinessOpen = true.obs;
   final RxString businessStatus = 'Open'.obs;
@@ -13,6 +24,7 @@ class SellerSettingsController extends GetxController {
   final RxBool emailNotifications = true.obs;
   final RxBool smsNotifications = false.obs;
   final RxBool pushNotifications = true.obs;
+  final RxBool whatsappNotifications = true.obs;
   
   // Privacy Settings
   final RxBool showPhoneNumber = true.obs;
@@ -26,6 +38,11 @@ class SellerSettingsController extends GetxController {
   // Account Settings
   final RxBool accountVerified = false.obs;
   final RxString subscriptionPlan = 'Free'.obs;
+  final RxMap<String, dynamic> subscriptionDetails = <String, dynamic>{}.obs;
+  
+  // UI State
+  final RxBool isLoading = false.obs;
+  final RxBool isSaving = false.obs;
 
   @override
   void onInit() {
@@ -46,10 +63,161 @@ class SellerSettingsController extends GetxController {
     }
   }
 
-  void _loadSettings() {
-    // In real app, load from shared preferences or API
-    // Mock some settings
+  Future<void> _loadSettings() async {
+    try {
+      isLoading.value = true;
+      
+      // Get current user and seller profile
+      final currentUser = _authService.currentUser;
+      if (currentUser?.userid == null) {
+        Get.snackbar('Error', 'No user found. Please login again.');
+        return;
+      }
+
+      // Get seller profile first to get seller ID
+      final sellerResponse = await _sellerService.getSellerByUserId(currentUser!.userid!);
+      if (!sellerResponse.success || sellerResponse.data?.sellerid == null) {
+        Get.snackbar('Error', 'No seller profile found. Please complete onboarding first.');
+        return;
+      }
+
+      sellerId.value = sellerResponse.data!.sellerid!;
+
+      // Load seller settings
+      final settingsResponse = await _sellerService.getSellerSettings(sellerId.value);
+      
+      if (settingsResponse.success && settingsResponse.data != null) {
+        currentSettings.value = settingsResponse.data;
+        _populateSettingsFromData(settingsResponse.data!);
+      } else {
+        // No settings found, create default settings
+        await _createDefaultSettings();
+      }
+      
+    } catch (e) {
+      Get.snackbar('Error', 'Failed to load settings');
+      print('Settings loading error: $e');
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  void _populateSettingsFromData(SellerSettings settings) {
+    // Basic settings
+    isBusinessOpen.value = settings.isopen ?? true;
     businessStatus.value = isBusinessOpen.value ? 'Open' : 'Closed';
+    subscriptionPlan.value = settings.subscriptionPlan ?? 'Free';
+    
+    // Parse notification settings from JSON strings
+    if (settings.notificationModes != null) {
+      try {
+        final modes = jsonDecode(settings.notificationModes!);
+        notificationsEnabled.value = modes['enabled'] ?? true;
+      } catch (e) {
+        notificationsEnabled.value = true;
+      }
+    }
+    
+    if (settings.pushNotifications != null) {
+      try {
+        final push = jsonDecode(settings.pushNotifications!);
+        pushNotifications.value = push['enabled'] ?? true;
+      } catch (e) {
+        pushNotifications.value = true;
+      }
+    }
+    
+    if (settings.emailNotifications != null) {
+      try {
+        final email = jsonDecode(settings.emailNotifications!);
+        emailNotifications.value = email['enabled'] ?? true;
+      } catch (e) {
+        emailNotifications.value = true;
+      }
+    }
+    
+    if (settings.smsNotifications != null) {
+      try {
+        final sms = jsonDecode(settings.smsNotifications!);
+        smsNotifications.value = sms['enabled'] ?? false;
+      } catch (e) {
+        smsNotifications.value = false;
+      }
+    }
+    
+    if (settings.whatsappNotifications != null) {
+      try {
+        final whatsapp = jsonDecode(settings.whatsappNotifications!);
+        whatsappNotifications.value = whatsapp['enabled'] ?? true;
+      } catch (e) {
+        whatsappNotifications.value = true;
+      }
+    }
+    
+    // Parse business hours
+    if (settings.businessHours != null) {
+      try {
+        final hours = jsonDecode(settings.businessHours!);
+        if (hours is Map<String, dynamic>) {
+          for (var entry in hours.entries) {
+            businessHours[entry.key] = Map<String, dynamic>.from(entry.value);
+          }
+        }
+      } catch (e) {
+        // Keep default business hours
+      }
+    }
+    
+    // Parse privacy settings
+    if (settings.privacySettings != null) {
+      try {
+        final privacy = jsonDecode(settings.privacySettings!);
+        showPhoneNumber.value = privacy['showPhoneNumber'] ?? true;
+        showWhatsApp.value = privacy['showWhatsApp'] ?? true;
+        showEmail.value = privacy['showEmail'] ?? false;
+        allowMessaging.value = privacy['allowMessaging'] ?? true;
+      } catch (e) {
+        // Keep default privacy settings
+      }
+    }
+    
+    // Parse subscription details
+    if (settings.subscriptionDetails != null) {
+      try {
+        subscriptionDetails.value = jsonDecode(settings.subscriptionDetails!);
+      } catch (e) {
+        subscriptionDetails.value = {};
+      }
+    }
+  }
+
+  Future<void> _createDefaultSettings() async {
+    try {
+      final defaultSettings = SellerSettings(
+        sellerid: sellerId.value,
+        isopen: true,
+        notificationModes: jsonEncode({'enabled': true}),
+        pushNotifications: jsonEncode({'enabled': true}),
+        emailNotifications: jsonEncode({'enabled': true}),
+        smsNotifications: jsonEncode({'enabled': false}),
+        whatsappNotifications: jsonEncode({'enabled': true}),
+        businessHours: jsonEncode(businessHours),
+        privacySettings: jsonEncode({
+          'showPhoneNumber': true,
+          'showWhatsApp': true,
+          'showEmail': false,
+          'allowMessaging': true,
+        }),
+        subscriptionPlan: 'basic',
+      );
+      
+      final response = await _sellerService.createSellerSettings(defaultSettings);
+      if (response.success) {
+        currentSettings.value = defaultSettings;
+      }
+    } catch (e) {
+      print('Error creating default settings: $e');
+    }
   }
 
   void toggleBusinessStatus() {
@@ -84,6 +252,7 @@ class SellerSettingsController extends GetxController {
       emailNotifications.value = false;
       smsNotifications.value = false;
       pushNotifications.value = false;
+      whatsappNotifications.value = false;
     }
   }
 
@@ -101,15 +270,60 @@ class SellerSettingsController extends GetxController {
     }
   }
 
-  void saveAllSettings() {
-    // In real app, save to backend/shared preferences
-    Get.snackbar(
-      'Settings Saved',
-      'All settings have been saved successfully',
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: AppTheme.successColor,
-      colorText: Colors.white,
-    );
+  Future<void> saveAllSettings() async {
+    try {
+      isSaving.value = true;
+      
+      if (sellerId.value == 0) {
+        Get.snackbar('Error', 'Seller ID not found');
+        return;
+      }
+
+      // Prepare settings data
+      final updatedSettings = SellerSettings(
+        sellerid: sellerId.value,
+        isopen: isBusinessOpen.value,
+        notificationModes: jsonEncode({'enabled': notificationsEnabled.value}),
+        pushNotifications: jsonEncode({'enabled': pushNotifications.value}),
+        emailNotifications: jsonEncode({'enabled': emailNotifications.value}),
+        smsNotifications: jsonEncode({'enabled': smsNotifications.value}),
+        whatsappNotifications: jsonEncode({'enabled': whatsappNotifications.value}),
+        businessHours: jsonEncode(businessHours),
+        privacySettings: jsonEncode({
+          'showPhoneNumber': showPhoneNumber.value,
+          'showWhatsApp': showWhatsApp.value,
+          'showEmail': showEmail.value,
+          'allowMessaging': allowMessaging.value,
+        }),
+        otherSettings: jsonEncode({
+          'acceptingOrders': acceptingOrders.value,
+        }),
+        subscriptionPlan: subscriptionPlan.value,
+        subscriptionDetails: jsonEncode(subscriptionDetails),
+      );
+
+      // Save to backend
+      final response = await _sellerService.updateSellerSettings(updatedSettings);
+      
+      if (response.success) {
+        currentSettings.value = updatedSettings;
+        Get.snackbar(
+          'Settings Saved',
+          'All settings have been saved successfully',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: AppTheme.successColor,
+          colorText: Colors.white,
+        );
+      } else {
+        Get.snackbar('Error', response.message ?? 'Failed to save settings');
+      }
+      
+    } catch (e) {
+      Get.snackbar('Error', 'Failed to save settings');
+      print('Save settings error: $e');
+    } finally {
+      isSaving.value = false;
+    }
   }
 
   void exportData() {
@@ -176,6 +390,10 @@ class SellerSettingsController extends GetxController {
         ],
       ),
     );
+  }
+
+  void refreshSettings() {
+    _loadSettings();
   }
 
   void showBusinessHoursDialog() {

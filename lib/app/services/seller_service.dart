@@ -1,6 +1,8 @@
-import 'package:get/get.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import 'api/base_api_service.dart';
 import 'api/api_exception.dart';
+import 'api/api_client.dart';
 import '../data/models/api/index.dart';
 
 class SellerService extends BaseApiService {
@@ -141,12 +143,26 @@ class SellerService extends BaseApiService {
 
   // Delete seller URL
   Future<ApiResponse<void>> deleteSellerUrl(SellerUrl sellerUrl) async {
-    final response = await delete(
-      '/SellerUrl',
-      // Note: This endpoint expects body in DELETE, which is unusual but matches the API
-    );
-    
-    return response;
+    try {
+      // Use http client directly since we need to send body with DELETE request
+      final uri = Uri.parse('${ApiClient.baseUrl}${ApiClient.apiPath}/SellerUrl');
+      final response = await http.delete(
+        uri,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: jsonEncode(sellerUrl.toJson()),
+      );
+      
+      if (response.statusCode == 204 || response.statusCode == 200) {
+        return ApiResponse.success(null);
+      } else {
+        return ApiResponse.error('Failed to delete seller URL');
+      }
+    } catch (e) {
+      return ApiResponse.error('Error deleting seller URL: ${e.toString()}');
+    }
   }
 
   // Search sellers
