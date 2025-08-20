@@ -256,22 +256,43 @@ class ProductCard extends StatelessWidget {
   }
 
   Widget _buildProductImage() {
+    final imageUrl = product.primaryImageUrl;
+    
     return ClipRRect(
       borderRadius: BorderRadius.circular(
         isGridView ? AppConstants.defaultRadius : 8,
       ),
-      child: product.images.isNotEmpty
-          ? Container(
+      child: imageUrl.isNotEmpty && !imageUrl.contains('placeholder')
+          ? Image.network(
+              imageUrl,
               width: double.infinity,
               height: double.infinity,
-              color: Colors.grey.shade200,
-              child: const Center(
-                child: Icon(
-                  Icons.image,
-                  size: 40,
-                  color: AppTheme.textHint,
-                ),
-              ),
+              fit: BoxFit.cover,
+              loadingBuilder: (context, child, loadingProgress) {
+                if (loadingProgress == null) return child;
+                return Container(
+                  width: double.infinity,
+                  height: double.infinity,
+                  color: Colors.grey.shade200,
+                  child: const Center(
+                    child: CircularProgressIndicator(),
+                  ),
+                );
+              },
+              errorBuilder: (context, error, stackTrace) {
+                return Container(
+                  width: double.infinity,
+                  height: double.infinity,
+                  color: Colors.grey.shade200,
+                  child: const Center(
+                    child: Icon(
+                      Icons.broken_image,
+                      size: 40,
+                      color: AppTheme.textHint,
+                    ),
+                  ),
+                );
+              },
             )
           : Container(
               width: double.infinity,
