@@ -92,16 +92,16 @@ class ApiClient extends GetxService {
   // Request logging
   void _logRequest(String method, String url, String? body, http.Response response) {
     if (ApiConfig.enableLogging && kDebugMode) {
-      print('🌐 API Request: $method $url');
-      if (body != null) print('📤 Body: $body');
-      print('📥 Response: ${response.statusCode} ${response.body}');
+      
+     
+      
     }
   }
 
   // Error logging
   void _logError(String method, String url, dynamic error) {
     if (ApiConfig.enableLogging && kDebugMode) {
-      print('❌ API Error: $method $url - $error');
+      
     }
   }
 

@@ -308,7 +308,7 @@ class SellerOnboardingController extends GetxController {
         backgroundColor: Colors.red.withOpacity(0.1),
         colorText: Colors.red,
       );
-      print('Onboarding error: $e');
+      
     } finally {
       isSubmitting.value = false;
     }

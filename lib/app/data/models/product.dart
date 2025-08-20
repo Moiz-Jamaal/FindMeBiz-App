@@ -94,6 +94,8 @@ class Product {
   }
 
   factory Product.fromJson(Map<String, dynamic> json) {
+    print('DEBUG: Parsing product JSON: $json'); // Debug log
+    
     // Handle both old and new JSON structures
     final productCategories = (json['categories'] as List?)
         ?.map((item) => ProductCategory.fromJson(item))
@@ -126,20 +128,35 @@ class Product {
           .toList();
     }
 
+    // Use Pascal case field names from API
+    final productId = json['productId'] ?? json['ProductId'] ?? json['id'];
+    final sellerId = json['sellerId'] ?? json['SellerId'];
+    final productName = json['productName'] ?? json['ProductName'] ?? json['name'];
+    final description = json['description'] ?? json['Description'];
+    final price = (json['price'] ?? json['Price'] as num?)?.toDouble();
+    final priceOnInquiry = json['priceOnInquiry'] ?? json['PriceOnInquiry'] ?? json['price_on_inquiry'] ?? false;
+    final isAvailable = json['isAvailable'] ?? json['IsAvailable'] ?? json['is_available'] ?? true;
+    final isActive = json['isActive'] ?? json['IsActive'] ?? json['is_active'] ?? true;
+    final createdAt = json['createdAt'] ?? json['CreatedAt'] ?? json['created_at'];
+    final updatedAt = json['updatedAt'] ?? json['UpdatedAt'] ?? json['updated_at'];
+    final customAttributes = json['customAttributes'] ?? json['CustomAttributes'] ?? {};
+
+    print('DEBUG: Mapped values - ID: $productId, Name: $productName, SellerId: $sellerId'); // Debug log
+
     return Product(
-      id: (json['productId'] ?? json['id']).toString(),
-      sellerId: (json['sellerId']).toString(),
-      name: json['productName'] ?? json['name'] ?? '',
-      description: json['description'],
-      price: (json['price'] as num?)?.toDouble(),
-      priceOnInquiry: json['priceOnInquiry'] ?? json['price_on_inquiry'] ?? false,
+      id: productId.toString(),
+      sellerId: sellerId.toString(),
+      name: productName ?? '',
+      description: description,
+      price: price,
+      priceOnInquiry: priceOnInquiry,
       categories: categories,
       images: images,
-      isAvailable: json['isAvailable'] ?? json['is_available'] ?? true,
-      isActive: json['isActive'] ?? json['is_active'] ?? true,
-      createdAt: DateTime.parse(json['createdAt'] ?? json['created_at'] ?? DateTime.now().toIso8601String()),
-      updatedAt: DateTime.parse(json['updatedAt'] ?? json['updated_at'] ?? DateTime.now().toIso8601String()),
-      customAttributes: Map<String, dynamic>.from(json['customAttributes'] ?? {}),
+      isAvailable: isAvailable,
+      isActive: isActive,
+      createdAt: DateTime.parse(createdAt ?? DateTime.now().toIso8601String()),
+      updatedAt: DateTime.parse(updatedAt ?? DateTime.now().toIso8601String()),
+      customAttributes: Map<String, dynamic>.from(customAttributes),
       productCategories: productCategories,
       media: media,
       categoryNames: json['categoryNames'] != null ? List<String>.from(json['categoryNames']) : null,

@@ -38,7 +38,7 @@ class AuthService extends BaseApiService {
   // Load saved user from storage
   Future<void> _loadSavedUser() async {
     final userData = _box.read(_userKey);
-    print('🔍 Checking saved user data: ${userData != null ? 'Found' : 'Not found'}');
+    
     
     if (userData != null) {
       try {
@@ -53,13 +53,13 @@ class AuthService extends BaseApiService {
         }
         
         // Debug: Print the actual data structure
-        print('📊 User data structure: ${userMap.keys.toList()}');
+        
         
         // Handle both old format (userid) and new format (UserId)
         if (userMap.containsKey('userid') && !userMap.containsKey('UserId')) {
           // Convert old format to new format
           userMap = _convertToNewFormat(userMap);
-          print('🔄 Converted old data format to new format');
+          
         }
         
         // Validate required fields before creating UsersProfile
@@ -74,17 +74,17 @@ class AuthService extends BaseApiService {
         }
         
         _currentUser.value = UsersProfile.fromJson(userMap);
-        print('✅ Loaded saved user: ${_currentUser.value?.username}');
+        
         
         // Load seller data if user exists
         await _loadSellerData();
       } catch (e) {
-        print('❌ Error loading saved user: $e');
-        print('🧹 Clearing corrupted user data');
+        
+        
         _clearUserData();
       }
     } else {
-      print('ℹ️ No saved user found');
+      
     }
   }
 
@@ -112,7 +112,7 @@ class AuthService extends BaseApiService {
     // Always save in the new format with proper field names
     final userData = user.toJson();
     _box.write(_userKey, userData);
-    print('💾 User saved to storage: ${user.username}');
+    
   }
 
   // Clear user data
@@ -131,7 +131,7 @@ class AuthService extends BaseApiService {
       Get.find<RoleService>().clearAllRoleData();
     }
     
-    print('🧹 All app data cleared');
+    
   }
 
   // Check if email is available
@@ -214,14 +214,14 @@ class AuthService extends BaseApiService {
         
         if (response.success && response.data != null) {
           _currentSeller.value = response.data!;
-          print('✅ Seller data loaded: ${response.data!.sellerId}');
+          
         } else {
           _currentSeller.value = null;
-          print('ℹ️ No seller data for user ${_currentUser.value!.username}');
+          
         }
       }
     } catch (e) {
-      print('❌ Error loading seller data: $e');
+      
       _currentSeller.value = null;
     }
   }

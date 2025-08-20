@@ -73,7 +73,7 @@ class SellerDashboardController extends GetxController {
         backgroundColor: Colors.red.withOpacity(0.1),
         colorText: Colors.red,
       );
-      print('Dashboard loading error: $e');
+      
     } finally {
       isLoading.value = false;
     }

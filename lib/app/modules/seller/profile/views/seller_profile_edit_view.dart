@@ -270,9 +270,9 @@ class SellerProfileEditView extends GetView<SellerProfileEditController> {
       final imageToShow = isLocalImage ? controller.tempLogoPath.value : imagePath.value;
       
       // Debug logging
-      print('🎨 UI Update - hasImage: $hasImage, isLocalImage: $isLocalImage, imageToShow: $imageToShow');
-      print('🎨 tempLogoPath: ${controller.tempLogoPath.value}');
-      print('🎨 businessLogoUrl: ${imagePath.value}');
+      
+      
+      
       
       return GestureDetector(
         onTap: onImageSelected,
@@ -324,7 +324,7 @@ class SellerProfileEditView extends GetView<SellerProfileEditController> {
                                 File(imageToShow),
                                 fit: BoxFit.cover,
                                 errorBuilder: (context, error, stackTrace) {
-                                  print('❌ Local image load error: $error');
+                                  
                                   return Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
@@ -361,7 +361,7 @@ class SellerProfileEditView extends GetView<SellerProfileEditController> {
                                   );
                                 },
                                 errorBuilder: (context, error, stackTrace) {
-                                  print('❌ Network image load error: $error');
+                                  
                                   return Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [

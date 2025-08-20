@@ -12,20 +12,20 @@ class ImageUploadService extends GetxService {
   /// Pick image from gallery
   Future<XFile?> pickImageFromGallery() async {
     try {
-      print('🖼️ Opening gallery picker...');
+      
       final XFile? image = await _picker.pickImage(
         source: ImageSource.gallery,
         maxWidth: 1024,
         maxHeight: 1024,
         imageQuality: 85,
       );
-      print('📷 Gallery picker result: ${image?.path ?? 'null'}');
+      
       if (image != null) {
-        print('📝 Image details - Name: ${image.name}, Size: ${await image.length()} bytes');
+        
       }
       return image;
     } catch (e) {
-      print('❌ Gallery picker error: $e');
+      
       Get.snackbar('Error', 'Failed to pick image from gallery');
       return null;
     }
@@ -34,20 +34,20 @@ class ImageUploadService extends GetxService {
   /// Pick image from camera
   Future<XFile?> pickImageFromCamera() async {
     try {
-      print('📸 Opening camera...');
+      
       final XFile? image = await _picker.pickImage(
         source: ImageSource.camera,
         maxWidth: 1024,
         maxHeight: 1024,
         imageQuality: 85,
       );
-      print('📷 Camera result: ${image?.path ?? 'null'}');
+      
       if (image != null) {
-        print('📝 Image details - Name: ${image.name}, Size: ${await image.length()} bytes');
+        
       }
       return image;
     } catch (e) {
-      print('❌ Camera error: $e');
+      
       Get.snackbar('Error', 'Failed to capture image from camera');
       return null;
     }
@@ -56,7 +56,7 @@ class ImageUploadService extends GetxService {
   /// Upload image to backend API using the new base64 endpoint
   Future<String?> uploadImage(XFile imageFile, {String? folder}) async {
     try {
-      print('🚀 Starting image upload...');
+      
       
       // Validate image first
       if (!await validateImageForUpload(imageFile)) {
@@ -64,12 +64,12 @@ class ImageUploadService extends GetxService {
       }
       
       // Read file as bytes and convert to base64
-      print('📖 Reading image file...');
+      
       final bytes = await imageFile.readAsBytes();
       final base64Content = base64Encode(bytes);
       
-      print('📊 File size: ${bytes.length} bytes');
-      print('📊 Base64 length: ${base64Content.length} characters');
+      
+      
       
       // Prepare request body for new API
       final requestBody = {
@@ -79,7 +79,7 @@ class ImageUploadService extends GetxService {
         'contentType': 'image/jpeg', // Default content type
       };
       
-      print('🌐 Uploading to: ${ApiClient.baseUrl}${ApiClient.apiPath}/UploadFile');
+      
       
       // Send POST request with JSON body
       final response = await http.post(
@@ -91,7 +91,7 @@ class ImageUploadService extends GetxService {
         body: jsonEncode(requestBody),
       );
 
-      print('📥 Upload response: ${response.statusCode} - ${response.body}');
+      
 
       if (response.statusCode == 200) {
         final jsonResponse = jsonDecode(response.body);
@@ -107,13 +107,13 @@ class ImageUploadService extends GetxService {
             // Use API to get presigned URL for the uploaded file
             final presignedUrl = await getPresignedUrl(fileKey);
             if (presignedUrl != null) {
-              print('✅ Upload successful with presigned URL: $presignedUrl');
+              
               return presignedUrl;
             } else {
               // Fallback to direct S3 URL if presigned URL fails
               if (bucketName != null) {
                 final fallbackUrl = 'https://$bucketName.s3.amazonaws.com/$fileKey';
-                print('✅ Upload successful with fallback URL: $fallbackUrl');
+                
                 return fallbackUrl;
               }
             }
@@ -122,15 +122,15 @@ class ImageUploadService extends GetxService {
           // Try direct fileUrl if available
           final directUrl = jsonResponse['fileUrl'] as String?;
           if (directUrl != null) {
-            print('✅ Upload successful with direct URL: $directUrl');
+            
             return directUrl;
           }
           
-          print('❌ No valid URL found in response');
+          
           return null;
         } else {
           final error = jsonResponse['errorMessage'] ?? jsonResponse['ErrorMessage'] ?? 'Upload failed';
-          print('❌ Upload failed: $error');
+          
           Get.snackbar('Error', error);
           return null;
         }
@@ -138,16 +138,16 @@ class ImageUploadService extends GetxService {
         try {
           final errorResponse = jsonDecode(response.body);
           final error = errorResponse['errorMessage'] ?? 'Upload failed';
-          print('❌ Upload failed: $error');
+          
           Get.snackbar('Error', error);
         } catch (e) {
-          print('❌ Upload failed with status ${response.statusCode}');
+          
           Get.snackbar('Error', 'Upload failed with status ${response.statusCode}');
         }
         return null;
       }
     } catch (e) {
-      print('💥 Upload error: $e');
+      
       Get.snackbar('Error', 'Failed to upload image: ${e.toString()}');
       return null;
     }
@@ -156,7 +156,7 @@ class ImageUploadService extends GetxService {
   /// Upload profile image using the new base64 API endpoint
   Future<String?> uploadProfileImage(XFile imageFile) async {
     try {
-      print('🚀 Starting profile image upload...');
+      
       
       // Validate image first
       if (!await validateImageForUpload(imageFile)) {
@@ -164,12 +164,12 @@ class ImageUploadService extends GetxService {
       }
       
       // Read file as bytes and convert to base64
-      print('📖 Reading image file...');
+      
       final bytes = await imageFile.readAsBytes();
       final base64Content = base64Encode(bytes);
       
-      print('📊 File size: ${bytes.length} bytes');
-      print('📊 Base64 length: ${base64Content.length} characters');
+      
+      
       
       // Prepare request body for new API
       final requestBody = {
@@ -179,7 +179,7 @@ class ImageUploadService extends GetxService {
         'contentType': 'image/jpeg', // Default content type
       };
       
-      print('🌐 Uploading to: ${ApiClient.baseUrl}${ApiClient.apiPath}/UploadFile');
+      
       
       // Send POST request with JSON body
       final response = await http.post(
@@ -191,7 +191,7 @@ class ImageUploadService extends GetxService {
         body: jsonEncode(requestBody),
       );
 
-      print('📥 Upload response: ${response.statusCode} - ${response.body}');
+      
 
       if (response.statusCode == 200) {
         final jsonResponse = jsonDecode(response.body);
@@ -207,13 +207,13 @@ class ImageUploadService extends GetxService {
             // Use API to get presigned URL for the uploaded file
             final presignedUrl = await getPresignedUrl(fileKey);
             if (presignedUrl != null) {
-              print('✅ Upload successful with presigned URL: $presignedUrl');
+              
               return presignedUrl;
             } else {
               // Fallback to direct S3 URL if presigned URL fails
               if (bucketName != null) {
                 final fallbackUrl = 'https://$bucketName.s3.amazonaws.com/$fileKey';
-                print('✅ Upload successful with fallback URL: $fallbackUrl');
+                
                 return fallbackUrl;
               }
             }
@@ -222,15 +222,15 @@ class ImageUploadService extends GetxService {
           // Try direct fileUrl if available
           final directUrl = jsonResponse['fileUrl'] as String?;
           if (directUrl != null) {
-            print('✅ Upload successful with direct URL: $directUrl');
+            
             return directUrl;
           }
           
-          print('❌ No valid URL found in response');
+          
           return null;
         } else {
           final error = jsonResponse['errorMessage'] ?? jsonResponse['ErrorMessage'] ?? 'Profile image upload failed';
-          print('❌ Upload failed: $error');
+          
           Get.snackbar('Error', error);
           return null;
         }
@@ -238,16 +238,16 @@ class ImageUploadService extends GetxService {
         try {
           final errorResponse = jsonDecode(response.body);
           final error = errorResponse['errorMessage'] ?? 'Profile image upload failed';
-          print('❌ Upload failed: $error');
+          
           Get.snackbar('Error', error);
         } catch (e) {
-          print('❌ Upload failed with status ${response.statusCode}');
+          
           Get.snackbar('Error', 'Profile image upload failed with status ${response.statusCode}');
         }
         return null;
       }
     } catch (e) {
-      print('💥 Upload error: $e');
+      
       Get.snackbar('Error', 'Failed to upload profile image: ${e.toString()}');
       return null;
     }
@@ -256,7 +256,7 @@ class ImageUploadService extends GetxService {
   /// Upload business logo using the new base64 API endpoint
   Future<String?> uploadBusinessLogo(XFile imageFile) async {
     try {
-      print('🚀 Starting business logo upload...');
+      
       
       // Validate image first
       if (!await validateImageForUpload(imageFile)) {
@@ -264,12 +264,12 @@ class ImageUploadService extends GetxService {
       }
       
       // Read file as bytes and convert to base64
-      print('📖 Reading image file...');
+      
       final bytes = await imageFile.readAsBytes();
       final base64Content = base64Encode(bytes);
       
-      print('📊 File size: ${bytes.length} bytes');
-      print('📊 Base64 length: ${base64Content.length} characters');
+      
+      
       
       // Prepare request body for new API
       final requestBody = {
@@ -279,7 +279,7 @@ class ImageUploadService extends GetxService {
         'contentType': 'image/jpeg', // Default content type
       };
       
-      print('🌐 Uploading to: ${ApiClient.baseUrl}${ApiClient.apiPath}/UploadFile');
+      
       
       // Send POST request with JSON body
       final response = await http.post(
@@ -291,7 +291,7 @@ class ImageUploadService extends GetxService {
         body: jsonEncode(requestBody),
       );
 
-      print('📥 Upload response: ${response.statusCode} - ${response.body}');
+      
 
       if (response.statusCode == 200) {
         final jsonResponse = jsonDecode(response.body);
@@ -307,13 +307,13 @@ class ImageUploadService extends GetxService {
             // Use API to get presigned URL for the uploaded file
             final presignedUrl = await getPresignedUrl(fileKey);
             if (presignedUrl != null) {
-              print('✅ Upload successful with presigned URL: $presignedUrl');
+              
               return presignedUrl;
             } else {
               // Fallback to direct S3 URL if presigned URL fails
               if (bucketName != null) {
                 final fallbackUrl = 'https://$bucketName.s3.amazonaws.com/$fileKey';
-                print('✅ Upload successful with fallback URL: $fallbackUrl');
+                
                 return fallbackUrl;
               }
             }
@@ -322,15 +322,15 @@ class ImageUploadService extends GetxService {
           // Try direct fileUrl if available
           final directUrl = jsonResponse['fileUrl'] as String?;
           if (directUrl != null) {
-            print('✅ Upload successful with direct URL: $directUrl');
+            
             return directUrl;
           }
           
-          print('❌ No valid URL found in response');
+          
           return null;
         } else {
           final error = jsonResponse['errorMessage'] ?? jsonResponse['ErrorMessage'] ?? 'Business logo upload failed';
-          print('❌ Upload failed: $error');
+          
           Get.snackbar('Error', error);
           return null;
         }
@@ -338,16 +338,16 @@ class ImageUploadService extends GetxService {
         try {
           final errorResponse = jsonDecode(response.body);
           final error = errorResponse['errorMessage'] ?? 'Business logo upload failed';
-          print('❌ Upload failed: $error');
+          
           Get.snackbar('Error', error);
         } catch (e) {
-          print('❌ Upload failed with status ${response.statusCode}');
+          
           Get.snackbar('Error', 'Business logo upload failed with status ${response.statusCode}');
         }
         return null;
       }
     } catch (e) {
-      print('💥 Upload error: $e');
+      
       Get.snackbar('Error', 'Failed to upload business logo: ${e.toString()}');
       return null;
     }
@@ -449,7 +449,7 @@ class ImageUploadService extends GetxService {
   /// Get presigned URL for a file using the API
   Future<String?> getPresignedUrl(String fileKey) async {
     try {
-      print('🔗 Getting presigned URL for: $fileKey');
+      
       
       // Prepare request body for presigned URL API
       final requestBody = {
@@ -467,7 +467,7 @@ class ImageUploadService extends GetxService {
         body: jsonEncode(requestBody),
       );
 
-      print('📥 Presigned URL response: ${response.statusCode} - ${response.body}');
+      
 
       if (response.statusCode == 200) {
         final jsonResponse = jsonDecode(response.body);
@@ -483,17 +483,17 @@ class ImageUploadService extends GetxService {
             final isAvailable = firstFile['isAvailable'] as bool? ?? firstFile['IsAvailable'] as bool? ?? false;
             
             if (isAvailable && presignedUrl != null) {
-              print('✅ Presigned URL obtained: $presignedUrl');
+              
               return presignedUrl;
             }
           }
         }
       }
       
-      print('❌ Failed to get presigned URL');
+      
       return null;
     } catch (e) {
-      print('💥 Presigned URL error: $e');
+      
       return null;
     }
   }

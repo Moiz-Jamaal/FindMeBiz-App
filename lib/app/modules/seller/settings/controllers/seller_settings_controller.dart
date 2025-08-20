@@ -96,7 +96,7 @@ class SellerSettingsController extends GetxController {
       
     } catch (e) {
       Get.snackbar('Error', 'Failed to load settings');
-      print('Settings loading error: $e');
+      
     } finally {
       isLoading.value = false;
     }
@@ -216,7 +216,7 @@ class SellerSettingsController extends GetxController {
         currentSettings.value = defaultSettings;
       }
     } catch (e) {
-      print('Error creating default settings: $e');
+      
     }
   }
 
@@ -320,7 +320,7 @@ class SellerSettingsController extends GetxController {
       
     } catch (e) {
       Get.snackbar('Error', 'Failed to save settings');
-      print('Save settings error: $e');
+      
     } finally {
       isSaving.value = false;
     }

@@ -102,7 +102,7 @@ class SellerProfileEditController extends GetxController {
       
     } catch (e) {
       Get.snackbar('Error', 'Failed to load profile data');
-      print('Profile loading error: $e');
+      
     } finally {
       isLoading.value = false;
     }
@@ -138,16 +138,16 @@ class SellerProfileEditController extends GetxController {
       final response = await _sellerService.getSellerUrls(sellerId);
       if (response.success && response.data != null) {
         socialUrls.value = response.data!;
-        print('🔗 Loaded ${socialUrls.length} social URLs: ${socialUrls.map((url) => 'SmId: ${url.smid}, URL: ${url.urllink}').join(', ')}');
+        
         
         // Re-initialize controllers if platforms are already loaded
         if (socialMediaPlatforms.isNotEmpty) {
-          print('🔄 Re-initializing social controllers after loading URLs');
+          
           _initializeSocialControllers();
         }
       }
     } catch (e) {
-      print('Error loading social URLs: $e');
+      
     }
   }
 
@@ -178,11 +178,11 @@ class SellerProfileEditController extends GetxController {
         }
         
         socialMediaPlatforms.value = uniquePlatforms.values.toList();
-        print('📱 Loaded ${socialMediaPlatforms.length} social media platforms');
+        
         
         // Initialize controllers for all platforms if URLs are already loaded
         if (socialUrls.isNotEmpty || socialMediaPlatforms.isNotEmpty) {
-          print('🔄 Initializing social controllers after loading platforms');
+          
           _initializeSocialControllers();
         }
       } else {
@@ -190,16 +190,16 @@ class SellerProfileEditController extends GetxController {
       }
       
     } catch (e) {
-      print('Error loading social media platforms: $e');
+      
     } finally {
       isLoadingSocialMedia.value = false;
     }
   }
 
   void _initializeSocialControllers() {
-    print('🎮 Initializing social controllers...');
-    print('📱 Available platforms: ${socialMediaPlatforms.map((p) => 'SmId: ${p.smid}, Name: ${p.sname}').join(', ')}');
-    print('🔗 Available URLs: ${socialUrls.map((url) => 'SmId: ${url.smid}, URL: ${url.urllink}').join(', ')}');
+    
+    
+    
     
     // Clear existing controllers
     for (var controller in socialControllers.values) {
@@ -217,7 +217,7 @@ class SellerProfileEditController extends GetxController {
           (url) => url.smid == platform.smid,
         );
         
-        print('🔍 Platform ${platform.sname} (SmId: ${platform.smid}): ${existingUrl != null ? 'Found URL: ${existingUrl.urllink}' : 'No URL found'}');
+        
         
         final controller = TextEditingController(text: existingUrl?.urllink ?? '');
         controller.addListener(_onFieldChanged);
@@ -225,7 +225,7 @@ class SellerProfileEditController extends GetxController {
       }
     }
     
-    print('🎮 Created ${socialControllers.length} controllers');
+    
   }
 
   void _setupListeners() {
@@ -288,13 +288,13 @@ class SellerProfileEditController extends GetxController {
   // Image handling methods - only business logo
   Future<void> _loadExistingBusinessLogo(String logoValue) async {
     try {
-      print('🖼️ Loading existing business logo: $logoValue');
+      
       
       // Check if it's already a full URL (presigned URL or direct URL)
       if (logoValue.startsWith('http://') || logoValue.startsWith('https://')) {
         // It's already a full URL, use it directly
         businessLogoUrl.value = logoValue;
-        print('✅ Using existing full URL: $logoValue');
+        
         return;
       }
       
@@ -302,55 +302,55 @@ class SellerProfileEditController extends GetxController {
       final presignedUrl = await _imageUploadService.getPresignedUrl(logoValue);
       if (presignedUrl != null) {
         businessLogoUrl.value = presignedUrl;
-        print('✅ Got presigned URL for existing logo: $presignedUrl');
+        
       } else {
         // Fallback: construct direct S3 URL (might give 403 but better than nothing)
         if (logoValue.contains('/')) {
           // Assume it's a file key like "logos/filename.jpg"
           businessLogoUrl.value = 'https://findmebiz.s3.amazonaws.com/$logoValue';
-          print('⚠️ Using fallback S3 URL: ${businessLogoUrl.value}');
+          
         } else {
           // It's something else, use as is
           businessLogoUrl.value = logoValue;
-          print('⚠️ Using logo value as is: $logoValue');
+          
         }
       }
       
     } catch (e) {
-      print('❌ Error loading existing business logo: $e');
+      
       // Still set the original value as fallback
       businessLogoUrl.value = logoValue;
     }
   }
 
   Future<void> updateBusinessLogo() async {
-    print('🖼️ Starting business logo update...');
+    
     
     try {
       isUploadingLogo.value = true;
       
       // Get image selection directly using the service's built-in dialog
-      print('📱 Opening image picker...');
+      
       final XFile? selectedImage = await _showImagePickerBottomSheet();
       
-      print('📷 Final image picker result: ${selectedImage?.path ?? 'null'}');
+      
       
       if (selectedImage == null) {
-        print('❌ No image selected');
+        
         isUploadingLogo.value = false;
         return;
       }
       
       // IMMEDIATE UI UPDATE - Set temporary path for immediate preview
-      print('✅ Setting temp path: ${selectedImage.path}');
+      
       tempLogoPath.value = selectedImage.path;
       hasChanges.value = true;
       
       // Force UI update
       update();
       
-      print('🔄 UI should now show selected image');
-      print('🔄 tempLogoPath is now: ${tempLogoPath.value}');
+      
+      
       
       // Show immediate feedback that image is selected
       Get.snackbar(
@@ -362,23 +362,23 @@ class SellerProfileEditController extends GetxController {
       );
       
       // Validate image before upload
-      print('🔍 Validating image...');
+      
       if (!await _imageUploadService.validateImageForUpload(selectedImage)) {
-        print('❌ Image validation failed');
+        
         tempLogoPath.value = ''; // Clear temp path on validation failure
         isUploadingLogo.value = false;
         return;
       }
       
-      print('🚀 Starting upload...');
+      
       final String? uploadedUrl = await _imageUploadService.uploadBusinessLogo(selectedImage);
-      print('📤 Upload result: ${uploadedUrl ?? 'null'}');
+      
       
       if (uploadedUrl != null) {
         businessLogoUrl.value = uploadedUrl;
         tempLogoPath.value = ''; // Clear temp path once uploaded
         hasChanges.value = true;
-        print('✅ Upload successful: $uploadedUrl');
+        
         Get.snackbar(
           'Success', 
           'Business logo updated successfully!',
@@ -388,7 +388,7 @@ class SellerProfileEditController extends GetxController {
         );
       } else {
         tempLogoPath.value = ''; // Clear temp path on upload failure
-        print('❌ Upload failed');
+        
         Get.snackbar(
           'Upload Failed', 
           'Failed to upload business logo. Please try again.',
@@ -398,7 +398,7 @@ class SellerProfileEditController extends GetxController {
       }
     } catch (e) {
       tempLogoPath.value = ''; // Clear temp path on error
-      print('💥 Upload error: $e');
+      
       Get.snackbar(
         'Error', 
         'Failed to upload business logo: ${e.toString()}',
@@ -407,7 +407,7 @@ class SellerProfileEditController extends GetxController {
       );
     } finally {
       isUploadingLogo.value = false;
-      print('🏁 Upload process finished');
+      
     }
   }
   
@@ -434,9 +434,9 @@ class SellerProfileEditController extends GetxController {
               title: const Text('Gallery'),
               onTap: () async {
                 Get.back();
-                print('📱 Opening gallery...');
+                
                 final XFile? image = await _imageUploadService.pickImageFromGallery();
-                print('📷 Gallery result: ${image?.path ?? 'null'}');
+                
                 completer.complete(image);
               },
             ),
@@ -445,9 +445,9 @@ class SellerProfileEditController extends GetxController {
               title: const Text('Camera'),
               onTap: () async {
                 Get.back();
-                print('📸 Opening camera...');
+                
                 final XFile? image = await _imageUploadService.pickImageFromCamera();
-                print('📷 Camera result: ${image?.path ?? 'null'}');
+                
                 completer.complete(image);
               },
             ),
@@ -526,7 +526,7 @@ class SellerProfileEditController extends GetxController {
         backgroundColor: Colors.red.withOpacity(0.1),
         colorText: Colors.red,
       );
-      print('Location error: $e');
+      
     } finally {
       isGettingLocation.value = false;
     }
@@ -605,7 +605,7 @@ class SellerProfileEditController extends GetxController {
       
     } catch (e) {
       Get.snackbar('Error', 'Failed to save profile changes');
-      print('Save profile error: $e');
+      
     } finally {
       isSaving.value = false;
     }
@@ -649,7 +649,7 @@ class SellerProfileEditController extends GetxController {
       await _loadSocialUrls(sellerId);
       
     } catch (e) {
-      print('Error saving social URLs: $e');
+      
     }
   }
 

@@ -32,7 +32,7 @@ class PerformanceService extends GetxService {
         _optimizeThemeTransitions();
       });
     } catch (e) {
-      debugPrint('Theme monitoring not available: $e');
+      
     }
   }
 
@@ -143,7 +143,7 @@ class PerformanceService extends GetxService {
     
     // Force garbage collection (Android/iOS will handle this)
     // This is more for monitoring than actual optimization
-    debugPrint('Memory optimization triggered');
+    
   }
 
   /// Network request optimization
@@ -241,7 +241,7 @@ class PerformanceService extends GetxService {
       );
       
     } catch (e) {
-      debugPrint('Error preloading critical data: $e');
+      
     }
   }
 
@@ -269,7 +269,7 @@ class PerformanceService extends GetxService {
 
   /// Error handling optimization
   void handleError(dynamic error, {String? context}) {
-    debugPrint('Error in $context: $error');
+    
     
     // Show user-friendly error message
     if (error.toString().contains('network') || 

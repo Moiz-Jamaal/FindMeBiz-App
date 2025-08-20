@@ -361,64 +361,64 @@ class AddProductController extends GetxController {
 
   // Add a debug method to test button functionality
   void debugButtonPress() {
-    print('🔍 === DEBUG BUTTON PRESS ===');
-    print('📍 Current Step: ${currentStep.value}');
-    print('✅ Can Proceed: $canProceed');
-    print('💾 Is Saving: ${isSaving.value}');
-    print('📊 Is Loading: ${isLoading.value}');
-    print('🏷️ Selected Categories: ${selectedCategoryIds.length}');
-    print('📝 Product Name: "${nameController.text}"');
-    print('📄 Description: "${descriptionController.text}"');
-    print('💰 Price: "${priceController.text}"');
-    print('🔄 Price on Inquiry: ${priceOnInquiry.value}');
-    print('📸 Images: ${productImages.length}');
-    print('👤 Seller ID: ${_authService.currentSeller?.sellerId}');
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     
     if (currentStep.value == 2) {
-      print('🚀 Should call saveProduct()');
+      
       saveProduct();
     } else {
-      print('➡️ Should call nextStep()');
+      
       nextStep();
     }
   }
 
   Future<void> saveProduct() async {
-    print('🚨 === SAVE PRODUCT CALLED ===');
-    print('📅 Timestamp: ${DateTime.now()}');
+    
+    
     
     if (!_validateAllSteps()) {
-      print('❌ Validation failed - stopping');
+      
       _showErrorMessage('Please fill in all required fields');
       return;
     }
-    print('✅ Validation passed');
+    
 
     try {
-      print('🔄 Setting isSaving to true');
+      
       isSaving.value = true;
       
-      print('🔓 Opening saving dialog');
+      
       _openSavingDialog();
       
       // Get current seller ID
       final sellerId = _authService.currentSeller?.sellerId;
-      print('👤 Seller ID: $sellerId');
+      
       
       if (sellerId == null) {
-        print('❌ No seller ID found');
+        
         _showErrorMessage('Seller not found. Please login again.');
         _closeSavingDialogIfOpen();
         return;
       }
 
       // Debug: Log request details
-      print('🚀 Starting product creation for seller: $sellerId');
-      print('📝 Product name: "${nameController.text.trim()}"');
-      print('🏷️ Categories: ${selectedCategoryIds.length} selected: $selectedCategoryIds');
-      print('📸 Images: ${productImages.length} attached');
-      print('🌐 API Base URL: ${ApiConfig.baseUrl}${ApiConfig.apiPath}');
-      print('💰 Price: ${priceController.text} (onInquiry: ${priceOnInquiry.value})');
+      
+      
+      
+      
+      
+      
 
       // Prepare create request (without media; we'll upload images separately)
       final request = CreateProductRequest(
@@ -433,29 +433,36 @@ class AddProductController extends GetxController {
         media: const [],
       );
 
-      print('📤 Request prepared, sending to API...');
-      print('🔧 Request details: ${request.toJson()}');
+      
+      
       
     // Create product with timeout (match API timeout)
     final response = await _productService.createProduct(request)
       .timeout(const Duration(seconds: 35), onTimeout: () {
-        print('⏰ Request timed out');
+        
         throw Exception('Request timed out. Please check your connection and try again.');
       });
       
       // Minimal debug info without logging images
-      print('✅ CreateProduct → status=${response.statusCode} success=${response.isSuccess}');
+      
       
       if (response.isSuccess && response.data != null) {
-        print('🎉 Product created successfully');
+        
         // Navigate back immediately after product creation
         final created = response.data!;
         final productId = int.tryParse(created.id);
-        print('🆔 Created product ID: $productId');
+        
 
-        // Close dialog and notify success before background image upload
+        // Close dialog first
         _closeSavingDialogIfOpen();
+        
+        // Add small delay to ensure dialog is closed
+        await Future.delayed(const Duration(milliseconds: 300));
+        
+        // Show success and navigate back
         _showSuccessMessage('Product created successfully!');
+        
+        // Navigate back with result
         Get.back(result: created);
 
         // Upload images in background (do not block UI)
@@ -471,26 +478,26 @@ class AddProductController extends GetxController {
 
           Future(() async {
             try {
-              print('📤 Uploading ${images.length} images for product $productId');
+              
               final uploadResp = await _productService
                   .uploadMultipleImages(productId, images)
                   .timeout(const Duration(seconds: 45));
               if (!uploadResp.isSuccess) {
-                print('⚠️ Image upload failed: ${uploadResp.errorMessage}');
+                
               } else {
-                print('✅ Images uploaded successfully');
+                
               }
             } catch (e) {
-              print('🚨 Image upload exception: $e');
+              
             }
           });
         }
       } else {
-        print('❌ API returned error');
+        
         _closeSavingDialogIfOpen();
-        print('❌ API Error: ${response.errorMessage}');
-        print('🔍 Response Status: ${response.statusCode}');
-        print('🔍 Response Data: ${response.data}');
+        
+        
+        
         String errorMsg = response.errorMessage ?? 'Failed to create product';
         if (response.statusCode == 500) {
           errorMsg = 'Server error. Please try again later.';
@@ -502,11 +509,11 @@ class AddProductController extends GetxController {
         _showErrorMessage(errorMsg);
       }
     } catch (e) {
-      print('🚨 Exception caught in saveProduct');
+      
       _closeSavingDialogIfOpen();
-      print('🚨 Exception: $e');
-      print('🔍 Exception Type: ${e.runtimeType}');
-      print('📚 Stack trace: ${StackTrace.current}');
+      
+      
+      
       
       String errorMessage;
       if (e.toString().contains('timed out')) {
@@ -522,28 +529,28 @@ class AddProductController extends GetxController {
       }
       _showErrorMessage(errorMessage);
     } finally {
-      print('🔄 Setting isSaving to false');
+      
       isSaving.value = false;
-      print('🏁 === SAVE PRODUCT COMPLETED ===');
+      
     }
   }
 
   // Add a debug method to test API connectivity
   Future<void> testApiConnection() async {
     try {
-      print('🧪 Testing API connection...');
-      print('🌐 Base URL: ${ApiConfig.baseUrl}');
-      print('🛤️ API Path: ${ApiConfig.apiPath}');
-      print('⏱️ Timeout: ${ApiConfig.requestTimeout}');
+      
+      
+      
+      
       
       // Test with a simple categories call
       final response = await _categoryService.getCategories();
-      print('✅ API Test Result: ${response.isSuccess ? "SUCCESS" : "FAILED"}');
+      
       if (!response.isSuccess) {
-        print('❌ Error: ${response.errorMessage}');
+        
       }
     } catch (e) {
-      print('🚨 API Test Exception: $e');
+      
     }
   }  void _openSavingDialog() {
     if (!(_savingDialogOpen)) {
@@ -608,7 +615,7 @@ class AddProductController extends GetxController {
           Navigator.of(Get.context!).pop();
         }
       } catch (e) {
-        print('⚠️ Error closing dialog: $e');
+        
         // Force reset dialog state even if closing fails
         _savingDialogOpen = false;
       }

@@ -51,18 +51,18 @@ class RoleService extends GetxService {
         if (response.success && response.data != null) {
           sellerDataExists.value = true;
           sellerOnboarded = true; // Update local flag
-          print('✅ Seller data exists for user ${authService.currentUser!.username}');
+          
         } else {
           sellerDataExists.value = false;
           sellerOnboarded = false; // Update local flag
-          print('ℹ️ No seller data found for user ${authService.currentUser!.username}');
+          
         }
       } else {
         sellerDataExists.value = false;
-        print('ℹ️ No logged in user to check seller data');
+        
       }
     } catch (e) {
-      print('❌ Error checking seller data: $e');
+      
       sellerDataExists.value = false;
     }
   }
@@ -82,7 +82,7 @@ class RoleService extends GetxService {
     currentRole.value = role;
     await box.write(_storageKey, role.value);
     
-    print('💾 Role saved to storage: ${role.value}');
+    
 
     // Navigate to the correct root for the role
     if (role == UserRole.buyer) {
@@ -98,13 +98,13 @@ class RoleService extends GetxService {
   Future<void> setRoleTemporary(UserRole role) async {
     currentRole.value = role;
     // Don't persist to storage yet
-    print('🔄 Role set temporarily: ${role.value}');
+    
   }
 
   /// Persist the current role to storage
   Future<void> persistCurrentRole() async {
     await box.write(_storageKey, currentRole.value.value);
-    print('💾 Role persisted to storage: ${currentRole.value.value}');
+    
   }
 
   Future<void> toggle() => switchTo(
@@ -129,6 +129,6 @@ class RoleService extends GetxService {
     currentRole.value = UserRole.buyer; // Reset to default
     box.remove(_storageKey);
     clearSellerData();
-    print('🧹 All role data cleared');
+    
   }
 }

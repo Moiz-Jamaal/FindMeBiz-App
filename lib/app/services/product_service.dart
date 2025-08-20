@@ -219,10 +219,23 @@ class ProductSearchResponse {
   });
 
   factory ProductSearchResponse.fromJson(Map<String, dynamic> json) {
+    print('DEBUG: Raw API Response: $json'); // Debug log
+    
+    final productsJson = json['products'] as List?;
+    print('DEBUG: Products JSON: $productsJson'); // Debug log
+    
+    final products = productsJson?.map((item) {
+      print('DEBUG: Processing product item: $item'); // Debug log
+      try {
+        return Product.fromJson(item);
+      } catch (e) {
+        print('DEBUG: Error parsing product: $e'); // Debug log
+        rethrow;
+      }
+    }).toList() ?? [];
+    
     return ProductSearchResponse(
-      products: (json['products'] as List?)
-          ?.map((item) => Product.fromJson(item))
-          .toList() ?? [],
+      products: products,
       totalCount: json['totalCount'] ?? 0,
       page: json['page'] ?? 1,
       pageSize: json['pageSize'] ?? 20,

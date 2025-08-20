@@ -17,9 +17,9 @@ abstract class BaseApiService extends GetxService {
     super.onInit();
     try {
       _apiClient = Get.find<ApiClient>();
-      print('✅ ApiClient initialized successfully');
+      
     } catch (e) {
-      print('❌ Failed to initialize ApiClient: $e');
+      
     }
   }
 
@@ -142,12 +142,12 @@ abstract class BaseApiService extends GetxService {
     T Function(dynamic json)? fromJson,
   }) async {
     try {
-      print('🚀 POST Request starting: $endpoint');
+      
       final response = await apiClient.post(endpoint, body: body, queryParams: queryParams);
-      print('✅ POST Response received: ${response.statusCode}');
+      
       return _handleResponse(response, fromJson);
     } catch (e) {
-      print('❌ POST Request failed: $e');
+      
       return ApiResponse.error('Network error: $e');
     }
   }

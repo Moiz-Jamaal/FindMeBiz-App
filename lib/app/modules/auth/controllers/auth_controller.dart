@@ -87,7 +87,7 @@ class AuthController extends GetxController {
         emailAvailable.value = response.data ?? false;
       }
     } catch (e) {
-      print('Error checking email availability: $e');
+      
     }
   }
   
@@ -106,7 +106,7 @@ class AuthController extends GetxController {
         usernameAvailable.value = response.data ?? false;
       }
     } catch (e) {
-      print('Error checking username availability: $e');
+      
     }
   }
   

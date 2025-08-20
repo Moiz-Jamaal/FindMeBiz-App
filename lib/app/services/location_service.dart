@@ -118,7 +118,7 @@ class LocationService extends GetxService {
         country: '',
       );
     } catch (e) {
-      print('Geocoding error: $e');
+      
       // Return basic location details as fallback
       return LocationDetails(
         latitude: latitude,
@@ -182,7 +182,7 @@ class LocationService extends GetxService {
         };
       }
     } catch (e) {
-      print('Error parsing geolocation: $e');
+      
     }
     
     return null;

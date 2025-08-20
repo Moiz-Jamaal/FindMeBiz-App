@@ -58,7 +58,7 @@ class WelcomeController extends GetxController {
         await roleService.switchTo(selectedRole.value!);
         isLoading.value = false;
       } catch (e) {
-        print('Error switching role: $e');
+        
         isLoading.value = false;
         Get.snackbar('Error', 'Failed to switch role. Please try again.');
       }

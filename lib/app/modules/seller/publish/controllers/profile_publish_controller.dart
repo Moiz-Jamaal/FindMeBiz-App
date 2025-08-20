@@ -86,7 +86,7 @@ class ProfilePublishController extends GetxController {
       
     } catch (e) {
       Get.snackbar('Error', 'Failed to load profile data');
-      print('Profile loading error: $e');
+      
     } finally {
       isLoading.value = false;
     }
@@ -116,7 +116,7 @@ class ProfilePublishController extends GetxController {
       
     } catch (e) {
       Get.snackbar('Error', 'Failed to load subscription plans');
-      print('Subscriptions loading error: $e');
+      
     }
   }
 
@@ -128,7 +128,7 @@ class ProfilePublishController extends GetxController {
         availableSubscriptions.add(response.data!);
       }
     } catch (e) {
-      print('Error creating basic subscription: $e');
+      
     }
   }
 
@@ -181,7 +181,7 @@ class ProfilePublishController extends GetxController {
       
     } catch (e) {
       Get.snackbar('Payment Failed', 'Failed to process payment. Please try again.');
-      print('Payment error: $e');
+      
     } finally {
       isProcessingPayment.value = false;
     }
@@ -236,7 +236,7 @@ class ProfilePublishController extends GetxController {
       
     } catch (e) {
       Get.snackbar('Error', 'Failed to publish profile');
-      print('Publishing error: $e');
+      
     } finally {
       isPublishing.value = false;
     }
