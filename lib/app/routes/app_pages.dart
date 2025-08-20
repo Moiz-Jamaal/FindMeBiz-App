@@ -9,10 +9,7 @@ import '../modules/home/bindings/home_binding.dart';
 import '../modules/home/views/home_view.dart';
 import '../modules/auth/bindings/auth_binding.dart';
 import '../modules/auth/views/auth_view.dart';
-import '../modules/seller/customers/bindings/customer_inquiries_binding.dart';
-import '../modules/seller/customers/views/customer_inquiries_view.dart';
-import '../modules/seller/enquiries/bindings/seller_enquiry_binding.dart';
-import '../modules/seller/enquiries/views/seller_enquiry_view.dart';
+
 import '../modules/welcome/bindings/welcome_binding.dart';
 import '../modules/welcome/views/welcome_view.dart';
 
@@ -33,10 +30,7 @@ import '../modules/seller/stall_location/bindings/stall_location_binding.dart';
 import '../modules/seller/stall_location/views/stall_location_view.dart';
 import '../modules/seller/publish/bindings/profile_publish_binding.dart';
 import '../modules/seller/publish/views/profile_publish_view.dart';
-import '../modules/seller/advertising/bindings/advertising_binding.dart';
-import '../modules/seller/advertising/views/advertising_view.dart';
-import '../modules/seller/analytics/bindings/analytics_binding.dart';
-import '../modules/seller/analytics/views/analytics_view.dart';
+
 
 import '../modules/seller/settings/bindings/seller_settings_binding.dart';
 import '../modules/seller/settings/views/seller_settings_view.dart';
@@ -136,26 +130,7 @@ class AppPages {
       page: () => const ProfilePublishView(),
       binding: ProfilePublishBinding(),
     ),
-    GetPage(
-      name: _Paths.SELLER_ADVERTISING,
-      page: () => const AdvertisingView(),
-      binding: AdvertisingBinding(),
-    ),
-    GetPage(
-      name: _Paths.SELLER_ANALYTICS,
-      page: () => const AnalyticsView(),
-      binding: AnalyticsBinding(),
-    ),
-    GetPage(
-      name: _Paths.SELLER_CUSTOMER_INQUIRIES,
-      page: () => const CustomerInquiriesView(),
-      binding: CustomerInquiriesBinding(),
-    ),
-    GetPage(
-      name: _Paths.SELLER_ENQUIRIES,
-      page: () => const SellerEnquiryView(),
-      binding: SellerEnquiryBinding(),
-    ),
+  
     GetPage(
       name: _Paths.SELLER_SETTINGS,
       page: () => const SellerSettingsView(),

@@ -5,7 +5,6 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../controllers/seller_dashboard_controller.dart';
 import '../../products/views/products_view.dart';
-import '../../profile/views/seller_profile_edit_view.dart';
 import '../../../shared/widgets/module_switcher.dart';
 import '../../../../core/widgets/app_logo.dart';
 
@@ -17,119 +16,71 @@ class SellerDashboardView extends GetView<SellerDashboardController> {
     final width = MediaQuery.of(context).size.width;
     final bool isWideWeb = kIsWeb && width >= 900;
 
-    final Widget stackedTabs = Obx(() => IndexedStack(
-          index: controller.currentIndex.value,
-          children: [
-            _buildDashboardTab(),
-            _buildProductsTab(),
-            _buildProfileTab(),
-            _buildAnalyticsTab(),
-          ],
-        ));
-
     if (isWideWeb) {
       return Scaffold(
         backgroundColor: AppTheme.backgroundColor,
         body: SafeArea(
           child: Row(
             children: [
-              Obx(() => NavigationRail(
-                    backgroundColor: Colors.white,
-                    selectedIndex: controller.currentIndex.value,
-                    onDestinationSelected: controller.changeTab,
-                    labelType: NavigationRailLabelType.all,
-                    leading: const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 12),
+              Container(
+                width: 80,
+                color: Colors.white,
+                child: Column(
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 20),
                       child: AppLogo(size: 36),
                     ),
-                    selectedIconTheme: IconThemeData(color: AppTheme.sellerPrimary),
-                    selectedLabelTextStyle: TextStyle(
-                      color: AppTheme.sellerPrimary,
-                      fontWeight: FontWeight.w600,
+                    const Divider(),
+                    ListTile(
+                      leading: Icon(
+                        Icons.inventory_2,
+                        color: AppTheme.sellerPrimary,
+                      ),
+                      title: Text(
+                        'Products',
+                        style: TextStyle(
+                          color: AppTheme.sellerPrimary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      dense: true,
                     ),
-                    destinations: const [
-                      NavigationRailDestination(
-                        icon: Icon(Icons.dashboard_outlined),
-                        selectedIcon: Icon(Icons.dashboard),
-                        label: Text('Dashboard'),
-                      ),
-                      NavigationRailDestination(
-                        icon: Icon(Icons.inventory_2_outlined),
-                        selectedIcon: Icon(Icons.inventory_2),
-                        label: Text('Products'),
-                      ),
-                      NavigationRailDestination(
-                        icon: Icon(Icons.person_outline),
-                        selectedIcon: Icon(Icons.person),
-                        label: Text('Profile'),
-                      ),
-                      NavigationRailDestination(
-                        icon: Icon(Icons.analytics_outlined),
-                        selectedIcon: Icon(Icons.analytics),
-                        label: Text('Analytics'),
-                      ),
-                    ],
-                  )),
+                  ],
+                ),
+              ),
               const VerticalDivider(width: 1),
               Expanded(
                 child: Center(
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 560),
-                    child: stackedTabs,
+                    child: _buildDashboardContent(),
                   ),
                 ),
               ),
             ],
           ),
         ),
-        floatingActionButton: Obx(() => controller.currentIndex.value == 1
-            ? FloatingActionButton(
-                onPressed: controller.addProduct,
-                backgroundColor: AppTheme.sellerPrimary,
-                child: const Icon(Icons.add, color: Colors.white),
-              )
-            : const SizedBox()),
+        floatingActionButton: FloatingActionButton(
+          onPressed: controller.addProduct,
+          backgroundColor: AppTheme.sellerPrimary,
+          child: const Icon(Icons.add, color: Colors.white),
+        ),
       );
     }
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
-      body: stackedTabs,
-      bottomNavigationBar: Obx(() => BottomNavigationBar(
-            currentIndex: controller.currentIndex.value,
-            onTap: controller.changeTab,
-            type: BottomNavigationBarType.fixed,
-            selectedItemColor: AppTheme.sellerPrimary,
-            unselectedItemColor: AppTheme.textHint,
-            items: const [
-              BottomNavigationBarItem(
-                icon: Icon(Icons.dashboard),
-                label: 'Dashboard',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.inventory),
-                label: 'Products',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.person),
-                label: 'Profile',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.analytics),
-                label: 'Analytics',
-              ),
-            ],
-          )),
-      floatingActionButton: Obx(() => controller.currentIndex.value == 1
-          ? FloatingActionButton(
-              onPressed: controller.addProduct,
-              backgroundColor: AppTheme.sellerPrimary,
-              child: const Icon(Icons.add, color: Colors.white),
-            )
-          : const SizedBox()),
+      body: _buildDashboardContent(),
+      floatingActionButton: FloatingActionButton(
+        onPressed: controller.addProduct,
+        backgroundColor: AppTheme.sellerPrimary,
+        child: const Icon(Icons.add, color: Colors.white),
+      ),
     );
   }
-  Widget _buildDashboardTab() {
+
+  Widget _buildDashboardContent() {
     return RefreshIndicator(
       onRefresh: () async => controller.refreshData(),
       child: CustomScrollView(
@@ -137,8 +88,7 @@ class SellerDashboardView extends GetView<SellerDashboardController> {
           _buildDashboardAppBar(),
           _buildProfileStatusCard(),
           _buildStatsCards(),
-          _buildQuickActions(),
-          _buildRecentActivity(),
+          _buildProductsSection(),
         ],
       ),
     );
@@ -294,6 +244,7 @@ class SellerDashboardView extends GetView<SellerDashboardController> {
       ),
     );
   }
+
   Widget _buildStatsCards() {
     return SliverToBoxAdapter(
       child: Padding(
@@ -342,7 +293,7 @@ class SellerDashboardView extends GetView<SellerDashboardController> {
     );
   }
 
-  Widget _buildQuickActions() {
+  Widget _buildProductsSection() {
     return SliverToBoxAdapter(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -350,260 +301,37 @@ class SellerDashboardView extends GetView<SellerDashboardController> {
           const SizedBox(height: 24),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppConstants.defaultPadding),
-            child: Text(
-              'Quick Actions',
-              style: Get.textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: AppTheme.textPrimary,
-              ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'My Products',
+                    style: Get.textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.textPrimary,
+                    ),
+                  ),
+                ),
+                TextButton.icon(
+                  onPressed: controller.addProduct,
+                  icon: const Icon(Icons.add),
+                  label: const Text('Add Product'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppTheme.sellerPrimary,
+                  ),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 16),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppConstants.defaultPadding),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildQuickActionCard(
-                        'Add Product',
-                        Icons.add_box,
-                        controller.addProduct,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _buildQuickActionCard(
-                        'View Products',
-                        Icons.inventory,
-                        controller.viewProducts,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildQuickActionCard(
-                        'Customer Enquiries',
-                        Icons.help_outline,
-                        () => Get.toNamed('/seller-enquiries'),
-                        badge: '3',
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _buildQuickActionCard(
-                        'Analytics',
-                        Icons.analytics,
-                        () => Get.toNamed('/seller-analytics'),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppConstants.defaultPadding),
-            child: Row(
-              children: [
-                Expanded(
-                  child: _buildQuickActionCard(
-                    'Preview Profile',
-                    Icons.preview,
-                    controller.previewProfile,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildQuickActionCard(
-                    'Analytics',
-                    Icons.analytics,
-                    controller.viewAnalytics,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppConstants.defaultPadding),
-            child: Row(
-              children: [
-                Expanded(
-                  child: _buildQuickActionCard(
-                    'Advertising',
-                    Icons.campaign,
-                    controller.manageAdvertising,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildQuickActionCard(
-                    'Set Location',
-                    Icons.location_on,
-                    controller.setStallLocation,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppConstants.defaultPadding),
-            child: Row(
-              children: [
-                Expanded(
-                  child: _buildQuickActionCard(
-                    'Customer Inquiries',
-                    Icons.question_answer,
-                    () => Get.toNamed('/seller-customer-inquiries'),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildQuickActionCard(
-                    'Settings',
-                    Icons.settings,
-                    () => Get.toNamed('/seller-settings'),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildQuickActionCard(String title, IconData icon, VoidCallback onTap, {String? badge}) {
-    return Card(
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            children: [
-              Stack(
-                children: [
-                  Icon(
-                    icon,
-                    size: 32,
-                    color: AppTheme.sellerPrimary,
-                  ),
-                  if (badge != null && badge.isNotEmpty)
-                    Positioned(
-                      right: 0,
-                      top: 0,
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          color: AppTheme.errorColor,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        constraints: const BoxConstraints(
-                          minWidth: 16,
-                          minHeight: 16,
-                        ),
-                        child: Text(
-                          badge,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Text(
-                title,
-                style: Get.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildRecentActivity() {
-    return SliverToBoxAdapter(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: 24),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppConstants.defaultPadding),
-            child: Text(
-              'Recent Activity',
-              style: Get.textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: AppTheme.textPrimary,
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Card(
-            margin: const EdgeInsets.symmetric(horizontal: AppConstants.defaultPadding),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Center(
-                child: Column(
-                  children: [
-                    Icon(
-                      Icons.history,
-                      size: 48,
-                      color: AppTheme.textHint,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'No recent activity',
-                      style: Get.textTheme.bodyMedium?.copyWith(
-                        color: AppTheme.textSecondary,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Start by adding your first product!',
-                      style: Get.textTheme.bodySmall?.copyWith(
-                        color: AppTheme.textHint,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+          // Embed the ProductsView content here
+          SizedBox(
+            height: 600, // Fixed height for the products section
+            child: const ProductsView(),
           ),
           const SizedBox(height: 20),
         ],
       ),
-    );
-  }
-
-  // Products tab - using actual ProductsView
-  Widget _buildProductsTab() {
-    return const ProductsView();
-  }
-
-  Widget _buildProfileTab() {
-    return const SellerProfileEditView();
-  }
-
-  Widget _buildAnalyticsTab() {
-    return const Center(
-      child: Text('Analytics Tab - Coming Soon'),
     );
   }
 }
