@@ -221,7 +221,7 @@ class ProductSearchResponse {
   factory ProductSearchResponse.fromJson(Map<String, dynamic> json) {
     print('DEBUG: Raw API Response: $json'); // Debug log
     
-    final productsJson = json['products'] as List?;
+    final productsJson = (json['products'] ?? json['Products']) as List?;
     print('DEBUG: Products JSON: $productsJson'); // Debug log
     
     final products = productsJson?.map((item) {

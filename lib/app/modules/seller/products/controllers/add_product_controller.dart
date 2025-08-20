@@ -453,17 +453,16 @@ class AddProductController extends GetxController {
         final productId = int.tryParse(created.id);
         
 
-        // Close dialog first
+        // Close dialog first and wait
         _closeSavingDialogIfOpen();
+        await Future.delayed(const Duration(milliseconds: 500));
         
-        // Add small delay to ensure dialog is closed
-        await Future.delayed(const Duration(milliseconds: 300));
-        
-        // Show success and navigate back
-        _showSuccessMessage('Product created successfully!');
-        
-        // Navigate back with result
+        // Navigate back immediately without snackbar to avoid interference
         Get.back(result: created);
+        
+        // Show success message after navigation
+        await Future.delayed(const Duration(milliseconds: 200));
+        _showSuccessMessage('Product created successfully!');
 
         // Upload images in background (do not block UI)
         if (productId != null && productImages.isNotEmpty) {

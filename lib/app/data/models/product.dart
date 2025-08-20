@@ -97,35 +97,31 @@ class Product {
     print('DEBUG: Parsing product JSON: $json'); // Debug log
     
     // Handle both old and new JSON structures
-    final productCategories = (json['categories'] as List?)
-        ?.map((item) => ProductCategory.fromJson(item))
-        .toList();
-    
-    final media = (json['media'] as List?)
-        ?.map((item) => ProductMedia.fromJson(item))
-        .toList();
-
-    // Extract category names for backward compatibility
+    final categoriesData = json['categories'] ?? json['Categories'];
+    List<ProductCategory>? productCategories;
     List<String> categories = [];
-    if (json['categoryNames'] != null) {
-      categories = List<String>.from(json['categoryNames']);
-    } else if (json['categories'] != null && json['categories'] is List) {
-      if (json['categories'].isNotEmpty && json['categories'][0] is String) {
-        categories = List<String>.from(json['categories']);
-      } else if (productCategories != null) {
-        categories = json['categoryNames'] as List<String>? ?? [];
-      }
+    
+    if (categoriesData is List) {
+      productCategories = categoriesData.map((item) => ProductCategory.fromJson(item)).toList();
+      // For now, use placeholder category names since CategoryNames is null in API
+      categories = productCategories.map((pc) => 'Category ${pc.catId}').toList();
     }
-
-    // Extract image URLs for backward compatibility
+    
+    final mediaData = json['media'] ?? json['Media'];
+    List<ProductMedia>? media;
     List<String> images = [];
-    if (json['images'] != null) {
-      images = List<String>.from(json['images']);
-    } else if (media != null) {
+    
+    if (mediaData is List) {
+      media = mediaData.map((item) => ProductMedia.fromJson(item)).toList();
       images = media
           .where((m) => m.mediaType == 'image')
           .map((m) => m.mediaUrl)
           .toList();
+    }
+
+    // Override with explicit categoryNames if provided
+    if (json['categoryNames'] != null) {
+      categories = List<String>.from(json['categoryNames']);
     }
 
     // Use Pascal case field names from API
@@ -272,11 +268,11 @@ class ProductCategory {
 
   factory ProductCategory.fromJson(Map<String, dynamic> json) {
     return ProductCategory(
-      pcBindId: json['pcBindId'],
-      productId: json['productId'],
-      catId: json['catId'],
-      isPrimary: json['isPrimary'] ?? false,
-      active: json['active'] ?? true,
+      pcBindId: json['pcBindId'] ?? json['PcBindId'],
+      productId: json['productId'] ?? json['ProductId'],
+      catId: json['catId'] ?? json['CatId'],
+      isPrimary: json['isPrimary'] ?? json['IsPrimary'] ?? false,
+      active: json['active'] ?? json['Active'] ?? true,
     );
   }
 
@@ -324,19 +320,19 @@ class ProductMedia {
 
   factory ProductMedia.fromJson(Map<String, dynamic> json) {
     return ProductMedia(
-      mediaId: json['mediaId'],
-      productId: json['productId'],
-      mediaType: json['mediaType'] ?? 'image',
-      mediaUrl: json['mediaUrl'] ?? '',
-      mediaOrder: json['mediaOrder'] ?? 0,
-      isPrimary: json['isPrimary'] ?? false,
-      altText: json['altText'],
-      s3Key: json['s3Key'],
-      fileSize: json['fileSize'],
-      mimeType: json['mimeType'],
-      durationSeconds: json['durationSeconds'],
-      thumbnailUrl: json['thumbnailUrl'],
-      createdAt: DateTime.parse(json['createdAt'] ?? DateTime.now().toIso8601String()),
+      mediaId: json['mediaId'] ?? json['MediaId'],
+      productId: json['productId'] ?? json['ProductId'],
+      mediaType: json['mediaType'] ?? json['MediaType'] ?? 'image',
+      mediaUrl: json['mediaUrl'] ?? json['MediaUrl'] ?? '',
+      mediaOrder: json['mediaOrder'] ?? json['MediaOrder'] ?? 0,
+      isPrimary: json['isPrimary'] ?? json['IsPrimary'] ?? false,
+      altText: json['altText'] ?? json['AltText'],
+      s3Key: json['s3Key'] ?? json['S3Key'],
+      fileSize: json['fileSize'] ?? json['FileSize'],
+      mimeType: json['mimeType'] ?? json['MimeType'],
+      durationSeconds: json['durationSeconds'] ?? json['DurationSeconds'],
+      thumbnailUrl: json['thumbnailUrl'] ?? json['ThumbnailUrl'],
+      createdAt: DateTime.parse(json['createdAt'] ?? json['CreatedAt'] ?? DateTime.now().toIso8601String()),
     );
   }
 

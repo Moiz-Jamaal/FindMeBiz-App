@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../../data/models/product.dart';
-import '../../../../core/constants/app_constants.dart';
 import '../../../../services/product_service.dart';
 import '../../../../services/auth_service.dart';
 import '../../../../services/category_service.dart';
-import '../../../../data/models/api/category_master.dart';
 
 class ProductsController extends GetxController {
   final ProductService _productService = ProductService.instance;
@@ -94,6 +92,9 @@ class ProductsController extends GetxController {
         } else {
           products.addAll(searchResponse.products);
         }
+        
+        // Fetch category names for products
+        await _loadCategoryNamesForProducts();
         
         totalPages.value = searchResponse.totalPages;
         hasMorePages.value = searchResponse.hasNextPage;
@@ -217,6 +218,47 @@ class ProductsController extends GetxController {
   void searchProducts(String query) {
     searchQuery.value = query;
     _updateFilteredProducts();
+  }
+
+  Future<void> _loadCategoryNamesForProducts() async {
+    try {
+      // Get all unique category IDs from products
+      final categoryIds = <int>{};
+      for (final product in products) {
+        if (product.productCategories != null) {
+          categoryIds.addAll(product.productCategories!.map((pc) => pc.catId));
+        }
+      }
+      
+      if (categoryIds.isEmpty) return;
+      
+      // Fetch all categories to get names
+      final response = await _categoryService.getCategories();
+      if (response.isSuccess && response.data != null) {
+        final categoryMap = <int, String>{};
+        for (final category in response.data!) {
+          categoryMap[category.catid!] = category.catname;
+        }
+        
+        // Update products with category names
+        for (int i = 0; i < products.length; i++) {
+          if (products[i].productCategories != null) {
+            final categoryNames = products[i].productCategories!
+                .map((pc) => categoryMap[pc.catId] ?? 'Category ${pc.catId}')
+                .toList();
+            
+            products[i] = products[i].copyWith(
+              categories: categoryNames,
+              categoryNames: categoryNames,
+            );
+          }
+        }
+        
+        print('DEBUG: Updated ${products.length} products with category names'); // Debug log
+      }
+    } catch (e) {
+      print('DEBUG: Error loading category names: $e'); // Debug log
+    }
   }
 
   void _updateFilteredProducts() {
