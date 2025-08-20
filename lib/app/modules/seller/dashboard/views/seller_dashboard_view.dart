@@ -4,9 +4,10 @@ import 'package:get/get.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../controllers/seller_dashboard_controller.dart';
-import '../../products/views/products_view.dart';
+import '../../products/widgets/products_sliver_widget.dart';
 import '../../../shared/widgets/module_switcher.dart';
 import '../../../../core/widgets/app_logo.dart';
+import '../../products/views/products_view.dart';
 
 class SellerDashboardView extends GetView<SellerDashboardController> {
   const SellerDashboardView({super.key});
@@ -88,7 +89,19 @@ class SellerDashboardView extends GetView<SellerDashboardController> {
           _buildDashboardAppBar(),
           _buildProfileStatusCard(),
           _buildStatsCards(),
-          _buildProductsSection(),
+          _buildQuickActions(),
+          _buildProductsSectionHeader(),
+          const ProductsCategoryFilterSliver(),
+          SliverPadding(
+            padding: const EdgeInsets.all(AppConstants.defaultPadding),
+            sliver: ProductsSliverWidget(
+              isEmbedded: true,
+              maxItems: 6,
+              onViewAllPressed: () => Get.to(() => const ProductsView()),
+            ),
+          ),
+          _buildViewAllProductsButton(),
+          _buildBottomSpacing(),
         ],
       ),
     );
@@ -264,14 +277,23 @@ class SellerDashboardView extends GetView<SellerDashboardController> {
 
   Widget _buildStatCard(String title, RxInt value, IconData icon) {
     return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            Icon(
-              icon,
-              size: 24,
-              color: AppTheme.sellerPrimary,
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppTheme.sellerPrimary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                icon,
+                size: 24,
+                color: AppTheme.sellerPrimary,
+              ),
             ),
             const SizedBox(height: 8),
             Obx(() => Text(
@@ -293,45 +315,149 @@ class SellerDashboardView extends GetView<SellerDashboardController> {
     );
   }
 
-  Widget _buildProductsSection() {
+  Widget _buildQuickActions() {
     return SliverToBoxAdapter(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: 24),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppConstants.defaultPadding),
-            child: Row(
+      child: Container(
+        margin: const EdgeInsets.all(AppConstants.defaultPadding),
+        child: Card(
+          elevation: 2,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: Text(
-                    'My Products',
-                    style: Get.textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.textPrimary,
-                    ),
+                Text(
+                  'Quick Actions',
+                  style: Get.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.textPrimary,
                   ),
                 ),
-                TextButton.icon(
-                  onPressed: controller.addProduct,
-                  icon: const Icon(Icons.add),
-                  label: const Text('Add Product'),
-                  style: TextButton.styleFrom(
-                    foregroundColor: AppTheme.sellerPrimary,
-                  ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildQuickActionButton(
+                        'Add Product',
+                        Icons.add_box,
+                        controller.addProduct,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _buildQuickActionButton(
+                        'Edit Profile',
+                        Icons.edit,
+                        controller.editProfile,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _buildQuickActionButton(
+                        'View Products',
+                        Icons.visibility,
+                        () => Get.to(() => const ProductsView()),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 16),
-          // Embed the ProductsView content here
-          SizedBox(
-            height: 600, // Fixed height for the products section
-            child: const ProductsView(),
-          ),
-          const SizedBox(height: 20),
-        ],
+        ),
       ),
+    );
+  }
+
+  Widget _buildQuickActionButton(String label, IconData icon, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+        decoration: BoxDecoration(
+          border: Border.all(color: AppTheme.borderColor),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Column(
+          children: [
+            Icon(
+              icon,
+              color: AppTheme.sellerPrimary,
+              size: 20,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: Get.textTheme.bodySmall?.copyWith(
+                color: AppTheme.textSecondary,
+                fontWeight: FontWeight.w500,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProductsSectionHeader() {
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(
+          AppConstants.defaultPadding, 
+          24, 
+          AppConstants.defaultPadding, 
+          8
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                'My Products',
+                style: Get.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.textPrimary,
+                ),
+              ),
+            ),
+            Text(
+              'Recent 6 items',
+              style: Get.textTheme.bodySmall?.copyWith(
+                color: AppTheme.textSecondary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildViewAllProductsButton() {
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: AppConstants.defaultPadding),
+        child: OutlinedButton.icon(
+          onPressed: () => Get.to(() => const ProductsView()),
+          icon: const Icon(Icons.arrow_forward),
+          label: const Text('View All Products'),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: AppTheme.sellerPrimary,
+            side: BorderSide(color: AppTheme.sellerPrimary),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+            padding: const EdgeInsets.symmetric(vertical: 12),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBottomSpacing() {
+    return const SliverToBoxAdapter(
+      child: SizedBox(height: 80), // Space for floating action button
     );
   }
 }
