@@ -33,42 +33,73 @@ class ProductsView extends GetView<ProductsController> {
       padding: const EdgeInsets.all(AppConstants.defaultPadding),
       child: SafeArea(
         bottom: false,
-        child: Row(
+        child: Column(
           children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'My Products',
-                    style: Get.textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  _buildProductCount(),
-                ],
-              ),
-            ),
             Row(
               children: [
-                IconButton(
-                  onPressed: () {
-                    // Toggle view mode (grid/list)
-                  },
-                  icon: const Icon(Icons.grid_view),
-                  color: AppTheme.sellerPrimary,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'My Products',
+                        style: Get.textTheme.headlineMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      _buildProductCount(),
+                    ],
+                  ),
                 ),
-                IconButton(
-                  onPressed: controller.refreshProducts,
-                  icon: const Icon(Icons.refresh),
-                  color: AppTheme.textSecondary,
+                Row(
+                  children: [
+                    IconButton(
+                      onPressed: () {
+                        // Toggle view mode (grid/list)
+                      },
+                      icon: const Icon(Icons.grid_view),
+                      color: AppTheme.sellerPrimary,
+                    ),
+                    IconButton(
+                      onPressed: controller.refreshProducts,
+                      icon: const Icon(Icons.refresh),
+                      color: AppTheme.textSecondary,
+                    ),
+                  ],
                 ),
               ],
             ),
+            const SizedBox(height: 16),
+            _buildSearchBar(),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildSearchBar() {
+    return TextField(
+      onChanged: controller.searchProducts,
+      decoration: InputDecoration(
+        hintText: 'Search products...',
+        prefixIcon: Icon(Icons.search, color: AppTheme.textHint),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: AppTheme.borderColor),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: AppTheme.borderColor),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: AppTheme.sellerPrimary, width: 2),
+        ),
+        filled: true,
+        fillColor: AppTheme.backgroundColor,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       ),
     );
   }
@@ -158,32 +189,53 @@ class ProductsView extends GetView<ProductsController> {
       builder: (_) {
         final products = controller.filteredProducts;
 
-        if (products.isEmpty) {
+        if (products.isEmpty && !controller.isLoading.value) {
           return _buildEmptyState();
         }
 
         return RefreshIndicator(
           onRefresh: () async => controller.refreshProducts(),
-          child: GridView.builder(
-            padding: const EdgeInsets.all(AppConstants.defaultPadding),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              childAspectRatio: 0.75,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-            ),
-            itemCount: products.length,
-            itemBuilder: (context, index) {
-              final product = products[index];
-              
-              return ProductCard(
-                product: product,
-                onTap: () => controller.viewProduct(product),
-                onEdit: () => controller.editProduct(product),
-                onDelete: () => controller.deleteProduct(product),
-                isGridView: true,
-              );
+          child: NotificationListener<ScrollNotification>(
+            onNotification: (ScrollNotification scrollInfo) {
+              if (scrollInfo.metrics.pixels == scrollInfo.metrics.maxScrollExtent) {
+                // Load more products when reaching the bottom
+                if (controller.hasMorePages.value && !controller.isLoading.value) {
+                  controller.loadMoreProducts();
+                }
+              }
+              return false;
             },
+            child: GridView.builder(
+              padding: const EdgeInsets.all(AppConstants.defaultPadding),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                childAspectRatio: 0.75,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+              ),
+              itemCount: products.length + (controller.hasMorePages.value ? 1 : 0),
+              itemBuilder: (context, index) {
+                if (index == products.length) {
+                  // Loading indicator for pagination
+                  return const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(16.0),
+                      child: CircularProgressIndicator(),
+                    ),
+                  );
+                }
+                
+                final product = products[index];
+                
+                return ProductCard(
+                  product: product,
+                  onTap: () => controller.viewProduct(product),
+                  onEdit: () => controller.editProduct(product),
+                  onDelete: () => controller.deleteProduct(product),
+                  isGridView: true,
+                );
+              },
+            ),
           ),
         );
       },

@@ -148,15 +148,17 @@ class EditProductView extends GetView<EditProductController> {
             
             // Category
             Obx(() => DropdownButtonFormField<String>(
-              value: controller.selectedCategory.value,
+              value: controller.selectedCategory.value.isNotEmpty 
+                  ? controller.selectedCategory.value 
+                  : null,
               decoration: const InputDecoration(
                 labelText: 'Category *',
                 hintText: 'Select category',
               ),
-              items: AppConstants.productCategories.map((category) {
+              items: controller.availableCategories.map((categoryOption) {
                 return DropdownMenuItem(
-                  value: category,
-                  child: Text(category),
+                  value: categoryOption.name,
+                  child: Text(categoryOption.name),
                 );
               }).toList(),
               onChanged: (value) {

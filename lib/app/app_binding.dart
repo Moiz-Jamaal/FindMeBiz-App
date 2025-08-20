@@ -6,6 +6,7 @@ import 'services/seller_service.dart';
 import 'services/category_service.dart';
 import 'services/subscription_service.dart';
 import 'services/role_service.dart';
+import 'services/product_service.dart';
 
 class AppBinding extends Bindings {
   @override
@@ -22,6 +23,7 @@ class AppBinding extends Bindings {
     Get.put<SellerService>(SellerService(), permanent: true);
     Get.put<CategoryService>(CategoryService(), permanent: true);
     Get.put<SubscriptionService>(SubscriptionService(), permanent: true);
+    Get.put<ProductService>(ProductService.instance, permanent: true);
   }
 }
 

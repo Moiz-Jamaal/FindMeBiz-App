@@ -182,7 +182,7 @@ class BuyerProductView extends GetView<BuyerProductViewController> {
               const SizedBox(height: 16),
               
               // Description
-              if (product.description.isNotEmpty) ...[
+              if (product.description?.isNotEmpty == true) ...[
                 Text(
                   'Description',
                   style: Get.textTheme.titleMedium?.copyWith(
@@ -191,7 +191,7 @@ class BuyerProductView extends GetView<BuyerProductViewController> {
                 ),
                 const SizedBox(height: 8),
                 Obx(() => Text(
-                  product.description,
+                  product.description ?? '',
                   style: Get.textTheme.bodyMedium?.copyWith(
                     color: AppTheme.textSecondary,
                     height: 1.5,
@@ -201,7 +201,7 @@ class BuyerProductView extends GetView<BuyerProductViewController> {
                       ? null 
                       : TextOverflow.ellipsis,
                 )),
-                if (product.description.length > 150)
+                if ((product.description?.length ?? 0) > 150)
                   TextButton(
                     onPressed: controller.toggleDescription,
                     child: Obx(() => Text(

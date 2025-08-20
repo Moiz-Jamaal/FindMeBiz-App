@@ -139,7 +139,7 @@ class SearchController extends GetxController {
     
     for (final product in mockProducts) {
       if (_matchesQuery(product.name, query) ||
-          _matchesQuery(product.description, query) ||
+          _matchesQuery(product.description ?? '', query) ||
           (product.categories.isNotEmpty && _matchesQuery(product.categories.first, query))) {
         productResults.add(product);
       }

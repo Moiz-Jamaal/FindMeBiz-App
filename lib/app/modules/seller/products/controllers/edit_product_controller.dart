@@ -2,8 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../../data/models/product.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../services/category_service.dart';
+import '../../../../data/models/api/category_master.dart';
 
 class EditProductController extends GetxController {
+  final CategoryService _categoryService = Get.find<CategoryService>();
+  
   // Form controllers
   final nameController = TextEditingController();
   final descriptionController = TextEditingController();
@@ -18,6 +22,9 @@ class EditProductController extends GetxController {
   final RxList<String> productImages = <String>[].obs;
   final RxBool isAvailable = true.obs;
   
+  // Categories
+  final RxList<CategoryOption> availableCategories = <CategoryOption>[].obs;
+  
   // UI state
   final RxBool isLoading = false.obs;
   final RxBool hasChanges = false.obs;
@@ -25,6 +32,7 @@ class EditProductController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    _loadCategories();
     _loadProductData();
     _setupListeners();
   }
@@ -35,6 +43,29 @@ class EditProductController extends GetxController {
     descriptionController.dispose();
     priceController.dispose();
     super.onClose();
+  }
+
+  Future<void> _loadCategories() async {
+    try {
+      final response = await _categoryService.getCategories();
+      
+      if (response.isSuccess && response.data != null) {
+        availableCategories.assignAll(
+          response.data!.map((cat) => CategoryOption(
+            id: cat.catid.toString(),
+            name: cat.catname,
+          )).toList()
+        );
+      }
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        'Failed to load categories: $e',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    }
   }
 
   void _loadProductData() {
@@ -51,7 +82,7 @@ class EditProductController extends GetxController {
 
   void _populateFields(Product product) {
     nameController.text = product.name;
-    descriptionController.text = product.description;
+    descriptionController.text = product.description ?? '';
     priceController.text = product.price?.toString() ?? '';
     selectedCategory.value = product.categories.isNotEmpty ? product.categories.first : '';
     productImages.addAll(product.images);
@@ -229,4 +260,11 @@ class EditProductController extends GetxController {
       ),
     );
   }
+}
+
+class CategoryOption {
+  final String id;
+  final String name;
+
+  CategoryOption({required this.id, required this.name});
 }

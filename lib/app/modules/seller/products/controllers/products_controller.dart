@@ -2,8 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../../data/models/product.dart';
 import '../../../../core/constants/app_constants.dart';
+import '../../../../services/product_service.dart';
+import '../../../../services/auth_service.dart';
+import '../../../../services/category_service.dart';
+import '../../../../data/models/api/category_master.dart';
 
 class ProductsController extends GetxController {
+  final ProductService _productService = ProductService.instance;
+  final AuthService _authService = Get.find<AuthService>();
+  final CategoryService _categoryService = Get.find<CategoryService>();
+  
   // Products list
   final RxList<Product> products = <Product>[].obs;
   final RxList<Product> filteredProducts = <Product>[].obs;
@@ -12,38 +20,108 @@ class ProductsController extends GetxController {
   final RxBool isLoading = false.obs;
   final RxBool isRefreshing = false.obs;
   final RxString selectedCategory = 'All'.obs;
+  final RxString searchQuery = ''.obs;
   
-  // Categories filter
-  final List<String> categories = ['All', ...AppConstants.productCategories];
+  // Pagination
+  final RxInt currentPage = 1.obs;
+  final RxInt totalPages = 1.obs;
+  final RxBool hasMorePages = false.obs;
+  final int pageSize = 20;
+  
+  // Categories filter - dynamic categories
+  final RxList<String> categories = <String>['All'].obs;
 
   @override
   void onInit() {
     super.onInit();
+    _loadCategories();
     loadProducts();
   }
 
-  void loadProducts() {
-    isLoading.value = true;
-    
-    // Simulate API call with mock data
-    Future.delayed(const Duration(seconds: 1), () {
-      products.addAll(_getMockProducts());
-      _updateFilteredProducts();
-      isLoading.value = false;
-    });
+  Future<void> _loadCategories() async {
+    try {
+      final response = await _categoryService.getCategories();
+      
+      if (response.isSuccess && response.data != null) {
+        final categoryNames = response.data!.map((cat) => cat.catname).toList();
+        categories.assignAll(['All', ...categoryNames]);
+      }
+    } catch (e) {
+      // Fallback to static categories if API fails
+      categories.assignAll(['All', 'Apparel', 'Jewelry', 'Food & Beverages', 'Art & Crafts', 'Home Decor', 'Electronics', 'Books & Stationery', 'Beauty & Personal Care', 'Others']);
+    }
   }
 
-  void refreshProducts() {
-    isRefreshing.value = true;
+  Future<void> loadProducts({bool refresh = false}) async {
+    if (refresh) {
+      currentPage.value = 1;
+      products.clear();
+      filteredProducts.clear();
+    }
     
-    Future.delayed(const Duration(seconds: 1), () {
-      // Simulate refresh
-      isRefreshing.value = false;
-    });
+    isLoading.value = true;
+    
+    try {
+      // Get current seller ID from auth service
+      final sellerId = _authService.currentSeller?.sellerId;
+      if (sellerId == null) {
+        Get.snackbar('Error', 'Seller not found. Please login again.');
+        return;
+      }
+
+      final response = await _productService.getProductsBySeller(
+        sellerId,
+        page: currentPage.value,
+        pageSize: pageSize,
+        sortBy: 'createdat',
+        sortOrder: 'desc',
+      );
+
+      if (response.isSuccess && response.data != null) {
+        final searchResponse = response.data!;
+        
+        if (refresh) {
+          products.assignAll(searchResponse.products);
+        } else {
+          products.addAll(searchResponse.products);
+        }
+        
+        totalPages.value = searchResponse.totalPages;
+        hasMorePages.value = searchResponse.hasNextPage;
+        
+        _updateFilteredProducts();
+        
+        _showSuccessMessage('Products loaded successfully', showSnackbar: false);
+      } else {
+        _showErrorMessage(response.errorMessage ?? 'Failed to load products');
+      }
+    } catch (e) {
+      _showErrorMessage('Error loading products: $e');
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  Future<void> refreshProducts() async {
+    isRefreshing.value = true;
+    await loadProducts(refresh: true);
+    isRefreshing.value = false;
+  }
+
+  Future<void> loadMoreProducts() async {
+    if (!hasMorePages.value || isLoading.value) return;
+    
+    currentPage.value++;
+    await loadProducts();
   }
 
   void addProduct() {
-    Get.toNamed('/seller-add-product');
+    Get.toNamed('/seller-add-product')?.then((result) async {
+      if (result != null) {
+        // If a product was created, refresh the list from page 1
+        await refreshProducts();
+      }
+    });
   }
 
   void editProduct(Product product) {
@@ -80,25 +158,42 @@ class ProductsController extends GetxController {
     });
   }
 
-  void deleteProduct(Product product) {
-    Get.dialog(
+  Future<void> deleteProduct(Product product) async {
+    final confirmed = await Get.dialog<bool>(
       GetxAlert(
         title: 'Delete Product',
         content: 'Are you sure you want to delete "${product.name}"?',
         confirmText: 'Delete',
         cancelText: 'Cancel',
-        onConfirm: () {
-          products.remove(product);
-          _updateFilteredProducts();
-          Get.back();
-          Get.snackbar(
-            'Success',
-            'Product deleted successfully',
-            snackPosition: SnackPosition.BOTTOM,
-          );
-        },
+        onConfirm: () => Get.back(result: true),
       ),
     );
+
+    if (confirmed == true) {
+      try {
+        isLoading.value = true;
+        
+        final productId = int.tryParse(product.id);
+        if (productId == null) {
+          _showErrorMessage('Invalid product ID');
+          return;
+        }
+
+        final response = await _productService.deleteProduct(productId);
+        
+        if (response.isSuccess) {
+          products.remove(product);
+          _updateFilteredProducts();
+          _showSuccessMessage('Product deleted successfully');
+        } else {
+          _showErrorMessage(response.errorMessage ?? 'Failed to delete product');
+        }
+      } catch (e) {
+        _showErrorMessage('Error deleting product: $e');
+      } finally {
+        isLoading.value = false;
+      }
+    }
   }
 
   void filterByCategory(String category) {
@@ -106,86 +201,80 @@ class ProductsController extends GetxController {
     _updateFilteredProducts();
   }
 
+  void searchProducts(String query) {
+    searchQuery.value = query;
+    _updateFilteredProducts();
+  }
+
   void _updateFilteredProducts() {
-    if (selectedCategory.value == 'All') {
-      filteredProducts.assignAll(products);
-    } else {
-      filteredProducts.assignAll(
-        products.where((product) => product.categories.contains(selectedCategory.value)).toList()
-      );
+    var filtered = List<Product>.from(products);
+    
+    // Filter by category
+    if (selectedCategory.value != 'All') {
+      filtered = filtered.where((product) => 
+        product.categories.contains(selectedCategory.value)).toList();
     }
+    
+    // Filter by search query
+    if (searchQuery.value.isNotEmpty) {
+      final query = searchQuery.value.toLowerCase();
+      filtered = filtered.where((product) =>
+        product.name.toLowerCase().contains(query) ||
+        (product.description?.toLowerCase().contains(query) ?? false)
+      ).toList();
+    }
+    
+    filteredProducts.assignAll(filtered);
     update(['products_list']);
   }
 
-  // Mock data for development
-  List<Product> _getMockProducts() {
-    return [
-      Product(
-        id: '1',
-        sellerId: 'seller1',
-        name: 'Beautiful Silk Saree',
-        description: 'Traditional Surat silk saree with intricate designs. Perfect for special occasions.',
-        price: 2500.0,
-        categories: ['Apparel'],
-        images: [
-          'https://via.placeholder.com/300x300/FF6B35/FFFFFF?text=Silk+Saree',
-        ],
-        createdAt: DateTime.now().subtract(const Duration(days: 2)),
-        updatedAt: DateTime.now().subtract(const Duration(days: 1)),
-      ),
-      Product(
-        id: '2',
-        sellerId: 'seller1',
-        name: 'Handcrafted Jewelry Set',
-        description: 'Elegant gold-plated jewelry set with matching earrings and necklace.',
-        price: 1800.0,
-        categories: ['Jewelry'],
-        images: [
-          'https://via.placeholder.com/300x300/4CAF50/FFFFFF?text=Jewelry+Set',
-        ],
-        createdAt: DateTime.now().subtract(const Duration(days: 5)),
-        updatedAt: DateTime.now().subtract(const Duration(days: 3)),
-      ),
-      Product(
-        id: '3',
-        sellerId: 'seller1',
-        name: 'Gujarati Thali Special',
-        description: 'Authentic Gujarati thali with 12 varieties of traditional dishes.',
-        price: 350.0,
-        categories: ['Food & Beverages'],
-        images: [
-          'https://via.placeholder.com/300x300/2196F3/FFFFFF?text=Gujarati+Thali',
-        ],
-        createdAt: DateTime.now().subtract(const Duration(days: 1)),
-        updatedAt: DateTime.now(),
-      ),
-      Product(
-        id: '4',
-        sellerId: 'seller1',
-        name: 'Handwoven Wall Art',
-        description: 'Beautiful handwoven wall hanging with traditional patterns.',
-        price: 1200.0,
-        categories: ['Art & Crafts'],
-        images: [
-          'https://via.placeholder.com/300x300/9C27B0/FFFFFF?text=Wall+Art',
-        ],
-        createdAt: DateTime.now().subtract(const Duration(days: 7)),
-        updatedAt: DateTime.now().subtract(const Duration(days: 4)),
-      ),
-      Product(
-        id: '5',
-        sellerId: 'seller1',
-        name: 'Decorative Brass Items',
-        description: 'Set of 3 decorative brass items for home decoration.',
-        price: 800.0,
-        categories: ['Home Decor'],
-        images: [
-          'https://via.placeholder.com/300x300/FF9800/FFFFFF?text=Brass+Items',
-        ],
-        createdAt: DateTime.now().subtract(const Duration(days: 3)),
-        updatedAt: DateTime.now().subtract(const Duration(days: 2)),
-      ),
-    ];
+  void _showSuccessMessage(String message, {bool showSnackbar = true}) {
+    if (showSnackbar) {
+      Get.snackbar(
+        'Success',
+        message,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+      );
+    }
+  }
+
+  void _showErrorMessage(String message) {
+    Get.snackbar(
+      'Error',
+      message,
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: Colors.red,
+      colorText: Colors.white,
+    );
+  }
+
+  // Utility methods for UI
+  String getProductImageUrl(Product product) {
+    if (product.images.isNotEmpty) {
+      return product.images.first;
+    }
+    return 'https://via.placeholder.com/300x300/E0E0E0/FFFFFF?text=No+Image';
+  }
+
+  String formatPrice(Product product) {
+    if (product.customAttributes.containsKey('priceOnInquiry') && 
+        product.customAttributes['priceOnInquiry'] == true) {
+      return 'Price on Inquiry';
+    }
+    if (product.price != null) {
+      return '₹${product.price!.toStringAsFixed(0)}';
+    }
+    return 'Price not set';
+  }
+
+  Color getAvailabilityColor(Product product) {
+    return product.isAvailable ? Colors.green : Colors.red;
+  }
+
+  String getAvailabilityText(Product product) {
+    return product.isAvailable ? 'Available' : 'Unavailable';
   }
 }
 

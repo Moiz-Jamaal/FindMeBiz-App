@@ -20,7 +20,7 @@ class ApiConfig {
   static String get fullApiUrl => baseUrl + apiPath;
   
   // Request timeout duration
-  static const Duration requestTimeout = Duration(seconds: 30);
+  static const Duration requestTimeout = Duration(seconds: 45);
   
   // Enable/disable API logging for debugging
   static const bool enableLogging = true;

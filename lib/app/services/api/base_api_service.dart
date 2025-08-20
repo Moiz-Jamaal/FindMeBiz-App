@@ -5,12 +5,22 @@ import 'api_client.dart';
 import 'api_exception.dart';
 
 abstract class BaseApiService extends GetxService {
-  late final ApiClient _apiClient;
+  ApiClient? _apiClient;
+
+  ApiClient get apiClient {
+    _apiClient ??= Get.find<ApiClient>();
+    return _apiClient!;
+  }
 
   @override
   void onInit() {
     super.onInit();
-    _apiClient = Get.find<ApiClient>();
+    try {
+      _apiClient = Get.find<ApiClient>();
+      print('✅ ApiClient initialized successfully');
+    } catch (e) {
+      print('❌ Failed to initialize ApiClient: $e');
+    }
   }
 
   // Handle HTTP response and convert to ApiResponse
@@ -105,7 +115,7 @@ abstract class BaseApiService extends GetxService {
     T Function(dynamic json)? fromJson,
   }) async {
     try {
-      final response = await _apiClient.get(endpoint, queryParams: queryParams);
+      final response = await apiClient.get(endpoint, queryParams: queryParams);
       return _handleResponse(response, fromJson);
     } catch (e) {
       return ApiResponse.error('Network error: $e');
@@ -118,7 +128,7 @@ abstract class BaseApiService extends GetxService {
     required T Function(dynamic json) fromJson,
   }) async {
     try {
-      final response = await _apiClient.get(endpoint, queryParams: queryParams);
+      final response = await apiClient.get(endpoint, queryParams: queryParams);
       return _handleListResponse(response, fromJson);
     } catch (e) {
       return ApiResponse.error('Network error: $e');
@@ -132,9 +142,12 @@ abstract class BaseApiService extends GetxService {
     T Function(dynamic json)? fromJson,
   }) async {
     try {
-      final response = await _apiClient.post(endpoint, body: body, queryParams: queryParams);
+      print('🚀 POST Request starting: $endpoint');
+      final response = await apiClient.post(endpoint, body: body, queryParams: queryParams);
+      print('✅ POST Response received: ${response.statusCode}');
       return _handleResponse(response, fromJson);
     } catch (e) {
+      print('❌ POST Request failed: $e');
       return ApiResponse.error('Network error: $e');
     }
   }
@@ -146,7 +159,7 @@ abstract class BaseApiService extends GetxService {
     T Function(dynamic json)? fromJson,
   }) async {
     try {
-      final response = await _apiClient.put(endpoint, body: body, queryParams: queryParams);
+      final response = await apiClient.put(endpoint, body: body, queryParams: queryParams);
       return _handleResponse(response, fromJson);
     } catch (e) {
       return ApiResponse.error('Network error: $e');
@@ -158,7 +171,7 @@ abstract class BaseApiService extends GetxService {
     Map<String, String>? queryParams,
   }) async {
     try {
-      final response = await _apiClient.delete(endpoint, queryParams: queryParams);
+      final response = await apiClient.delete(endpoint, queryParams: queryParams);
       return _handleResponse<void>(response, null);
     } catch (e) {
       return ApiResponse.error('Network error: $e');

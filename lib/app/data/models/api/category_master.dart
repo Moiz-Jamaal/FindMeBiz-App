@@ -13,10 +13,10 @@ class CategoryMaster {
 
   factory CategoryMaster.fromJson(Map<String, dynamic> json) {
     return CategoryMaster(
-      catid: json['CatId'] as int?,
-      catname: json['CatName'] as String,
-      parentcat: json['ParentCat'] as int?,
-      active: json['Active'] as bool? ?? true,
+      catid: json['catId'] ?? json['CatId'] as int?,
+      catname: json['catName'] ?? json['CatName'] as String,
+      parentcat: json['parentCat'] ?? json['ParentCat'] as int?,
+      active: json['active'] ?? json['Active'] as bool? ?? true,
     );
   }
 

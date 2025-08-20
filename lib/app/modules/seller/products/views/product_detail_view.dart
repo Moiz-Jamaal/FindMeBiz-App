@@ -192,7 +192,7 @@ class ProductDetailView extends GetView<ProductDetailController> {
             ],
             
             // Description
-            if (product.description.isNotEmpty) ...[
+            if (product.description?.isNotEmpty == true) ...[
               Text(
                 'Description',
                 style: Get.textTheme.titleMedium?.copyWith(
@@ -201,7 +201,7 @@ class ProductDetailView extends GetView<ProductDetailController> {
               ),
               const SizedBox(height: 8),
               Text(
-                product.description,
+                product.description ?? '',
                 style: Get.textTheme.bodyMedium,
               ),
               const SizedBox(height: 16),

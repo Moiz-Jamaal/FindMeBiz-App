@@ -28,6 +28,10 @@ class ApiResponse<T> {
     this.statusCode,
   });
 
+  // Getter for backward compatibility
+  bool get isSuccess => success;
+  String? get errorMessage => success ? null : message;
+
   factory ApiResponse.success(T data, {int? statusCode}) {
     return ApiResponse<T>(
       success: true,

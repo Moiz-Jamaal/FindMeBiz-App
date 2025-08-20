@@ -22,7 +22,9 @@ class ApiClient extends GetxService {
     final uri = _buildUri(endpoint, queryParams);
     
     try {
-      final response = await _httpClient.get(uri, headers: _headers);
+    final response = await _httpClient
+      .get(uri, headers: _headers)
+      .timeout(ApiConfig.requestTimeout);
       _logRequest('GET', uri.toString(), null, response);
       return response;
     } catch (e) {
@@ -37,7 +39,9 @@ class ApiClient extends GetxService {
     final jsonBody = body != null ? jsonEncode(body) : null;
     
     try {
-      final response = await _httpClient.post(uri, headers: _headers, body: jsonBody);
+    final response = await _httpClient
+      .post(uri, headers: _headers, body: jsonBody)
+      .timeout(ApiConfig.requestTimeout);
       _logRequest('POST', uri.toString(), jsonBody, response);
       return response;
     } catch (e) {
@@ -52,7 +56,9 @@ class ApiClient extends GetxService {
     final jsonBody = body != null ? jsonEncode(body) : null;
     
     try {
-      final response = await _httpClient.put(uri, headers: _headers, body: jsonBody);
+    final response = await _httpClient
+      .put(uri, headers: _headers, body: jsonBody)
+      .timeout(ApiConfig.requestTimeout);
       _logRequest('PUT', uri.toString(), jsonBody, response);
       return response;
     } catch (e) {
@@ -66,7 +72,9 @@ class ApiClient extends GetxService {
     final uri = _buildUri(endpoint, queryParams);
     
     try {
-      final response = await _httpClient.delete(uri, headers: _headers);
+    final response = await _httpClient
+      .delete(uri, headers: _headers)
+      .timeout(ApiConfig.requestTimeout);
       _logRequest('DELETE', uri.toString(), null, response);
       return response;
     } catch (e) {

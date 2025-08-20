@@ -39,6 +39,9 @@ class SellerDetails {
     this.publishedat,
   });
 
+  // Getter for backward compatibility
+  int? get sellerId => sellerid;
+
   factory SellerDetails.fromJson(Map<String, dynamic> json) {
     return SellerDetails(
       sellerid: json['SellerId'] as int?,

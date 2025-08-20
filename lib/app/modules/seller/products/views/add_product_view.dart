@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'dart:convert';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../controllers/add_product_controller.dart';
@@ -124,6 +125,7 @@ class AddProductView extends GetView<AddProductController> {
               ),
               maxLength: AppConstants.maxProductNameLength,
               textCapitalization: TextCapitalization.words,
+              onChanged: (_) => controller.notifyValidationChanged(),
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
                   return 'Product name is required';
@@ -143,10 +145,10 @@ class AddProductView extends GetView<AddProductController> {
                 labelText: 'Category *',
                 prefixIcon: Icon(Icons.category_outlined),
               ),
-              items: AppConstants.productCategories.map((category) {
+              items: controller.availableCategories.map((categoryOption) {
                 return DropdownMenuItem<String>(
-                  value: category,
-                  child: Text(category),
+                  value: categoryOption.name,
+                  child: Text(categoryOption.name),
                 );
               }).toList(),
               onChanged: controller.updateCategory,
@@ -157,23 +159,6 @@ class AddProductView extends GetView<AddProductController> {
                 return null;
               },
             )),
-            
-            const SizedBox(height: 16),
-            
-            // Price (Optional)
-            TextFormField(
-              controller: controller.priceController,
-              decoration: InputDecoration(
-                labelText: 'Price (${AppConstants.currency})',
-                hintText: 'Enter price (optional)',
-                prefixIcon: const Icon(Icons.currency_rupee),
-                helperText: 'Leave empty if price varies or negotiable',
-              ),
-              keyboardType: TextInputType.numberWithOptions(decimal: true),
-              inputFormatters: [
-                FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
-              ],
-            ),
             
             const SizedBox(height: 24),
             
@@ -228,12 +213,73 @@ class AddProductView extends GetView<AddProductController> {
             maxLines: 6,
             maxLength: AppConstants.maxProductDescriptionLength,
             textCapitalization: TextCapitalization.sentences,
+            onChanged: (_) => controller.notifyValidationChanged(),
             validator: (value) {
               if (value == null || value.trim().isEmpty) {
                 return 'Product description is required';
               }
               return null;
             },
+          ),
+          
+          const SizedBox(height: 24),
+          
+          // Price Section
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Pricing',
+                    style: Get.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  // Price on Inquiry Toggle
+                  Obx(() => SwitchListTile(
+                    title: const Text('Price on Inquiry'),
+                    subtitle: const Text('Let buyers contact you for pricing'),
+                    value: controller.priceOnInquiry.value,
+                    onChanged: (_) => controller.togglePriceOnInquiry(),
+                    contentPadding: EdgeInsets.zero,
+                  )),
+                  
+                  // Price Field (only shown if not price on inquiry)
+                  Obx(() => controller.priceOnInquiry.value 
+                    ? const SizedBox.shrink()
+                    : Column(
+                        children: [
+                          const SizedBox(height: 16),
+                          TextFormField(
+                            controller: controller.priceController,
+                            decoration: InputDecoration(
+                              labelText: 'Price (${AppConstants.currency})',
+                              hintText: 'Enter product price',
+                              prefixIcon: const Icon(Icons.currency_rupee),
+                            ),
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            inputFormatters: [
+                              FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
+                            ],
+                            onChanged: (_) => controller.notifyValidationChanged(),
+                            validator: (value) {
+                              if (!controller.priceOnInquiry.value && 
+                                  (value == null || value.trim().isEmpty || double.tryParse(value) == null)) {
+                                return 'Please enter a valid price or enable "Price on Inquiry"';
+                              }
+                              return null;
+                            },
+                          ),
+                        ],
+                      ),
+                  ),
+                ],
+              ),
+            ),
           ),
           
           const SizedBox(height: 24),
@@ -414,21 +460,28 @@ class AddProductView extends GetView<AddProductController> {
   }
 
   Widget _buildImageItem(int index) {
+    final img = controller.productImages[index];
     return Stack(
       children: [
-        Container(
-          width: double.infinity,
-          height: double.infinity,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(8),
-            color: Colors.grey.shade200,
-            border: Border.all(color: Colors.grey.shade300),
-          ),
-          child: const Center(
-            child: Icon(
-              Icons.image,
-              size: 32,
-              color: AppTheme.textHint,
+        ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: Container(
+            width: double.infinity,
+            height: double.infinity,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade200,
+              border: Border.all(color: Colors.grey.shade300),
+            ),
+            child: Image.memory(
+              base64Decode(img.base64Content),
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => const Center(
+                child: Icon(
+                  Icons.broken_image,
+                  size: 32,
+                  color: AppTheme.textHint,
+                ),
+              ),
             ),
           ),
         ),
@@ -486,18 +539,20 @@ class AddProductView extends GetView<AddProductController> {
             // Next/Save Button
             Expanded(
               flex: 2,
-              child: ElevatedButton(
-                onPressed: controller.canProceed
-                    ? (controller.currentStep.value == 2
-                        ? controller.saveProduct
-                        : controller.nextStep)
-                    : null,
+        child: ElevatedButton(
+        onPressed: controller.canProceed && !controller.isSaving.value
+          ? (controller.currentStep.value == 2
+            ? controller.saveProduct
+            : controller.nextStep)
+          : null,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.sellerPrimary,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
-                child: controller.isLoading.value
+        child: (controller.currentStep.value == 2
+            ? controller.isSaving.value
+            : controller.isLoading.value)
                     ? const SizedBox(
                         height: 20,
                         width: 20,

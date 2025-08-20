@@ -34,6 +34,10 @@ class AppTheme {
   static const Color textSecondary = Color(0xFF666666);
   static const Color textHint = Color(0xFF999999);
   
+  // Border Colors
+  static const Color borderColor = Color(0xFFE0E0E0);
+  static const Color borderLight = Color(0xFFF0F0F0);
+  
   // System Colors
   static const Color successColor = Color(0xFF4CAF50);
   static const Color errorColor = Color(0xFFE53E3E);

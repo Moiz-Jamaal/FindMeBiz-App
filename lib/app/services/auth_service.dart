@@ -3,6 +3,7 @@ import 'package:get_storage/get_storage.dart';
 import 'api/base_api_service.dart';
 import 'api/api_exception.dart';
 import 'role_service.dart';
+import 'seller_service.dart';
 import '../data/models/api/index.dart';
 
 class AuthService extends BaseApiService {
@@ -11,28 +12,31 @@ class AuthService extends BaseApiService {
   
   final _box = GetStorage();
   final Rx<UsersProfile?> _currentUser = Rx<UsersProfile?>(null);
+  final Rx<SellerDetails?> _currentSeller = Rx<SellerDetails?>(null);
   
   // Getters
   UsersProfile? get currentUser => _currentUser.value;
+  SellerDetails? get currentSeller => _currentSeller.value;
   bool get isLoggedIn => _currentUser.value != null;
   RxBool get isLoggedInReactive => (_currentUser.value != null).obs;
   
   @override
   void onInit() {
     super.onInit();
-    _loadSavedUser();
+    // Load saved user asynchronously
+    Future(() async => await _loadSavedUser());
   }
 
   // Initialize service and load saved user data
   Future<AuthService> init() async {
-    _loadSavedUser();
+    await _loadSavedUser();
     // Give it a moment to load
     await Future.delayed(const Duration(milliseconds: 100));
     return this;
   }
 
   // Load saved user from storage
-  void _loadSavedUser() {
+  Future<void> _loadSavedUser() async {
     final userData = _box.read(_userKey);
     print('🔍 Checking saved user data: ${userData != null ? 'Found' : 'Not found'}');
     
@@ -71,6 +75,9 @@ class AuthService extends BaseApiService {
         
         _currentUser.value = UsersProfile.fromJson(userMap);
         print('✅ Loaded saved user: ${_currentUser.value?.username}');
+        
+        // Load seller data if user exists
+        await _loadSellerData();
       } catch (e) {
         print('❌ Error loading saved user: $e');
         print('🧹 Clearing corrupted user data');
@@ -186,13 +193,37 @@ class AuthService extends BaseApiService {
     if (response.success && response.data != null) {
       _saveUser(response.data!);
       
-      // After successful login, check seller data
+      // After successful login, check and load seller data
       if (Get.isRegistered<RoleService>()) {
         await Get.find<RoleService>().checkSellerData();
+        await _loadSellerData(); // Load seller data into AuthService
       }
     }
     
     return response;
+  }
+
+  // Load seller data for current user
+  Future<void> _loadSellerData() async {
+    if (_currentUser.value?.userid == null) return;
+    
+    try {
+      if (Get.isRegistered<SellerService>()) {
+        final sellerService = Get.find<SellerService>();
+        final response = await sellerService.getSellerByUserId(_currentUser.value!.userid!);
+        
+        if (response.success && response.data != null) {
+          _currentSeller.value = response.data!;
+          print('✅ Seller data loaded: ${response.data!.sellerId}');
+        } else {
+          _currentSeller.value = null;
+          print('ℹ️ No seller data for user ${_currentUser.value!.username}');
+        }
+      }
+    } catch (e) {
+      print('❌ Error loading seller data: $e');
+      _currentSeller.value = null;
+    }
   }
 
   // Update user profile
