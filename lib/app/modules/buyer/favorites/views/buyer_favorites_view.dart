@@ -200,7 +200,7 @@ class BuyerFavoritesView extends GetView<BuyerFavoritesController> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          seller.businessName,
+                          seller.businessname ?? 'Business Name',
                           style: Get.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w600,
                           ),

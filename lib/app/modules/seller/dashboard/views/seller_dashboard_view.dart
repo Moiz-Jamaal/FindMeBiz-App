@@ -36,12 +36,12 @@ class SellerDashboardView extends GetView<SellerDashboardController> {
                     ListTile(
                       leading: Icon(
                         Icons.inventory_2,
-                        color: AppTheme.sellerPrimary,
+                        color: AppTheme.buyerLight,
                       ),
                       title: Text(
                         'Products',
                         style: TextStyle(
-                          color: AppTheme.sellerPrimary,
+                          color: AppTheme.buyerLight,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -64,7 +64,7 @@ class SellerDashboardView extends GetView<SellerDashboardController> {
         ),
         floatingActionButton: FloatingActionButton(
           onPressed: controller.addProduct,
-          backgroundColor: AppTheme.sellerPrimary,
+          backgroundColor: AppTheme.buyerLight,
           child: const Icon(Icons.add, color: Colors.white),
         ),
       );
@@ -75,7 +75,7 @@ class SellerDashboardView extends GetView<SellerDashboardController> {
       body: _buildDashboardContent(),
       floatingActionButton: FloatingActionButton(
         onPressed: controller.addProduct,
-        backgroundColor: AppTheme.sellerPrimary,
+        backgroundColor: AppTheme.buyerLight,
         child: const Icon(Icons.add, color: Colors.white),
       ),
     );
@@ -140,7 +140,7 @@ class SellerDashboardView extends GetView<SellerDashboardController> {
                         controller.businessName.value,
                         style: Get.textTheme.headlineMedium?.copyWith(
                           fontWeight: FontWeight.bold,
-                          color: AppTheme.sellerPrimary,
+                          color: AppTheme.buyerLight,
                         ),
                       )),
                     ],
@@ -161,11 +161,12 @@ class SellerDashboardView extends GetView<SellerDashboardController> {
         margin: const EdgeInsets.all(AppConstants.defaultPadding),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          gradient: AppTheme.sellerGradient,
+          color: AppTheme.buyerLight,
+          // gradient: AppTheme.sellerGradient,
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: AppTheme.sellerPrimary.withOpacity(0.2),
+              color: AppTheme.buyerLight.withOpacity(0.2),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -242,7 +243,7 @@ class SellerDashboardView extends GetView<SellerDashboardController> {
                     onPressed: controller.publishProfile,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.white,
-                      foregroundColor: AppTheme.sellerPrimary,
+                      foregroundColor: AppTheme.buyerLight,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
@@ -286,13 +287,13 @@ class SellerDashboardView extends GetView<SellerDashboardController> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: AppTheme.sellerPrimary.withOpacity(0.1),
+                color: AppTheme.buyerLight.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(
                 icon,
                 size: 24,
-                color: AppTheme.sellerPrimary,
+                color: AppTheme.buyerLight,
               ),
             ),
             const SizedBox(height: 8),
@@ -384,7 +385,7 @@ class SellerDashboardView extends GetView<SellerDashboardController> {
           children: [
             Icon(
               icon,
-              color: AppTheme.sellerPrimary,
+              color: AppTheme.buyerLight,
               size: 20,
             ),
             const SizedBox(height: 4),
@@ -443,8 +444,8 @@ class SellerDashboardView extends GetView<SellerDashboardController> {
           icon: const Icon(Icons.arrow_forward),
           label: const Text('View All Products'),
           style: OutlinedButton.styleFrom(
-            foregroundColor: AppTheme.sellerPrimary,
-            side: BorderSide(color: AppTheme.sellerPrimary),
+            foregroundColor: AppTheme.buyerLight,
+            side: BorderSide(color: AppTheme.buyerLight),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),
             ),

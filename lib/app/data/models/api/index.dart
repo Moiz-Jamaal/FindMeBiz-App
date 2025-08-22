@@ -6,3 +6,4 @@ export 'seller_settings.dart';
 export 'seller_category.dart';
 export 'seller_url.dart';
 export 'subscription_master.dart';
+export '../product.dart';

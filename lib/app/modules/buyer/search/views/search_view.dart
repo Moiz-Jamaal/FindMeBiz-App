@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:souq/core/widgets/enhanced_network_image.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/constants/app_constants.dart';
-import '../controllers/search_controller.dart' as search;
+import '../controllers/buyer_search_controller.dart';
 import '../../../../services/ad_service.dart';
 import '../../../shared/widgets/ads/native_ad_card.dart';
 import '../../../shared/widgets/ads/banner_ad_tile.dart';
 import '../../../../data/models/sponsored_content.dart';
 
-class SearchView extends GetView<search.SearchController> {
+class SearchView extends GetView<BuyerSearchController> {
   const SearchView({super.key});
 
   @override
@@ -139,17 +140,17 @@ class SearchView extends GetView<search.SearchController> {
               // Location Filter
               Expanded(
                 child: Obx(() => DropdownButtonFormField<String>(
-                  value: controller.selectedLocation.value,
+                  value: controller.selectedCity.value.isEmpty ? null : controller.selectedCity.value,
                   decoration: const InputDecoration(
-                    labelText: 'Location',
+                    labelText: 'City',
                     isDense: true,
                     contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   ),
-                  items: controller.locations.map((location) {
-                    return DropdownMenuItem(value: location, child: Text(location));
+                  items: controller.availableCities.map((city) {
+                    return DropdownMenuItem(value: city, child: Text(city));
                   }).toList(),
                   onChanged: (value) {
-                    if (value != null) controller.updateLocation(value);
+                    if (value != null) controller.updateCity(value);
                   },
                 )),
               ),
@@ -165,7 +166,7 @@ class SearchView extends GetView<search.SearchController> {
         return _buildLoadingState();
       } else if (!controller.hasSearched.value) {
         return _buildInitialState();
-      } else if (controller.activeResultsCount.value == 0) {
+      } else if (controller.totalResultsCount.value == 0) {
         return _buildEmptyState();
       } else {
         return _buildSearchResults();
@@ -379,9 +380,6 @@ class SearchView extends GetView<search.SearchController> {
             OutlinedButton.icon(
               onPressed: () {
                 controller.clearSearch();
-                controller.selectedCategories.clear();
-                controller.selectedLocation.value = 'All Areas';
-                controller.searchType.value = 'All';
               },
               icon: const Icon(Icons.refresh),
               label: const Text('Clear Filters'),
@@ -406,8 +404,8 @@ class SearchView extends GetView<search.SearchController> {
           const SizedBox(height: 16),
           
           // Sellers Section
-          if (controller.searchResults.isNotEmpty) ...[
-            _buildSectionHeader('Sellers', controller.searchResults.length),
+          if (controller.sellerResults.isNotEmpty) ...[
+            _buildSectionHeader('Sellers', controller.sellerResults.length),
             const SizedBox(height: 12),
             _buildSellerResults(),
             const SizedBox(height: 24),
@@ -441,7 +439,7 @@ class SearchView extends GetView<search.SearchController> {
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              'Found ${controller.activeResultsCount.value} results for "${controller.searchQuery.value}"',
+              controller.resultsCountText,
               style: Get.textTheme.bodyMedium?.copyWith(
                 color: AppTheme.buyerPrimary,
                 fontWeight: FontWeight.w500,
@@ -483,7 +481,7 @@ class SearchView extends GetView<search.SearchController> {
 
   Widget _buildSellerResults() {
     return Obx(() {
-      final sellers = controller.searchResults;
+      final sellers = controller.sellerResults;
       // Deterministic placement: insert a single native ad after the 2nd seller if available
       final adIndex = sellers.length >= 2 ? 2 : (sellers.isNotEmpty ? 1 : null);
       final itemCount = sellers.length + (adIndex != null ? 1 : 0);
@@ -569,11 +567,35 @@ class SearchView extends GetView<search.SearchController> {
                   color: AppTheme.buyerPrimary.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(
-                  Icons.store,
-                  color: AppTheme.buyerPrimary,
-                  size: 30,
-                ),
+                child: seller.logo?.isNotEmpty == true
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: EnhancedNetworkImage(
+                          imageUrl: seller.logo!,
+                          width: 60,
+                          height: 60,
+                          fit: BoxFit.cover,
+                          borderRadius: BorderRadius.circular(12),
+                          errorWidget: Container(
+                            width: 60,
+                            height: 60,
+                            decoration: BoxDecoration(
+                              color: AppTheme.buyerPrimary.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Icon(
+                              Icons.store,
+                              color: AppTheme.buyerPrimary,
+                              size: 30,
+                            ),
+                          ),
+                        ),
+                      )
+                    : Icon(
+                        Icons.store,
+                        color: AppTheme.buyerPrimary,
+                        size: 30,
+                      ),
               ),
               
               const SizedBox(width: 12),
@@ -584,14 +606,14 @@ class SearchView extends GetView<search.SearchController> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      seller.businessName,
+                      seller.businessname ?? 'Business Name',
                       style: Get.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      seller.fullName,
+                      seller.profilename ?? 'Seller',
                       style: Get.textTheme.bodyMedium?.copyWith(
                         color: AppTheme.textSecondary,
                       ),
@@ -607,7 +629,7 @@ class SearchView extends GetView<search.SearchController> {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ],
-                    if (seller.stallLocation != null) ...[
+                    if (seller.area?.isNotEmpty == true || seller.city?.isNotEmpty == true) ...[
                       const SizedBox(height: 8),
                       Row(
                         children: [
@@ -618,7 +640,7 @@ class SearchView extends GetView<search.SearchController> {
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            '${seller.stallLocation!.stallNumber} - ${seller.stallLocation!.area}',
+                            '${seller.area ?? ''}${seller.area?.isNotEmpty == true && seller.city?.isNotEmpty == true ? ', ' : ''}${seller.city ?? ''}'.trim(),
                             style: Get.textTheme.bodySmall?.copyWith(
                               color: AppTheme.textSecondary,
                             ),
@@ -636,7 +658,7 @@ class SearchView extends GetView<search.SearchController> {
                   // Contact seller action
                   Get.snackbar(
                     'Contact Seller',
-                    'Opening WhatsApp to contact ${seller.businessName}',
+                    'Opening WhatsApp to contact ${seller.businessname ?? 'Business'}',
                     snackPosition: SnackPosition.BOTTOM,
                   );
                 },
@@ -655,7 +677,10 @@ class SearchView extends GetView<search.SearchController> {
   Widget _buildProductCard(product) {
     return Card(
       child: InkWell(
-        onTap: () => controller.viewProduct(product),
+        onTap: () {
+          // Pass the product object to the controller for proper handling
+          controller.viewProduct(product);
+        },
         borderRadius: BorderRadius.circular(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -671,12 +696,42 @@ class SearchView extends GetView<search.SearchController> {
                     top: Radius.circular(12),
                   ),
                 ),
-                child: const Center(
-                  child: Icon(
-                    Icons.image,
-                    size: 40,
-                    color: AppTheme.textHint,
+                child: ClipRRect(
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(12),
                   ),
+                  child: product.primaryImageUrl.isNotEmpty && !product.primaryImageUrl.contains('placeholder')
+                      ? Image.network(
+                          product.primaryImageUrl,
+                          width: double.infinity,
+                          height: double.infinity,
+                          fit: BoxFit.cover,
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return Center(
+                              child: CircularProgressIndicator(
+                                value: loadingProgress.expectedTotalBytes != null
+                                    ? loadingProgress.cumulativeBytesLoaded / 
+                                      loadingProgress.expectedTotalBytes!
+                                    : null,
+                              ),
+                            );
+                          },
+                          errorBuilder: (context, error, stackTrace) => const Center(
+                            child: Icon(
+                              Icons.image,
+                              size: 40,
+                              color: AppTheme.textHint,
+                            ),
+                          ),
+                        )
+                      : const Center(
+                          child: Icon(
+                            Icons.image,
+                            size: 40,
+                            color: AppTheme.textHint,
+                          ),
+                        ),
                 ),
               ),
             ),

@@ -140,34 +140,32 @@ class BuyerProfileView extends GetView<BuyerProfileController> {
                   ],
                 );
               } else {
-                final buyer = controller.buyer.value;
                 return Column(
                   children: [
                     Text(
-                      buyer?.fullName ?? 'User Name',
+                      controller.buyer.value?.fullname ?? 'User Name',
                       style: Get.textTheme.headlineSmall?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      buyer?.email ?? 'user@example.com',
+                      controller.buyer.value?.emailid ?? 'user@example.com',
                       style: Get.textTheme.bodyMedium?.copyWith(
                         color: AppTheme.textSecondary,
                       ),
                     ),
-                    if (buyer?.phoneNumber?.isNotEmpty == true) ...[
+                    if (controller.buyer.value?.mobileno?.isNotEmpty == true) ...[
                       const SizedBox(height: 4),
                       Text(
-                        buyer!.phoneNumber!,
+                        controller.buyer.value!.mobileno!,
                         style: Get.textTheme.bodyMedium?.copyWith(
                           color: AppTheme.textSecondary,
                         ),
                       ),
                     ],
-                    if (buyer?.address?.isNotEmpty == true) ...[
-                      const SizedBox(height: 8),
-                      Row(
+                    const SizedBox(height: 8),
+                    Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(
@@ -178,7 +176,7 @@ class BuyerProfileView extends GetView<BuyerProfileController> {
                           const SizedBox(width: 4),
                           Flexible(
                             child: Text(
-                              buyer!.address!,
+                              controller.memberSince,
                               style: Get.textTheme.bodySmall?.copyWith(
                                 color: AppTheme.textSecondary,
                               ),
@@ -188,8 +186,7 @@ class BuyerProfileView extends GetView<BuyerProfileController> {
                         ],
                       ),
                     ],
-                  ],
-                );
+                  );
               }
             }),
           ],
@@ -207,7 +204,7 @@ class BuyerProfileView extends GetView<BuyerProfileController> {
           children: [
             Obx(() => _buildStatItem(
               'Favorites',
-              '${controller.favoriteCount.value}',
+              '${controller.favoriteCount}',
               Icons.favorite,
               () => controller.viewFavorites(),
             )),
@@ -218,7 +215,7 @@ class BuyerProfileView extends GetView<BuyerProfileController> {
             ),
             Obx(() => _buildStatItem(
               'Reviews',
-              '${controller.reviewsCount.value}',
+              '${controller.reviewsCount}',
               Icons.star,
               () => controller.viewReviews(),
             )),
@@ -229,7 +226,7 @@ class BuyerProfileView extends GetView<BuyerProfileController> {
             ),
             Obx(() => _buildStatItem(
               'Orders',
-              '${controller.orderHistory.value}',
+              '${controller.orderHistory}',
               Icons.shopping_bag,
               () => controller.viewOrderHistory(),
             )),

@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:souq/app/services/api/api_exception.dart';
 // import 'package:url_launcher/url_launcher.dart'; // Add this dependency to pubspec.yaml
 import '../../../../data/models/seller.dart';
 import '../../../../data/models/product.dart';
+import '../../../../data/models/api/seller_details.dart';
+import '../../../../services/buyer_service.dart';
+import '../../../../services/auth_service.dart';
 import '../../../../core/theme/app_theme.dart';
 
 class SellerProfileViewController extends GetxController {
@@ -14,6 +18,8 @@ class SellerProfileViewController extends GetxController {
   final RxBool isLoading = false.obs;
   final RxBool isFavorite = false.obs;
   final RxInt selectedProductCategory = 0.obs;
+  final RxBool hasError = false.obs;
+  final RxString errorMessage = ''.obs;
   
   // Product categories for this seller
   final RxList<String> sellerCategories = <String>[].obs;
@@ -25,72 +31,199 @@ class SellerProfileViewController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    // Use post-frame callback to avoid build context issues
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadSellerData();
+    });
+  }
+
+  void loadSellerData() {
+    _loadSellerData();
+  }
+
+  void _setError(String message) {
+    hasError.value = true;
+    errorMessage.value = message;
+    isLoading.value = false;
+  }
+
+  void _clearError() {
+    hasError.value = false;
+    errorMessage.value = '';
+  }
+
+  void retryLoading() {
+    _clearError();
     _loadSellerData();
   }
 
   void _loadSellerData() {
+    _clearError();
+    isLoading.value = true;
+    
     // Get seller from arguments
     final sellerData = Get.arguments;
+    print('🔍 SellerProfileViewController: Received arguments: $sellerData (type: ${sellerData.runtimeType})');
     
     if (sellerData is Seller) {
       // Full seller object passed (e.g., from search)
+      print('✅ SellerProfileViewController: Loading seller object directly');
       seller.value = sellerData;
       _loadSellerProducts();
       _checkIfFavorite();
       _markAsViewed();
+      isLoading.value = false;
     } else if (sellerData is String) {
       // Only seller ID passed (e.g., from home)
+      print('✅ SellerProfileViewController: Loading seller by string ID: $sellerData');
       _loadSellerById(sellerData);
+    } else if (sellerData is int) {
+      // Seller ID as int
+      print('✅ SellerProfileViewController: Loading seller by int ID: $sellerData');
+      _loadSellerById(sellerData.toString());
     } else {
       // No valid data provided
-      Get.back();
-      Get.snackbar(
-        'Error',
-        'Unable to load seller information',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
+      print('❌ SellerProfileViewController: Invalid data provided - $sellerData');
+      _setError('Unable to load seller information. Invalid data provided.');
     }
   }
 
   void _loadSellerById(String sellerId) {
     isLoading.value = true;
+    print('🔄 SellerProfileViewController: Loading seller by ID: $sellerId');
     
-    // Simulate API call to fetch seller by ID
-    Future.delayed(const Duration(seconds: 1), () {
-      final sellerData = _getMockSellerById(sellerId);
-      
-      if (sellerData != null) {
+    // Use actual API service to fetch seller details
+    final buyerService = Get.find<BuyerService>();
+    final sellerIdInt = int.tryParse(sellerId);
+    
+    if (sellerIdInt == null) {
+      print('❌ SellerProfileViewController: Invalid seller ID format: $sellerId');
+      _setError('Invalid seller ID. Please try again.');
+      return;
+    }
+    
+    // Try the new API endpoint first (searches by sellerId)
+    buyerService.getSellerDetailsBySellerId(sellerIdInt).then((response) {
+      if (response.isSuccess && response.data != null) {
+        print('✅ SellerProfileViewController: Seller data loaded from sellerId API successfully');
+        
+        // Convert SellerDetailsExtended to Seller model
+        final sellerData = _convertToSellerModel(response.data!);
         seller.value = sellerData;
         _loadSellerProducts();
         _checkIfFavorite();
         _markAsViewed();
-      } else {
-        // Seller not found
         isLoading.value = false;
-        Get.back();
-        Get.snackbar(
-          'Error',
-          'Seller not found',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
-        );
+      } else {
+        print('❌ SellerProfileViewController: API call failed: ${response.errorMessage}');
+        _setError(response.errorMessage ?? 'Failed to load seller information. Please try again.');
       }
+    }).catchError((e) {
+      print('❌ SellerProfileViewController: Exception during API call: $e');
+      _setError('Network error. Please check your connection and try again.');
     });
+  }
+
+  // Convert SellerDetailsExtended to Seller model
+  Seller _convertToSellerModel(SellerDetailsExtended sellerDetailsExtended) {
+    return Seller(
+      id: sellerDetailsExtended.sellerid?.toString() ?? '0',
+      email: '', // Email is not available in SellerDetails API model
+      fullName: sellerDetailsExtended.profilename ?? 'Business Owner',
+      createdAt: DateTime.now().subtract(const Duration(days: 30)), // TODO: Use actual created date from API
+      updatedAt: DateTime.now(),
+      businessName: sellerDetailsExtended.businessname ?? 'Local Business',
+      bio: sellerDetailsExtended.bio ?? 'Welcome to our business!',
+      whatsappNumber: sellerDetailsExtended.whatsappno ?? sellerDetailsExtended.mobileno,
+      stallLocation: StallLocation(
+        latitude: _parseLatitude(sellerDetailsExtended.geolocation),
+        longitude: _parseLongitude(sellerDetailsExtended.geolocation),
+        stallNumber: _generateStallNumber(sellerDetailsExtended.sellerid),
+        area: sellerDetailsExtended.area ?? 'Business Area',
+        address: sellerDetailsExtended.address,
+      ),
+      businessLogo: sellerDetailsExtended.logo, // This should now have fresh presigned URL
+      isProfilePublished: sellerDetailsExtended.ispublished ?? true,
+    );
+  }
+
+  // Helper method to parse latitude from geolocation string
+  double _parseLatitude(String? geoLocation) {
+    if (geoLocation == null || geoLocation.isEmpty) return 0.0;
+    try {
+      // Assuming geolocation format is "lat,lng" or similar
+      final parts = geoLocation.split(',');
+      if (parts.length >= 2) {
+        return double.tryParse(parts[0].trim()) ?? 0.0;
+      }
+    } catch (e) {
+      print('Error parsing latitude from: $geoLocation');
+    }
+    return 0.0;
+  }
+
+  // Helper method to parse longitude from geolocation string
+  double _parseLongitude(String? geoLocation) {
+    if (geoLocation == null || geoLocation.isEmpty) return 0.0;
+    try {
+      // Assuming geolocation format is "lat,lng" or similar
+      final parts = geoLocation.split(',');
+      if (parts.length >= 2) {
+        return double.tryParse(parts[1].trim()) ?? 0.0;
+      }
+    } catch (e) {
+      print('Error parsing longitude from: $geoLocation');
+    }
+    return 0.0;
+  }
+
+  // Helper method to generate stall number from seller ID
+  String _generateStallNumber(dynamic sellerId) {
+    if (sellerId == null) return 'A-00';
+    final idStr = sellerId.toString();
+    if (idStr.length >= 2) {
+      return 'A-${idStr.substring(0, 2)}';
+    }
+    return 'A-${idStr.padLeft(2, '0')}';
   }
 
   void _loadSellerProducts() {
     if (seller.value == null) return;
     
-    isLoading.value = true;
+    print('🔄 SellerProfileViewController: Loading products for seller ID: ${seller.value!.id}');
     
-    // Simulate API call to load seller's products
-    Future.delayed(const Duration(seconds: 1), () {
-      products.addAll(_getMockProductsForSeller(seller.value!.id));
+    // Use actual API service to fetch seller's products
+    final buyerService = Get.find<BuyerService>();
+    final sellerIdInt = int.tryParse(seller.value!.id);
+    
+    if (sellerIdInt == null) {
+      print('❌ SellerProfileViewController: Invalid seller ID for products: ${seller.value!.id}');
+      // Don't load any products if seller ID is invalid
+      products.clear();
       _extractProductCategories();
-      isLoading.value = false;
+      return;
+    }
+    
+    buyerService.searchProducts(
+      sellerId: sellerIdInt,
+      pageSize: 50, // Get more products for seller profile
+    ).then((response) {
+      if (response.isSuccess && response.data != null) {
+        print('✅ SellerProfileViewController: Products loaded from API successfully (${response.data!.products.length} products)');
+        products.clear();
+        products.addAll(response.data!.products);
+        _extractProductCategories();
+      } else {
+        print('❌ SellerProfileViewController: Failed to load products from API: ${response.errorMessage}');
+        // Clear products if API call fails - no fallback to mock data
+        products.clear();
+        _extractProductCategories();
+      }
+    }).catchError((e) {
+      print('❌ SellerProfileViewController: Exception during products API call: $e');
+      // Clear products if API call fails - no fallback to mock data
+      products.clear();
+      _extractProductCategories();
     });
   }
 
@@ -99,38 +232,153 @@ class SellerProfileViewController extends GetxController {
     for (final product in products) {
       categories.addAll(product.categories);
     }
+    sellerCategories.clear();
     sellerCategories.addAll(categories.toList());
   }
 
   void _checkIfFavorite() {
-    // Simulate checking if seller is in user's favorites
-    // In real app, this would check local storage or API
-    isFavorite.value = false;
+    final authService = Get.find<AuthService>();
+    final currentUser = authService.currentUser;
+    
+    if (currentUser?.userid == null || seller.value?.id == null) {
+      isFavorite.value = false;
+      return;
+    }
+    
+    final sellerId = int.tryParse(seller.value!.id);
+    if (sellerId == null) {
+      isFavorite.value = false;
+      return;
+    }
+    
+    final buyerService = Get.find<BuyerService>();
+    buyerService.checkIfFavorite(
+      userId: currentUser!.userid!,
+      refId: sellerId,
+      type: 'S', // 'S' for seller
+    ).then((response) {
+      if (response.isSuccess && response.data != null) {
+        isFavorite.value = response.data!['isFavorite'] == true;
+        print('✅ Seller favorite status loaded: ${isFavorite.value}');
+      } else {
+        isFavorite.value = false;
+        print('❌ Failed to check seller favorite status: ${response.errorMessage}');
+      }
+    }).catchError((e) {
+      isFavorite.value = false;
+      print('❌ Exception checking seller favorite status: $e');
+    });
   }
 
   void _markAsViewed() {
     if (!hasViewed.value) {
       hasViewed.value = true;
-      // In real app, track this view for analytics
+      // TODO: Track this view for analytics via API
     }
   }
 
   void toggleFavorite() {
+    final authService = Get.find<AuthService>();
+    final currentUser = authService.currentUser;
+    
+    if (currentUser?.userid == null) {
+      Get.snackbar(
+        'Login Required',
+        'Please login to add sellers to favorites',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.orange,
+        colorText: Colors.white,
+      );
+      return;
+    }
+    
+    if (seller.value?.id == null) {
+      Get.snackbar(
+        'Error',
+        'Unable to favorite this seller',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+      return;
+    }
+    
+    final sellerId = int.tryParse(seller.value!.id);
+    if (sellerId == null) {
+      Get.snackbar(
+        'Error',
+        'Invalid seller information',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+      return;
+    }
+    
+    // Optimistically update UI
+    final wasAlreadyFavorite = isFavorite.value;
     isFavorite.value = !isFavorite.value;
     
-    final message = isFavorite.value 
-        ? 'Added to favorites'
-        : 'Removed from favorites';
+    final buyerService = Get.find<BuyerService>();
     
-    Get.snackbar(
-      'Favorites',
-      message,
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: isFavorite.value 
-          ? AppTheme.successColor 
-          : AppTheme.textSecondary,
-      colorText: Colors.white,
-    );
+    Future<ApiResponse<Map<String, dynamic>>> apiCall;
+    if (wasAlreadyFavorite) {
+      // Remove from favorites
+      apiCall = buyerService.removeFromFavorites(
+        userId: currentUser!.userid!,
+        refId: sellerId,
+        type: 'S',
+      );
+    } else {
+      // Add to favorites
+      apiCall = buyerService.addToFavorites(
+        userId: currentUser!.userid!,
+        refId: sellerId,
+        type: 'S',
+      );
+    }
+    
+    apiCall.then((response) {
+      if (response.isSuccess) {
+        final message = isFavorite.value 
+            ? 'Added to favorites'
+            : 'Removed from favorites';
+        
+        Get.snackbar(
+          'Favorites',
+          message,
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: isFavorite.value 
+              ? AppTheme.buyerPrimary.withOpacity(0.9)
+              : Colors.grey.withOpacity(0.9),
+          colorText: Colors.white,
+        );
+        
+        print('✅ Seller favorite status updated successfully: ${isFavorite.value}');
+      } else {
+        // Revert optimistic update on failure
+        isFavorite.value = wasAlreadyFavorite;
+        Get.snackbar(
+          'Error',
+          'Failed to update favorites. Please try again.',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+        print('❌ Failed to update seller favorite status: ${response.errorMessage}');
+      }
+    }).catchError((e) {
+      // Revert optimistic update on error
+      isFavorite.value = wasAlreadyFavorite;
+      Get.snackbar(
+        'Error',
+        'Network error. Please try again.',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+      print('❌ Exception updating seller favorite status: $e');
+    });
   }
 
   void contactSeller() {
@@ -162,7 +410,7 @@ class SellerProfileViewController extends GetxController {
     
     // TODO: Uncomment when url_launcher is added to pubspec.yaml
     /*
-  const message = 'Hi, I found your profile on FindMeBiz and I\'m interested in your products.';
+    const message = 'Hi, I found your profile on FindMeBiz and I\'m interested in your products.';
     final whatsappNumber = seller.whatsappNumber!.replaceAll(RegExp(r'[^\d]'), '');
     final url = 'https://wa.me/$whatsappNumber?text=${Uri.encodeComponent(message)}';
     try {
@@ -239,7 +487,7 @@ class SellerProfileViewController extends GetxController {
   }
 
   void shareProfile() {
-    // In real app, generate shareable link
+    // TODO: Generate shareable link via API
     Get.snackbar(
       'Share',
       'Profile link copied to clipboard',
@@ -260,6 +508,7 @@ class SellerProfileViewController extends GetxController {
           ElevatedButton(
             onPressed: () {
               Get.back();
+              // TODO: Send report to API
               Get.snackbar(
                 'Reported',
                 'Profile has been reported for review',
@@ -272,227 +521,5 @@ class SellerProfileViewController extends GetxController {
         ],
       ),
     );
-  }
-
-  // Mock method to fetch seller by ID
-  Seller? _getMockSellerById(String sellerId) {
-    // Mock seller data - in real app, this would fetch from API/database
-    switch (sellerId) {
-      case '1':
-        return Seller(
-          id: '1',
-          email: 'rajesh@suratsik.com',
-          fullName: 'Rajesh Patel',
-          createdAt: DateTime.now().subtract(const Duration(days: 30)),
-          updatedAt: DateTime.now(),
-          businessName: 'Surat Silk Emporium',
-          bio: 'Premium silk sarees and traditional wear from Surat. Family business since 1985.',
-          whatsappNumber: '+91 98765 43210',
-          stallLocation: StallLocation(
-            latitude: 21.1702,
-            longitude: 72.8311,
-            stallNumber: 'A-23',
-            area: 'Textile Zone',
-          ),
-          isProfilePublished: true,
-        );
-      case '2':
-        return Seller(
-          id: '2',
-          email: 'meera@crafts.com',
-          fullName: 'Meera Shah',
-          createdAt: DateTime.now().subtract(const Duration(days: 15)),
-          updatedAt: DateTime.now(),
-          businessName: 'Gujarati Crafts',
-          bio: 'Authentic handmade crafts and artwork from Gujarat.',
-          whatsappNumber: '+91 98765 43211',
-          stallLocation: StallLocation(
-            latitude: 21.1700,
-            longitude: 72.8308,
-            stallNumber: 'B-12',
-            area: 'Handicraft Section',
-          ),
-          isProfilePublished: true,
-        );
-      case '3':
-        return Seller(
-          id: '3',
-          email: 'spice@paradise.com',
-          fullName: 'Kiran Joshi',
-          createdAt: DateTime.now().subtract(const Duration(days: 10)),
-          updatedAt: DateTime.now(),
-          businessName: 'Spice Paradise',
-          bio: 'Authentic Gujarat spices and traditional food items.',
-          whatsappNumber: '+91 98765 43212',
-          stallLocation: StallLocation(
-            latitude: 21.1698,
-            longitude: 72.8315,
-            stallNumber: 'C-45',
-            area: 'Food Court',
-          ),
-          isProfilePublished: true,
-        );
-      case '4':
-        return Seller(
-          id: '4',
-          email: 'diamond@jewelry.com',
-          fullName: 'Amit Jain',
-          createdAt: DateTime.now().subtract(const Duration(days: 5)),
-          updatedAt: DateTime.now(),
-          businessName: 'Diamond Jewelry',
-          bio: 'Exquisite diamond and gold jewelry for special occasions.',
-          whatsappNumber: '+91 98765 43213',
-          stallLocation: StallLocation(
-            latitude: 21.1705,
-            longitude: 72.8320,
-            stallNumber: 'D-78',
-            area: 'Main Entrance',
-          ),
-          isProfilePublished: true,
-        );
-      case '5':
-        return Seller(
-          id: '5',
-          email: 'homedecor@plus.com',
-          fullName: 'Priya Desai',
-          createdAt: DateTime.now().subtract(const Duration(days: 3)),
-          updatedAt: DateTime.now(),
-          businessName: 'Home Decor Plus',
-          bio: 'Beautiful home decoration items and furniture accessories.',
-          whatsappNumber: '+91 98765 43214',
-          stallLocation: StallLocation(
-            latitude: 21.1695,
-            longitude: 72.8325,
-            stallNumber: 'E-34',
-            area: 'Home Decor Zone',
-          ),
-          isProfilePublished: true,
-        );
-      default:
-        return null;
-    }
-  }
-
-  // Mock data for products
-  List<Product> _getMockProductsForSeller(String sellerId) {
-    final mockProducts = <Product>[];
-    
-    switch (sellerId) {
-      case '1': // Surat Silk Emporium
-        mockProducts.addAll([
-          Product(
-            id: 'p1', sellerId: sellerId, name: 'Premium Silk Saree',
-            description: 'Beautiful Banarasi silk saree with gold thread work',
-            price: 5500.0, categories: ['Apparel'], images: ['mock1'],
-            createdAt: DateTime.now().subtract(const Duration(days: 3)),
-            updatedAt: DateTime.now(),
-          ),
-          Product(
-            id: 'p2', sellerId: sellerId, name: 'Traditional Lehenga',
-            description: 'Elegant wedding lehenga with intricate embroidery',
-            price: 8500.0, categories: ['Apparel'], images: ['mock2'],
-            createdAt: DateTime.now().subtract(const Duration(days: 1)),
-            updatedAt: DateTime.now(),
-          ),
-          Product(
-            id: 'p3', sellerId: sellerId, name: 'Silk Dupatta',
-            description: 'Matching silk dupatta with golden border',
-            price: 1200.0, categories: ['Apparel'], images: ['mock3'],
-            createdAt: DateTime.now().subtract(const Duration(days: 5)),
-            updatedAt: DateTime.now(),
-          ),
-        ]);
-        break;
-        
-      case '2': // Gujarati Handicrafts
-        mockProducts.addAll([
-          Product(
-            id: 'p4', sellerId: sellerId, name: 'Handwoven Wall Hanging',
-            description: 'Traditional Gujarati wall art with mirror work',
-            price: 1200.0, categories: ['Art & Crafts'], images: ['mock4'],
-            createdAt: DateTime.now().subtract(const Duration(days: 1)),
-            updatedAt: DateTime.now(),
-          ),
-          Product(
-            id: 'p5', sellerId: sellerId, name: 'Wooden Handicraft',
-            description: 'Hand-carved wooden decorative items',
-            price: 800.0, categories: ['Home Decor'], images: ['mock5'],
-            createdAt: DateTime.now().subtract(const Duration(days: 2)),
-            updatedAt: DateTime.now(),
-          ),
-        ]);
-        break;
-        
-      case '3': // Spice Paradise
-        mockProducts.addAll([
-          Product(
-            id: 'p6', sellerId: sellerId, name: 'Gujarati Thali Special',
-            description: 'Authentic Gujarati thali with 12 varieties of traditional dishes',
-            price: 350.0, categories: ['Food & Beverages'], images: ['mock6'],
-            createdAt: DateTime.now().subtract(const Duration(hours: 6)),
-            updatedAt: DateTime.now(),
-          ),
-          Product(
-            id: 'p7', sellerId: sellerId, name: 'Traditional Spice Mix',
-            description: 'Homemade Gujarati spice blend for authentic flavors',
-            price: 120.0, categories: ['Food & Beverages'], images: ['mock7'],
-            createdAt: DateTime.now().subtract(const Duration(days: 1)),
-            updatedAt: DateTime.now(),
-          ),
-        ]);
-        break;
-        
-      case '4': // Diamond Jewelry
-        mockProducts.addAll([
-          Product(
-            id: 'p8', sellerId: sellerId, name: 'Diamond Necklace Set',
-            description: 'Elegant diamond necklace with matching earrings',
-            price: 25000.0, categories: ['Jewelry'], images: ['mock8'],
-            createdAt: DateTime.now().subtract(const Duration(days: 2)),
-            updatedAt: DateTime.now(),
-          ),
-          Product(
-            id: 'p9', sellerId: sellerId, name: 'Gold Ring Collection',
-            description: 'Beautiful gold rings with precious stones',
-            price: 8500.0, categories: ['Jewelry'], images: ['mock9'],
-            createdAt: DateTime.now().subtract(const Duration(days: 3)),
-            updatedAt: DateTime.now(),
-          ),
-        ]);
-        break;
-        
-      case '5': // Home Decor Plus
-        mockProducts.addAll([
-          Product(
-            id: 'p10', sellerId: sellerId, name: 'Decorative Vases Set',
-            description: 'Elegant ceramic vases for home decoration',
-            price: 1200.0, categories: ['Home Decor'], images: ['mock10'],
-            createdAt: DateTime.now().subtract(const Duration(days: 1)),
-            updatedAt: DateTime.now(),
-          ),
-          Product(
-            id: 'p11', sellerId: sellerId, name: 'Wall Art Collection',
-            description: 'Beautiful framed wall art pieces',
-            price: 800.0, categories: ['Home Decor'], images: ['mock11'],
-            createdAt: DateTime.now().subtract(const Duration(days: 4)),
-            updatedAt: DateTime.now(),
-          ),
-        ]);
-        break;
-        
-      default:
-        // Default products for other sellers
-        mockProducts.addAll([
-          Product(
-            id: 'p_default', sellerId: sellerId, name: 'Sample Product',
-            description: 'Sample product description',
-            price: 500.0, categories: ['Others'], images: ['mock_default'],
-            createdAt: DateTime.now().subtract(const Duration(days: 1)),
-            updatedAt: DateTime.now(),
-          ),
-        ]);
-    }
-    
-    return mockProducts;
   }
 }

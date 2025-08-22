@@ -1,5 +1,5 @@
 import 'package:get/get.dart';
-import '../controllers/search_controller.dart' as search;
+import '../controllers/buyer_search_controller.dart';
 import '../../../../services/ad_service.dart';
 
 class SearchBinding extends Bindings {
@@ -8,8 +8,8 @@ class SearchBinding extends Bindings {
     if (!Get.isRegistered<AdService>()) {
       Get.put<AdService>(AdService(), permanent: true);
     }
-    Get.lazyPut<search.SearchController>(
-      () => search.SearchController(),
+    Get.lazyPut<BuyerSearchController>(
+      () => BuyerSearchController(),
     );
   }
 }

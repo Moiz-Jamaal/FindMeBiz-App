@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/constants/app_constants.dart';
+import '../../../../data/models/api/index.dart';
 import '../controllers/buyer_home_controller.dart';
 import '../../../shared/widgets/module_switcher.dart';
 import '../../../../services/ad_service.dart';
@@ -413,23 +414,29 @@ class BuyerHomeView extends GetView<BuyerHomeController> {
               padding: const EdgeInsets.symmetric(
                 horizontal: AppConstants.defaultPadding,
               ),
-              itemCount: controller.featuredSellers.length + 1,
+              itemCount: controller.featuredSellers.isEmpty ? 0 : controller.featuredSellers.length + 1,
               itemBuilder: (context, index) {
                 final adService = Get.find<AdService>();
                 // Deterministic: insert a single ad after the 3rd card if possible
-                if (index == 3) {
-                  final ad = adService.getSponsoredForSlot(AdSlot.homeFeatured).first;
-                  return SizedBox(
-                    width: 160,
-                    child: NativeAdCard(
-                      ad: ad,
-                      onTap: () {
-                        if (ad.deeplinkRoute != null) {
-                          Get.toNamed(ad.deeplinkRoute!, arguments: ad.payload);
-                        }
-                      },
-                    ),
-                  );
+                if (index == 3 && controller.featuredSellers.isNotEmpty) {
+                  final ads = adService.getSponsoredForSlot(AdSlot.homeFeatured);
+                  if (ads.isNotEmpty) {
+                    final ad = ads.first;
+                    return SizedBox(
+                      width: 160,
+                      child: NativeAdCard(
+                        ad: ad,
+                        onTap: () {
+                          if (ad.deeplinkRoute != null) {
+                            Get.toNamed(ad.deeplinkRoute!, arguments: ad.payload);
+                          }
+                        },
+                      ),
+                    );
+                  }
+                }
+                if (controller.featuredSellers.isEmpty) {
+                  return const SizedBox();
                 }
                 final dataIndex = index % controller.featuredSellers.length;
                 final seller = controller.featuredSellers[dataIndex];
@@ -442,7 +449,7 @@ class BuyerHomeView extends GetView<BuyerHomeController> {
     );
   }
 
-  Widget _buildFeaturedSellerCard(Map<String, dynamic> seller) {
+  Widget _buildFeaturedSellerCard(SellerDetails seller) {
     return Container(
       width: 160,
       margin: const EdgeInsets.only(right: 12),
@@ -452,7 +459,7 @@ class BuyerHomeView extends GetView<BuyerHomeController> {
           borderRadius: BorderRadius.circular(12),
         ),
         child: InkWell(
-          onTap: () => controller.viewSeller(seller['id']),
+          onTap: () => controller.viewSeller(seller.sellerid ?? 0),
           borderRadius: BorderRadius.circular(12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -481,7 +488,7 @@ class BuyerHomeView extends GetView<BuyerHomeController> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      seller['businessName'],
+                      seller.businessname ?? 'Business',
                       style: Get.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
@@ -490,7 +497,7 @@ class BuyerHomeView extends GetView<BuyerHomeController> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      seller['category'],
+                      seller.area ?? 'Location',
                       style: Get.textTheme.bodySmall?.copyWith(
                         color: AppTheme.textSecondary,
                       ),
@@ -505,7 +512,7 @@ class BuyerHomeView extends GetView<BuyerHomeController> {
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          seller['rating'].toString(),
+                          '4.5', // Default rating since not in SellerDetails
                           style: Get.textTheme.bodySmall?.copyWith(
                             fontWeight: FontWeight.w500,
                           ),
@@ -521,7 +528,7 @@ class BuyerHomeView extends GetView<BuyerHomeController> {
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
-                            seller['stallNumber'],
+                            seller.city ?? 'Location',
                             style: Get.textTheme.labelSmall?.copyWith(
                               color: AppTheme.buyerPrimary,
                               fontWeight: FontWeight.w500,
@@ -575,10 +582,10 @@ class BuyerHomeView extends GetView<BuyerHomeController> {
     );
   }
 
-  Widget _buildCategoryCard(String category) {
+  Widget _buildCategoryCard(CategoryMaster category) {
     // Simple category icons mapping
-    IconData getIconForCategory(String category) {
-      switch (category.toLowerCase()) {
+    IconData getIconForCategory(String categoryName) {
+      switch (categoryName.toLowerCase()) {
         case 'apparel':
           return Icons.checkroom;
         case 'jewelry':
@@ -600,7 +607,7 @@ class BuyerHomeView extends GetView<BuyerHomeController> {
       width: 90,
       margin: const EdgeInsets.only(right: 12),
       child: InkWell(
-        onTap: () => controller.browseCategory(category),
+        onTap: () => controller.browseCategory(category.catid ?? 0, category.catname ?? 'Category'),
         borderRadius: BorderRadius.circular(12),
         child: Column(
           children: [
@@ -612,14 +619,14 @@ class BuyerHomeView extends GetView<BuyerHomeController> {
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
-                getIconForCategory(category),
+                getIconForCategory(category.catname ?? ''),
                 color: AppTheme.buyerPrimary,
                 size: 24,
               ),
             ),
             const SizedBox(height: 8),
             Text(
-              category,
+              category.catname ?? 'Category',
               style: Get.textTheme.bodySmall?.copyWith(
                 fontWeight: FontWeight.w500,
               ),
@@ -683,7 +690,7 @@ class BuyerHomeView extends GetView<BuyerHomeController> {
     );
   }
 
-  Widget _buildNewSellerTile(Map<String, dynamic> seller) {
+  Widget _buildNewSellerTile(SellerDetails seller) {
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
@@ -700,12 +707,12 @@ class BuyerHomeView extends GetView<BuyerHomeController> {
           ),
         ),
         title: Text(
-          seller['businessName'],
+          seller.businessname ?? 'Business',
           style: Get.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.w600,
           ),
         ),
-        subtitle: Text(seller['category']),
+        subtitle: Text(seller.area ?? 'Location'),
         trailing: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -725,14 +732,14 @@ class BuyerHomeView extends GetView<BuyerHomeController> {
             ),
             const SizedBox(height: 4),
             Text(
-              seller['stallNumber'],
+              seller.city ?? 'Location',
               style: Get.textTheme.bodySmall?.copyWith(
                 color: AppTheme.textSecondary,
               ),
             ),
           ],
         ),
-        onTap: () => controller.viewSeller(seller['id']),
+        onTap: () => controller.viewSeller(seller.sellerid ?? 0),
       ),
     );
   }

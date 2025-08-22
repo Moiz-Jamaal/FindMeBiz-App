@@ -2,6 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:flutter/foundation.dart';
+import 'package:souq/app/services/ad_service.dart';
+import 'package:souq/app/services/buyer_service.dart';
+import 'package:souq/app/services/favorites_service.dart';
+import 'package:souq/app/services/user_settings_service.dart';
+import 'package:souq/app/services/viewed_history_service.dart';
 
 import 'app/routes/app_pages.dart';
 import 'app/core/theme/app_theme.dart';
@@ -52,6 +57,11 @@ Future<void> main() async {
   Get.put<SubscriptionService>(SubscriptionService(), permanent: true);
   Get.put<ImageUploadService>(ImageUploadService(), permanent: true);
   Get.put<LocationService>(LocationService(), permanent: true);
+  Get.put<BuyerService>(BuyerService(), permanent: true);
+  Get.put<FavoritesService>(FavoritesService(), permanent: true);
+  Get.put<ViewedHistoryService>(ViewedHistoryService(), permanent: true);
+  Get.put<UserSettingsService>(UserSettingsService(), permanent: true);
+  Get.put<AdService>(AdService(), permanent: true);
   
   await Get.putAsync<RoleService>(() async => RoleService().init());
   await Get.putAsync<PushNotificationService>(() async => PushNotificationService().init());

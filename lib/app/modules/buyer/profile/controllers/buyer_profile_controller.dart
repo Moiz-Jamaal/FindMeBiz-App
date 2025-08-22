@@ -1,26 +1,34 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../../../data/models/buyer.dart';
-import '../../../../core/theme/app_theme.dart';
 import '../../../../services/auth_service.dart';
+import '../../../../services/favorites_service.dart';
+import '../../../../services/viewed_history_service.dart';
+import '../../../../services/user_settings_service.dart';
+import '../../../../data/models/api/index.dart';
+import '../../../../core/theme/app_theme.dart';
 
 class BuyerProfileController extends GetxController {
+  // Services
   final AuthService _authService = Get.find<AuthService>();
+  final FavoritesService _favoritesService = Get.find<FavoritesService>();
+  final ViewedHistoryService _viewedHistoryService = Get.find<ViewedHistoryService>();
+  final UserSettingsService _userSettingsService = Get.find<UserSettingsService>();
   
   // User profile data
-  final Rx<Buyer?> buyer = Rx<Buyer?>(null);
+  final Rx<UsersProfile?> userProfile = Rx<UsersProfile?>(null);
+  final Rx<UserSettings?> userSettings = Rx<UserSettings?>(null);
+  final Rx<FavoritesCount?> favoritesCount = Rx<FavoritesCount?>(null);
+  final Rx<ViewedHistoryStats?> viewedStats = Rx<ViewedHistoryStats?>(null);
   
   // Profile sections
   final RxBool isLoading = false.obs;
   final RxBool isEditing = false.obs;
+  final RxString errorMessage = ''.obs;
   
-  // Statistics
-  final RxInt favoriteCount = 0.obs;
-  final RxInt reviewsCount = 0.obs;
-  final RxInt orderHistory = 0.obs;
-  
-  // Settings
+  // Settings from user preferences
   final RxBool notificationsEnabled = true.obs;
+  final RxBool emailNotificationsEnabled = true.obs;
+  final RxBool smsNotificationsEnabled = false.obs;
   final RxBool locationEnabled = true.obs;
   final RxString preferredLanguage = 'English'.obs;
   final RxString theme = 'System'.obs;
@@ -32,7 +40,8 @@ class BuyerProfileController extends GetxController {
   final nameController = TextEditingController();
   final emailController = TextEditingController();
   final phoneController = TextEditingController();
-  final addressController = TextEditingController();
+  final whatsappController = TextEditingController();
+  final usernameController = TextEditingController();
   
   @override
   void onInit() {
@@ -45,75 +54,152 @@ class BuyerProfileController extends GetxController {
     nameController.dispose();
     emailController.dispose();
     phoneController.dispose();
+    whatsappController.dispose();
+    usernameController.dispose();
     addressController.dispose();
     super.onClose();
   }
   
-  void _loadProfileData() {
+  Future<void> _loadProfileData() async {
     isLoading.value = true;
+    errorMessage.value = '';
     
-    // Simulate loading profile data
-    Future.delayed(const Duration(milliseconds: 800), () {
-      // Mock buyer data
-      buyer.value = Buyer(
-        id: 'buyer_001',
-        email: 'buyer@example.com',
-        fullName: 'Ahmed Al-Mansoori',
-        phoneNumber: '+971 50 123 4567',
-        createdAt: DateTime.now().subtract(const Duration(days: 30)),
-        updatedAt: DateTime.now(),
-        preferredLanguage: 'English',
-        address: 'Dubai, UAE',
-      );
+    try {
+      // Load user profile from AuthService
+      userProfile.value = _authService.currentUser;
       
-      // Update form controllers
-      nameController.text = buyer.value?.fullName ?? '';
-      emailController.text = buyer.value?.email ?? '';
-      phoneController.text = buyer.value?.phoneNumber ?? '';
-      addressController.text = buyer.value?.address ?? '';
-      
-      // Load statistics
-      favoriteCount.value = 12;
-      reviewsCount.value = 8;
-      orderHistory.value = 25;
-      
+      if (userProfile.value != null) {
+        // Update form controllers
+        _updateFormControllers();
+        
+        // Load additional data
+        await _loadUserSettings();
+        await _loadFavoritesCount();
+        await _loadViewedHistory();
+      } else {
+        errorMessage.value = 'No user logged in';
+      }
+    } catch (e) {
+      errorMessage.value = 'Failed to load profile: ${e.toString()}';
+    } finally {
       isLoading.value = false;
-    });
+    }
   }
-  
-  void toggleEditMode() {
-    isEditing.value = !isEditing.value;
-    
-    if (!isEditing.value) {
-      // Save changes
-      _saveProfile();
+
+  void _updateFormControllers() {
+    if (userProfile.value != null) {
+      nameController.text = userProfile.value!.fullname ?? '';
+      emailController.text = userProfile.value!.emailid ?? '';
+      phoneController.text = userProfile.value!.mobileno ?? '';
+      whatsappController.text = userProfile.value!.whatsappno ?? '';
+      usernameController.text = userProfile.value!.username ?? '';
+    }
+  }
+
+  Future<void> _loadUserSettings() async {
+    try {
+      final response = await _userSettingsService.getUserSettings();
+      if (response.isSuccess && response.data != null) {
+        userSettings.value = response.data!;
+        _updateSettingsFromData();
+      } else {
+        // Initialize default settings if none exist
+        await _userSettingsService.initializeUserSettings();
+      }
+    } catch (e) {
+      print('Error loading user settings: $e');
+    }
+  }
+
+  void _updateSettingsFromData() {
+    if (userSettings.value != null) {
+      final notifications = userSettings.value!.notifications;
+      notificationsEnabled.value = notifications.pushNotifications;
+      emailNotificationsEnabled.value = notifications.emailNotifications;
+      smsNotificationsEnabled.value = notifications.smsNotifications;
+    }
+  }
+
+  Future<void> _loadFavoritesCount() async {
+    try {
+      final response = await _favoritesService.getFavoritesCount();
+      if (response.isSuccess && response.data != null) {
+        favoritesCount.value = response.data!;
+      }
+    } catch (e) {
+      print('Error loading favorites count: $e');
+    }
+  }
+
+  Future<void> _loadViewedHistory() async {
+    try {
+      final response = await _viewedHistoryService.getViewedHistoryStats();
+      if (response.isSuccess && response.data != null) {
+        viewedStats.value = response.data!;
+      }
+    } catch (e) {
+      print('Error loading viewed history: $e');
     }
   }
   
-  void _saveProfile() {
-    if (buyer.value == null) return;
+  void toggleEditMode() {
+    if (isEditing.value) {
+      // Save changes
+      _saveProfile();
+    }
+    isEditing.value = !isEditing.value;
+  }
+  
+  void _saveProfile() async {
+    if (userProfile.value == null) return;
     
     isLoading.value = true;
+    errorMessage.value = '';
     
-    // Simulate saving profile
-    Future.delayed(const Duration(milliseconds: 1000), () {
-      buyer.value = buyer.value!.copyWith(
-        fullName: nameController.text,
-        phoneNumber: phoneController.text,
-        address: addressController.text,
-        updatedAt: DateTime.now(),
+    try {
+      // Create updated user profile
+      final updatedProfile = userProfile.value!.copyWith(
+        fullname: nameController.text.trim(),
+        mobileno: phoneController.text.trim().isNotEmpty ? phoneController.text.trim() : null,
+        whatsappno: whatsappController.text.trim().isNotEmpty ? whatsappController.text.trim() : null,
+        updateddt: DateTime.now(),
       );
       
-      isLoading.value = false;
+      // Update profile via AuthService
+      final response = await _authService.updateProfile(updatedProfile);
       
+      if (response.isSuccess) {
+        userProfile.value = updatedProfile;
+        
+        Get.snackbar(
+          'Profile Updated',
+          'Your profile has been updated successfully',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: AppTheme.buyerPrimary.withOpacity(0.9),
+          colorText: Colors.white,
+        );
+      } else {
+        errorMessage.value = response.errorMessage ?? 'Failed to update profile';
+        Get.snackbar(
+          'Update Failed',
+          errorMessage.value,
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red.withOpacity(0.9),
+          colorText: Colors.white,
+        );
+      }
+    } catch (e) {
+      errorMessage.value = 'Failed to update profile: ${e.toString()}';
       Get.snackbar(
-        'Profile Updated',
-        'Your profile has been updated successfully',
+        'Error',
+        errorMessage.value,
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: AppTheme.buyerPrimary.withOpacity(0.9),
+        backgroundColor: Colors.red.withOpacity(0.9),
         colorText: Colors.white,
       );
-    });
+    } finally {
+      isLoading.value = false;
+    }
   }
   
   void selectProfileImage() {
@@ -155,7 +241,7 @@ class BuyerProfileController extends GetxController {
   }
   
   void _pickImageFromCamera() {
-    // Simulate camera image selection
+    // TODO: Implement camera image selection with image_picker
     profileImagePath.value = 'camera_image_path';
     Get.snackbar(
       'Photo Captured',
@@ -165,7 +251,7 @@ class BuyerProfileController extends GetxController {
   }
   
   void _pickImageFromGallery() {
-    // Simulate gallery image selection
+    // TODO: Implement gallery image selection with image_picker
     profileImagePath.value = 'gallery_image_path';
     Get.snackbar(
       'Photo Selected',
@@ -187,22 +273,56 @@ class BuyerProfileController extends GetxController {
     Get.toNamed('/buyer-favorites');
   }
   
-  void viewReviews() {
-    Get.toNamed('/buyer-reviews');
-  }
-  
   void viewOrderHistory() {
     Get.toNamed('/buyer-orders');
   }
+
+  void viewRecentlyViewed() {
+    // Navigate to a recently viewed screen or show in dialog
+    Get.toNamed('/buyer-recently-viewed');
+  }
   
-  void updateNotificationSettings(bool enabled) {
+  void updateNotificationSettings(bool enabled) async {
     notificationsEnabled.value = enabled;
-    // Save to local storage or API
+    await _saveNotificationSettings();
+  }
+
+  void updateEmailNotificationSettings(bool enabled) async {
+    emailNotificationsEnabled.value = enabled;
+    await _saveNotificationSettings();
+  }
+
+  void updateSmsNotificationSettings(bool enabled) async {
+    smsNotificationsEnabled.value = enabled;
+    await _saveNotificationSettings();
+  }
+
+  Future<void> _saveNotificationSettings() async {
+    try {
+      if (userSettings.value != null) {
+        final updatedNotifications = userSettings.value!.notifications.copyWith(
+          pushNotifications: notificationsEnabled.value,
+          emailNotifications: emailNotificationsEnabled.value,
+          smsNotifications: smsNotificationsEnabled.value,
+        );
+
+        final updatedSettings = userSettings.value!.copyWith(
+          notifications: updatedNotifications,
+        );
+
+        final response = await _userSettingsService.saveUserSettings(updatedSettings);
+        if (response.isSuccess) {
+          userSettings.value = updatedSettings;
+        }
+      }
+    } catch (e) {
+      print('Error saving notification settings: $e');
+    }
   }
   
   void updateLocationSettings(bool enabled) {
     locationEnabled.value = enabled;
-    // Save to local storage or API
+    // TODO: Save location settings
   }
   
   void changeLanguage() {
@@ -234,6 +354,7 @@ class BuyerProfileController extends GetxController {
           'Language changed to $language',
           snackPosition: SnackPosition.BOTTOM,
         );
+        // TODO: Implement actual language change
       },
     );
   }
@@ -268,7 +389,73 @@ class BuyerProfileController extends GetxController {
           'Theme changed to $themeOption',
           snackPosition: SnackPosition.BOTTOM,
         );
+        // TODO: Implement actual theme change
       },
+    );
+  }
+
+  void manageInterestCategories() {
+    // Navigate to interest categories management screen
+    Get.toNamed('/buyer-interest-categories');
+  }
+
+  void clearViewedHistory() {
+    Get.dialog(
+      AlertDialog(
+        title: const Text('Clear Viewing History'),
+        content: const Text('Are you sure you want to clear your entire viewing history? This action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Get.back();
+              
+              try {
+                final response = await _viewedHistoryService.clearViewedHistory();
+                if (response.isSuccess) {
+                  viewedStats.value = ViewedHistoryStats(
+                    totalViewedSellers: 0,
+                    totalViewedProducts: 0,
+                    totalViews: 0,
+                  );
+                  
+                  Get.snackbar(
+                    'History Cleared',
+                    'Your viewing history has been cleared',
+                    snackPosition: SnackPosition.BOTTOM,
+                    backgroundColor: AppTheme.buyerPrimary.withOpacity(0.9),
+                    colorText: Colors.white,
+                  );
+                } else {
+                  Get.snackbar(
+                    'Error',
+                    'Failed to clear history',
+                    snackPosition: SnackPosition.BOTTOM,
+                    backgroundColor: Colors.red.withOpacity(0.9),
+                    colorText: Colors.white,
+                  );
+                }
+              } catch (e) {
+                Get.snackbar(
+                  'Error',
+                  'Failed to clear history: ${e.toString()}',
+                  snackPosition: SnackPosition.BOTTOM,
+                  backgroundColor: Colors.red.withOpacity(0.9),
+                  colorText: Colors.white,
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Clear History'),
+          ),
+        ],
+      ),
     );
   }
   
@@ -339,25 +526,25 @@ class BuyerProfileController extends GetxController {
               subtitle: const Text('support@souqistefada.com'),
               onTap: () {
                 Get.back();
-                // Launch email
+                // TODO: Launch email
               },
             ),
             ListTile(
               leading: const Icon(Icons.phone),
               title: const Text('Phone Support'),
-              subtitle: const Text('+971 4 123 4567'),
+              subtitle: const Text('+91 98765 43210'),
               onTap: () {
                 Get.back();
-                // Launch phone dialer
+                // TODO: Launch phone dialer
               },
             ),
             ListTile(
               leading: const Icon(Icons.chat),
               title: const Text('WhatsApp Support'),
-              subtitle: const Text('+971 50 123 4567'),
+              subtitle: const Text('+91 98765 43210'),
               onTap: () {
                 Get.back();
-                // Launch WhatsApp
+                // TODO: Launch WhatsApp
               },
             ),
           ],
@@ -399,6 +586,45 @@ class BuyerProfileController extends GetxController {
     Get.snackbar(
       'Logged Out',
       'You have been logged out successfully',
+      snackPosition: SnackPosition.BOTTOM,
+    );
+  }
+
+  Future<void> refreshProfile() async {
+    await _loadProfileData();
+  }
+
+  // Helper getters for UI
+  String get displayName => userProfile.value?.fullname ?? userProfile.value?.username ?? 'User';
+  String get displayEmail => userProfile.value?.emailid ?? '';
+  String get displayPhone => userProfile.value?.mobileno ?? '';
+  String get memberSince => userProfile.value?.createddt != null 
+      ? 'Member since ${userProfile.value!.createddt!.year}' 
+      : '';
+  
+  int get favoriteSellerCount => favoritesCount.value?.sellersCount ?? 0;
+  int get favoriteProductCount => favoritesCount.value?.productsCount ?? 0;
+  int get totalFavoritesCount => favoritesCount.value?.totalCount ?? 0;
+  
+  int get totalViewsCount => viewedStats.value?.totalViews ?? 0;
+  int get viewedSellersCount => viewedStats.value?.totalViewedSellers ?? 0;
+  int get viewedProductsCount => viewedStats.value?.totalViewedProducts ?? 0;
+
+  // Legacy compatibility getters for old UI
+  Rx<UsersProfile?> get buyer => userProfile; // For backward compatibility
+  int get favoriteCount => totalFavoritesCount;
+  int get reviewsCount => 0; // TODO: Implement reviews functionality
+  int get orderHistory => 0; // TODO: Implement order history
+
+  // Missing controller for address (not used in new implementation but referenced in old view)
+  final addressController = TextEditingController();
+
+  // Missing method for old UI compatibility
+  void viewReviews() {
+    // TODO: Navigate to reviews screen when implemented
+    Get.snackbar(
+      'Coming Soon',
+      'Reviews feature will be available soon',
       snackPosition: SnackPosition.BOTTOM,
     );
   }

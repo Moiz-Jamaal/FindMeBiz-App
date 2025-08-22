@@ -104,8 +104,9 @@ class BuyerMapController extends GetxController {
   }
 
   void viewSellerProfile() {
-    if (selectedSeller.value != null) {
-      Get.toNamed('/buyer-seller-view', arguments: selectedSeller.value);
+    final seller = selectedSeller.value;
+    if (seller != null) {
+      Get.toNamed('/buyer-seller-view', arguments: seller);
     }
   }
 

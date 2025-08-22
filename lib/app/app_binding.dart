@@ -7,6 +7,10 @@ import 'services/category_service.dart';
 import 'services/subscription_service.dart';
 import 'services/role_service.dart';
 import 'services/product_service.dart';
+import 'services/buyer_service.dart';
+import 'services/favorites_service.dart';
+import 'services/viewed_history_service.dart';
+import 'services/user_settings_service.dart';
 
 class AppBinding extends Bindings {
   @override
@@ -24,6 +28,12 @@ class AppBinding extends Bindings {
     Get.put<CategoryService>(CategoryService(), permanent: true);
     Get.put<SubscriptionService>(SubscriptionService(), permanent: true);
     Get.put<ProductService>(ProductService.instance, permanent: true);
+    
+    // Initialize Buyer Services
+    Get.put<BuyerService>(BuyerService(), permanent: true);
+    Get.put<FavoritesService>(FavoritesService(), permanent: true);
+    Get.put<ViewedHistoryService>(ViewedHistoryService(), permanent: true);
+    Get.put<UserSettingsService>(UserSettingsService(), permanent: true);
   }
 }
 
