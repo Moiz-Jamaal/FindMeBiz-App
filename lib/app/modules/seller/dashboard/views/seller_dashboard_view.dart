@@ -64,7 +64,7 @@ class SellerDashboardView extends GetView<SellerDashboardController> {
         ),
         floatingActionButton: FloatingActionButton(
           onPressed: controller.addProduct,
-          backgroundColor: AppTheme.buyerLight,
+          backgroundColor: AppTheme.primaryDark,
           child: const Icon(Icons.add, color: Colors.white),
         ),
       );
@@ -75,7 +75,7 @@ class SellerDashboardView extends GetView<SellerDashboardController> {
       body: _buildDashboardContent(),
       floatingActionButton: FloatingActionButton(
         onPressed: controller.addProduct,
-        backgroundColor: const Color(0xFF7ED321),
+        backgroundColor: const Color(0xFFC4DFAA),
         child: const Icon(Icons.add, color: Colors.white),
       ),
     );
@@ -143,7 +143,7 @@ class SellerDashboardView extends GetView<SellerDashboardController> {
                         controller.businessName.value,
                         style: Get.textTheme.headlineMedium?.copyWith(
                           fontWeight: FontWeight.bold,
-                          color: AppTheme.buyerLight,
+                          color: AppTheme.primaryDark,
                         ),
                       )),
                     ],
@@ -166,8 +166,8 @@ class SellerDashboardView extends GetView<SellerDashboardController> {
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
-              AppTheme.buyerLight,
-              AppTheme.buyerLight.withValues(alpha: 0.8),
+              AppTheme.primaryDark,
+              AppTheme.primaryDark.withValues(alpha: 0.8),
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
@@ -252,7 +252,7 @@ class SellerDashboardView extends GetView<SellerDashboardController> {
                   child: ElevatedButton(
                     onPressed: controller.publishProfile,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF7ED321),
+                      backgroundColor: const Color(0xFF90C8AC),
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
@@ -275,11 +275,11 @@ class SellerDashboardView extends GetView<SellerDashboardController> {
         padding: const EdgeInsets.symmetric(horizontal: AppConstants.defaultPadding),
         child: Row(
           children: [
-            Expanded(child: _buildStatCard('Products', controller.totalProducts, Icons.inventory_2, const Color(0xFF4A90E2))),
+            Expanded(child: _buildStatCard('Products', controller.totalProducts, Icons.inventory_2, const Color(0xFF73A9AD))),
             const SizedBox(width: 12),
-            Expanded(child: _buildRatingStatCard('Rating', controller.averageRating, Icons.star, const Color(0xFFF5A623))),
+            Expanded(child: _buildRatingStatCard('Rating', controller.averageRating, Icons.star, const Color(0xFF90C8AC))),
             const SizedBox(width: 12),
-            Expanded(child: _buildStatCard('Reviews', controller.totalReviews, Icons.reviews, const Color(0xFF7ED321))),
+            Expanded(child: _buildStatCard('Reviews', controller.totalReviews, Icons.reviews, const Color(0xFFC4DFAA))),
           ],
         ),
       ),
@@ -431,7 +431,7 @@ class SellerDashboardView extends GetView<SellerDashboardController> {
                         'Add Product',
                         Icons.add_box,
                         controller.addProduct,
-                        const Color(0xFF7ED321),
+                        const Color(0xFFC4DFAA),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -440,7 +440,7 @@ class SellerDashboardView extends GetView<SellerDashboardController> {
                         'Edit Profile',
                         Icons.edit,
                         controller.editProfile,
-                        const Color(0xFF4A90E2),
+                        const Color(0xFF73A9AD),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -449,7 +449,7 @@ class SellerDashboardView extends GetView<SellerDashboardController> {
                         'Reviews',
                         Icons.star,
                         () => Get.toNamed('/seller-reviews'),
-                        const Color(0xFFF5A623),
+                        const Color(0xFF90C8AC),
                       ),
                     ),
                   ],
@@ -550,8 +550,8 @@ class SellerDashboardView extends GetView<SellerDashboardController> {
           icon: const Icon(Icons.arrow_forward),
           label: const Text('View All Products'),
           style: OutlinedButton.styleFrom(
-            foregroundColor: const Color(0xFF4A90E2),
-            side: const BorderSide(color: Color(0xFF4A90E2)),
+            foregroundColor: const Color(0xFF73A9AD),
+            side: const BorderSide(color: Color(0xFF73A9AD)),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),
             ),
