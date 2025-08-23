@@ -119,6 +119,8 @@ class SellerProfileViewController extends GetxController {
         _loadSellerProducts();
         _checkIfFavorite();
         _markAsViewed();
+        _trackSellerView();
+        _loadReviewSummary();
         isLoading.value = false;
       } else {
         
@@ -291,11 +293,59 @@ class SellerProfileViewController extends GetxController {
       
       if (response.isSuccess && response.data != null) {
         final data = response.data!;
-        averageRating.value = (data['averageRating'] ?? 0.0).toDouble();
-        totalReviews.value = data['totalReviews'] ?? 0;
+        final apiRating = (data['averageRating'] ?? 0.0).toDouble();
+        final apiReviews = data['totalReviews'] ?? 0;
+        
+        // Use API data if valid, otherwise calculate from individual reviews
+        if (apiRating > 0 || apiReviews > 0) {
+          averageRating.value = apiRating;
+          totalReviews.value = apiReviews;
+        } else {
+          // Fallback: calculate from individual reviews
+          await _calculateReviewSummaryFromReviews(sellerId);
+        }
+      } else {
+        // Fallback: calculate from individual reviews
+        await _calculateReviewSummaryFromReviews(sellerId);
       }
     } catch (e) {
+      // Fallback: calculate from individual reviews
+      await _calculateReviewSummaryFromReviews(sellerId);
+    }
+  }
+
+  Future<void> _calculateReviewSummaryFromReviews(int sellerId) async {
+    try {
+      final buyerService = Get.find<BuyerService>();
+      final response = await buyerService.getSellerReviews(sellerId);
       
+      if (response.isSuccess && response.data != null) {
+        final reviews = List<Map<String, dynamic>>.from(response.data ?? []);
+        
+        if (reviews.isEmpty) {
+          averageRating.value = 0.0;
+          totalReviews.value = 0;
+          return;
+        }
+        
+        // Calculate average rating from individual reviews
+        double totalRating = 0.0;
+        for (final review in reviews) {
+          final rating = review['rating'] ?? review['Rating'] ?? 0;
+          totalRating += rating.toDouble();
+        }
+        
+        final calculatedAverage = totalRating / reviews.length;
+        averageRating.value = calculatedAverage;
+        totalReviews.value = reviews.length;
+        
+      } else {
+        averageRating.value = 0.0;
+        totalReviews.value = 0;
+      }
+    } catch (e) {
+      averageRating.value = 0.0;
+      totalReviews.value = 0;
     }
   }
 
