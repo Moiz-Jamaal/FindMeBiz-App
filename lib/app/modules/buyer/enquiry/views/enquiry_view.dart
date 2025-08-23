@@ -75,7 +75,7 @@ class EnquiryView extends GetView<EnquiryController> {
               width: 120,
               height: 120,
               decoration: BoxDecoration(
-                color: AppTheme.buyerPrimary.withOpacity(0.1),
+                color: AppTheme.buyerPrimary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(60),
               ),
               child: Icon(
@@ -133,7 +133,7 @@ class EnquiryView extends GetView<EnquiryController> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -228,7 +228,7 @@ class EnquiryView extends GetView<EnquiryController> {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: enquiry.urgencyColor.withOpacity(0.1),
+                      color: enquiry.urgencyColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
@@ -265,7 +265,7 @@ class EnquiryView extends GetView<EnquiryController> {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: AppTheme.buyerPrimary.withOpacity(0.1),
+                      color: AppTheme.buyerPrimary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
@@ -346,7 +346,7 @@ class EnquiryView extends GetView<EnquiryController> {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.green.withOpacity(0.1),
+                        color: Colors.green.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Row(

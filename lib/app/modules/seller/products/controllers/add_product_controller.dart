@@ -4,7 +4,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:souq/app/core/config/api_config.dart';
 
 import '../../../../services/product_service.dart';
 import '../../../../services/auth_service.dart';
@@ -476,7 +475,7 @@ class AddProductController extends GetxController {
           )).toList();
 
           Future(() async {
-            try {
+       
               
               final uploadResp = await _productService
                   .uploadMultipleImages(productId, images)
@@ -486,9 +485,7 @@ class AddProductController extends GetxController {
               } else {
                 
               }
-            } catch (e) {
-              
-            }
+          
           });
         }
       } else {
@@ -524,7 +521,7 @@ class AddProductController extends GetxController {
       } else if (e.toString().contains('HandshakeException')) {
         errorMessage = 'SSL connection error. Please try again.';
       } else {
-        errorMessage = 'Error creating product: ${e.toString().length > 100 ? e.toString().substring(0, 100) + "..." : e.toString()}';
+        errorMessage = 'Error creating product: ${e.toString().length > 100 ? "${e.toString().substring(0, 100)}..." : e.toString()}';
       }
       _showErrorMessage(errorMessage);
     } finally {
@@ -536,21 +533,12 @@ class AddProductController extends GetxController {
 
   // Add a debug method to test API connectivity
   Future<void> testApiConnection() async {
-    try {
-      
-      
-      
-      
+ 
       
       // Test with a simple categories call
-      final response = await _categoryService.getCategories();
+       await _categoryService.getCategories();
       
-      if (!response.isSuccess) {
-        
-      }
-    } catch (e) {
-      
-    }
+  
   }  void _openSavingDialog() {
     if (!(_savingDialogOpen)) {
       _savingDialogOpen = true;
@@ -558,6 +546,7 @@ class AddProductController extends GetxController {
         showDialog(
           context: Get.context!,
           barrierDismissible: false,
+          // ignore: deprecated_member_use
           builder: (context) => WillPopScope(
             onWillPop: () async => false,
             child: Center(

@@ -21,8 +21,8 @@ class BannerAdTile extends StatelessWidget {
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
-                AppTheme.buyerPrimary.withOpacity(0.08),
-                AppTheme.buyerPrimary.withOpacity(0.02),
+                AppTheme.buyerPrimary.withValues(alpha: 0.08),
+                AppTheme.buyerPrimary.withValues(alpha: 0.02),
               ],
             ),
             borderRadius: BorderRadius.circular(12),

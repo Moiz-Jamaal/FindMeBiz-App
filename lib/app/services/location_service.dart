@@ -17,7 +17,7 @@ class LocationService extends GetxService {
       Get.snackbar(
         'Location Services Disabled',
         'Please enable location services in your device settings.',
-        backgroundColor: Colors.orange.withOpacity(0.1),
+        backgroundColor: Colors.orange.withValues(alpha: 0.1),
         colorText: Colors.orange,
       );
       return false;
@@ -30,7 +30,7 @@ class LocationService extends GetxService {
         Get.snackbar(
           'Permission Denied',
           'Location permissions are required to get your current location.',
-          backgroundColor: Colors.red.withOpacity(0.1),
+          backgroundColor: Colors.red.withValues(alpha: 0.1),
           colorText: Colors.red,
         );
         return false;
@@ -41,7 +41,7 @@ class LocationService extends GetxService {
       Get.snackbar(
         'Permission Permanently Denied',
         'Location permissions are permanently denied. Please enable them in app settings.',
-        backgroundColor: Colors.red.withOpacity(0.1),
+        backgroundColor: Colors.red.withValues(alpha: 0.1),
         colorText: Colors.red,
       );
       return false;
@@ -67,7 +67,7 @@ class LocationService extends GetxService {
       Get.snackbar(
         'Location Error',
         'Failed to get current location: ${e.toString()}',
-        backgroundColor: Colors.red.withOpacity(0.1),
+        backgroundColor: Colors.red.withValues(alpha: 0.1),
         colorText: Colors.red,
       );
       return null;
@@ -142,7 +142,7 @@ class LocationService extends GetxService {
       Get.snackbar(
         'Getting Location Details',
         'Fetching address information...',
-        backgroundColor: Colors.blue.withOpacity(0.1),
+        backgroundColor: Colors.blue.withValues(alpha: 0.1),
         colorText: Colors.blue,
         duration: const Duration(seconds: 2),
       );
@@ -157,7 +157,7 @@ class LocationService extends GetxService {
       Get.snackbar(
         'Error',
         'Failed to get location details: ${e.toString()}',
-        backgroundColor: Colors.red.withOpacity(0.1),
+        backgroundColor: Colors.red.withValues(alpha: 0.1),
         colorText: Colors.red,
       );
       return null;
@@ -173,7 +173,7 @@ class LocationService extends GetxService {
   Map<String, double>? parseGeoLocation(String? geoLocationString) {
     if (geoLocationString == null || geoLocationString.isEmpty) return null;
     
-    try {
+  
       final parts = geoLocationString.split(',');
       if (parts.length == 2) {
         return {
@@ -181,9 +181,7 @@ class LocationService extends GetxService {
           'longitude': double.parse(parts[1]),
         };
       }
-    } catch (e) {
-      
-    }
+  
     
     return null;
   }

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:souq/app/data/models/product.dart';
 import 'package:souq/app/data/models/seller.dart';
-import 'package:souq/app/data/models/api/seller_details.dart';
 import 'package:souq/app/services/api/api_exception.dart';
 import 'package:souq/app/services/buyer_service.dart';
 import 'package:souq/app/services/auth_service.dart';
@@ -41,30 +40,30 @@ class BuyerProductViewController extends GetxController {
 
   void _loadProductData() {
     final productArg = Get.arguments;
-    print('🔍 BuyerProductViewController: Received arguments: $productArg (type: ${productArg.runtimeType})');
+    
     
     if (productArg is Product) {
       // Full product object passed
-      print('✅ BuyerProductViewController: Loading full product object');
+      
       product.value = productArg;
       _loadProductDetails();
     } else if (productArg is int && productArg > 0) {
       // Product ID as int
-      print('✅ BuyerProductViewController: Loading product by int ID: $productArg');
+      
       _loadProductById(productArg.toString());
     } else if (productArg is String && productArg.isNotEmpty) {
       // Product ID as string
       final productId = int.tryParse(productArg);
       if (productId != null && productId > 0) {
-        print('✅ BuyerProductViewController: Loading product by string ID: $productArg');
+        
         _loadProductById(productArg);
       } else {
-        print('❌ BuyerProductViewController: Invalid string product ID: $productArg');
+        
         _setError('Invalid product ID format. Please try again.');
       }
     } else {
       // Invalid data provided
-      print('❌ BuyerProductViewController: Invalid data provided - $productArg');
+      
       _setError('Product information is missing or invalid. Please try selecting the product again.');
     }
   }
@@ -89,29 +88,29 @@ class BuyerProductViewController extends GetxController {
     isLoading.value = true;
     _clearError();
     
-    print('🔄 BuyerProductViewController: Loading product by ID: $productId');
+    
     
     // Use the buyer service to load product details
     final buyerService = Get.find<BuyerService>();
     final productIdInt = int.tryParse(productId);
     
     if (productIdInt == null) {
-      print('❌ BuyerProductViewController: Invalid product ID format: $productId');
+      
       _setError('Invalid product ID format. Please try again.');
       return;
     }
     
     buyerService.getProductDetails(productIdInt).then((response) {
       if (response.isSuccess && response.data != null) {
-        print('✅ BuyerProductViewController: Product data loaded successfully');
+        
         product.value = response.data;
         _loadProductDetails();
       } else {
-        print('❌ BuyerProductViewController: API call failed: ${response.errorMessage}');
+        
         _setError(response.errorMessage ?? 'Product not found. It may have been removed or is no longer available.');
       }
     }).catchError((e) {
-      print('❌ BuyerProductViewController: Exception during API call: $e');
+      
       _setError('Network error. Please check your connection and try again.');
     });
   }
@@ -125,11 +124,11 @@ class BuyerProductViewController extends GetxController {
     try {
       // Check if seller info is already included in product response
       if (product.value?.seller != null) {
-        print('✅ BuyerProductViewController: Using seller data from product response');
+        
         seller.value = _convertSellerInfoToSeller(product.value!.seller!);
       } else {
         // Fallback: try to load seller info via separate API call
-        print('🔄 BuyerProductViewController: Seller not in product response, loading separately');
+        
         _loadSellerInfo();
       }
       
@@ -174,14 +173,14 @@ class BuyerProductViewController extends GetxController {
     ).then((response) {
       if (response.isSuccess && response.data != null) {
         isFavorite.value = response.data!['isFavorite'] == true;
-        print('✅ Favorite status loaded: ${isFavorite.value}');
+        
       } else {
         isFavorite.value = false;
-        print('❌ Failed to check favorite status: ${response.errorMessage}');
+        
       }
     }).catchError((e) {
       isFavorite.value = false;
-      print('❌ Exception checking favorite status: $e');
+      
     });
   }
 
@@ -203,12 +202,12 @@ class BuyerProductViewController extends GetxController {
       type: 'P',
     ).then((response) {
       if (response.isSuccess) {
-        print('✅ Product view tracked successfully');
+        
       } else {
-        print('❌ Failed to track product view: ${response.errorMessage}');
+        
       }
     }).catchError((e) {
-      print('❌ Exception tracking product view: $e');
+      
     });
   }
 
@@ -245,41 +244,41 @@ class BuyerProductViewController extends GetxController {
       // No fallback placeholder images - if no images, show empty state
     } catch (e) {
       // Handle image loading errors gracefully
-      print('Failed to load product images: $e');
+      
       productImages.clear();
     }
   }
 
   void _loadSellerInfo() {
     if (product.value?.sellerId == null) {
-      print('❌ BuyerProductViewController: No seller ID available for product');
+      
       return;
     }
     
-    print('🔄 BuyerProductViewController: Loading seller info for sellerId: ${product.value!.sellerId}');
+    
     
     // Use the new API endpoint that searches by sellerId
     final buyerService = Get.find<BuyerService>();
     final sellerIdInt = int.tryParse(product.value!.sellerId);
     
     if (sellerIdInt == null) {
-      print('❌ BuyerProductViewController: Invalid seller ID format: ${product.value!.sellerId}');
+      
       return;
     }
     
     buyerService.getSellerDetailsBySellerId(sellerIdInt).then((response) {
       if (response.isSuccess && response.data != null) {
-        print('✅ BuyerProductViewController: Seller data loaded from new API successfully');
+        
         
         // Convert SellerDetailsExtended to Seller model
         final sellerData = _convertSellerDetailsToSeller(response.data!);
         seller.value = sellerData;
       } else {
-        print('❌ BuyerProductViewController: Failed to load seller from new API: ${response.errorMessage}');
+        
         // No fallback - let UI handle gracefully
       }
     }).catchError((e) {
-      print('❌ BuyerProductViewController: Exception during seller API call: $e');
+      
       // No fallback - let UI handle gracefully
     });
   }
@@ -310,30 +309,26 @@ class BuyerProductViewController extends GetxController {
   // Helper method to parse latitude from geolocation string
   double _parseLatitude(String? geoLocation) {
     if (geoLocation == null || geoLocation.isEmpty) return 0.0;
-    try {
+   
       // Assuming geolocation format is "lat,lng" or similar
       final parts = geoLocation.split(',');
       if (parts.length >= 2) {
         return double.tryParse(parts[0].trim()) ?? 0.0;
       }
-    } catch (e) {
-      print('Error parsing latitude from: $geoLocation');
-    }
+   
     return 0.0;
   }
 
   // Helper method to parse longitude from geolocation string
   double _parseLongitude(String? geoLocation) {
     if (geoLocation == null || geoLocation.isEmpty) return 0.0;
-    try {
+   
       // Assuming geolocation format is "lat,lng" or similar
       final parts = geoLocation.split(',');
       if (parts.length >= 2) {
         return double.tryParse(parts[1].trim()) ?? 0.0;
       }
-    } catch (e) {
-      print('Error parsing longitude from: $geoLocation');
-    }
+ 
     return 0.0;
   }
 
@@ -350,7 +345,7 @@ class BuyerProductViewController extends GetxController {
   void _loadRelatedProducts() {
     if (product.value == null) return;
     
-    print('🔄 BuyerProductViewController: Loading related products');
+    
     
     // Use actual API service to fetch related products
     final buyerService = Get.find<BuyerService>();
@@ -368,17 +363,17 @@ class BuyerProductViewController extends GetxController {
           pageSize: 10, // Get up to 10 related products
         ).then((response) {
           if (response.isSuccess && response.data != null) {
-            print('✅ BuyerProductViewController: Related products loaded from API (${response.data!.products.length} products)');
+            
             relatedProducts.clear();
             // Exclude current product from related products
             final filtered = response.data!.products.where((p) => p.id != product.value!.id).toList();
             relatedProducts.addAll(filtered);
           } else {
-            print('❌ BuyerProductViewController: Failed to load related products: ${response.errorMessage}');
+            
             relatedProducts.clear();
           }
         }).catchError((e) {
-          print('❌ BuyerProductViewController: Exception during related products API call: $e');
+          
           relatedProducts.clear();
         });
       } else {
@@ -452,11 +447,11 @@ class BuyerProductViewController extends GetxController {
           'Favorites',
           message,
           isFavorite.value 
-              ? AppTheme.buyerPrimary.withOpacity(0.9)
-              : Colors.grey.withOpacity(0.9),
+              ? AppTheme.buyerPrimary.withValues(alpha: 0.9)
+              : Colors.grey.withValues(alpha: 0.9),
         );
         
-        print('✅ Favorite status updated successfully: ${isFavorite.value}');
+        
       } else {
         // Revert optimistic update on failure
         isFavorite.value = wasAlreadyFavorite;
@@ -465,7 +460,7 @@ class BuyerProductViewController extends GetxController {
           'Failed to update favorites. Please try again.',
           Colors.red,
         );
-        print('❌ Failed to update favorite status: ${response.errorMessage}');
+        
       }
     }).catchError((e) {
       // Revert optimistic update on error
@@ -475,7 +470,7 @@ class BuyerProductViewController extends GetxController {
         'Network error. Please try again.',
         Colors.red,
       );
-      print('❌ Exception updating favorite status: $e');
+      
     });
   }
 
@@ -496,7 +491,7 @@ class BuyerProductViewController extends GetxController {
       _showSnackbar(
         'Opening WhatsApp',
         'Opening WhatsApp to contact ${seller.value?.businessName}',
-        Colors.green.withOpacity(0.9),
+        Colors.green.withValues(alpha: 0.9),
       );
       // In real app: launch WhatsApp
     } else if (seller.value != null) {
@@ -565,10 +560,10 @@ class BuyerProductViewController extends GetxController {
       type: 'P',
     ).then((response) {
       if (response.isSuccess) {
-        print('✅ Related product view tracked successfully');
+        
       }
     }).catchError((e) {
-      print('❌ Exception tracking related product view: $e');
+      
     });
   }
 
@@ -653,7 +648,7 @@ class BuyerProductViewController extends GetxController {
         width: 40,
         height: 40,
         decoration: BoxDecoration(
-          color: AppTheme.buyerPrimary.withOpacity(0.1),
+          color: AppTheme.buyerPrimary.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Icon(
@@ -672,7 +667,7 @@ class BuyerProductViewController extends GetxController {
     _showSnackbar(
       'Opening WhatsApp',
       'Opening WhatsApp with: "$message"',
-      Colors.green.withOpacity(0.9),
+      Colors.green.withValues(alpha: 0.9),
       duration: const Duration(seconds: 3),
     );
     // In real app: launch WhatsApp with pre-filled message

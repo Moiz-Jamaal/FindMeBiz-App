@@ -75,8 +75,8 @@ class SellerSettingsView extends GetView<SellerSettingsController> {
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: controller.isBusinessOpen.value 
-                    ? AppTheme.successColor.withOpacity(0.1)
-                    : Colors.red.withOpacity(0.1),
+                    ? AppTheme.successColor.withValues(alpha: 0.1)
+                    : Colors.red.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
                   color: controller.isBusinessOpen.value
@@ -410,7 +410,7 @@ class SellerSettingsView extends GetView<SellerSettingsController> {
 
   Widget _buildDangerZone() {
     return Card(
-      color: Colors.red.withOpacity(0.05),
+      color: Colors.red.withValues(alpha: 0.05),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(

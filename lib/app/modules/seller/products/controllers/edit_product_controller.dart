@@ -3,7 +3,6 @@ import 'package:get/get.dart';
 import '../../../../data/models/product.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../services/category_service.dart';
-import '../../../../data/models/api/category_master.dart';
 
 class EditProductController extends GetxController {
   final CategoryService _categoryService = Get.find<CategoryService>();

@@ -89,15 +89,15 @@ class BuyerProfileController extends GetxController {
   void _updateFormControllers() {
     if (userProfile.value != null) {
       nameController.text = userProfile.value!.fullname ?? '';
-      emailController.text = userProfile.value!.emailid ?? '';
+      emailController.text = userProfile.value!.emailid ;
       phoneController.text = userProfile.value!.mobileno ?? '';
       whatsappController.text = userProfile.value!.whatsappno ?? '';
-      usernameController.text = userProfile.value!.username ?? '';
+      usernameController.text = userProfile.value!.username ;
     }
   }
 
   Future<void> _loadUserSettings() async {
-    try {
+
       final response = await _userSettingsService.getUserSettings();
       if (response.isSuccess && response.data != null) {
         userSettings.value = response.data!;
@@ -106,9 +106,7 @@ class BuyerProfileController extends GetxController {
         // Initialize default settings if none exist
         await _userSettingsService.initializeUserSettings();
       }
-    } catch (e) {
-      print('Error loading user settings: $e');
-    }
+   
   }
 
   void _updateSettingsFromData() {
@@ -121,25 +119,21 @@ class BuyerProfileController extends GetxController {
   }
 
   Future<void> _loadFavoritesCount() async {
-    try {
+
       final response = await _favoritesService.getFavoritesCount();
       if (response.isSuccess && response.data != null) {
         favoritesCount.value = response.data!;
       }
-    } catch (e) {
-      print('Error loading favorites count: $e');
-    }
+  
   }
 
   Future<void> _loadViewedHistory() async {
-    try {
+
       final response = await _viewedHistoryService.getViewedHistoryStats();
       if (response.isSuccess && response.data != null) {
         viewedStats.value = response.data!;
       }
-    } catch (e) {
-      print('Error loading viewed history: $e');
-    }
+
   }
   
   void toggleEditMode() {
@@ -175,7 +169,7 @@ class BuyerProfileController extends GetxController {
           'Profile Updated',
           'Your profile has been updated successfully',
           snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: AppTheme.buyerPrimary.withOpacity(0.9),
+          backgroundColor: AppTheme.buyerPrimary.withValues(alpha: 0.9),
           colorText: Colors.white,
         );
       } else {
@@ -184,7 +178,7 @@ class BuyerProfileController extends GetxController {
           'Update Failed',
           errorMessage.value,
           snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red.withOpacity(0.9),
+          backgroundColor: Colors.red.withValues(alpha: 0.9),
           colorText: Colors.white,
         );
       }
@@ -194,7 +188,7 @@ class BuyerProfileController extends GetxController {
         'Error',
         errorMessage.value,
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red.withOpacity(0.9),
+        backgroundColor: Colors.red.withValues(alpha: 0.9),
         colorText: Colors.white,
       );
     } finally {
@@ -298,7 +292,7 @@ class BuyerProfileController extends GetxController {
   }
 
   Future<void> _saveNotificationSettings() async {
-    try {
+
       if (userSettings.value != null) {
         final updatedNotifications = userSettings.value!.notifications.copyWith(
           pushNotifications: notificationsEnabled.value,
@@ -315,9 +309,7 @@ class BuyerProfileController extends GetxController {
           userSettings.value = updatedSettings;
         }
       }
-    } catch (e) {
-      print('Error saving notification settings: $e');
-    }
+   
   }
   
   void updateLocationSettings(bool enabled) {
@@ -426,7 +418,7 @@ class BuyerProfileController extends GetxController {
                     'History Cleared',
                     'Your viewing history has been cleared',
                     snackPosition: SnackPosition.BOTTOM,
-                    backgroundColor: AppTheme.buyerPrimary.withOpacity(0.9),
+                    backgroundColor: AppTheme.buyerPrimary.withValues(alpha: 0.9),
                     colorText: Colors.white,
                   );
                 } else {
@@ -434,7 +426,7 @@ class BuyerProfileController extends GetxController {
                     'Error',
                     'Failed to clear history',
                     snackPosition: SnackPosition.BOTTOM,
-                    backgroundColor: Colors.red.withOpacity(0.9),
+                    backgroundColor: Colors.red.withValues(alpha: 0.9),
                     colorText: Colors.white,
                   );
                 }
@@ -443,7 +435,7 @@ class BuyerProfileController extends GetxController {
                   'Error',
                   'Failed to clear history: ${e.toString()}',
                   snackPosition: SnackPosition.BOTTOM,
-                  backgroundColor: Colors.red.withOpacity(0.9),
+                  backgroundColor: Colors.red.withValues(alpha: 0.9),
                   colorText: Colors.white,
                 );
               }

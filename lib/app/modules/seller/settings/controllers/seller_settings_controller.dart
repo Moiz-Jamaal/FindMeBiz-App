@@ -192,7 +192,7 @@ class SellerSettingsController extends GetxController {
   }
 
   Future<void> _createDefaultSettings() async {
-    try {
+    
       final defaultSettings = SellerSettings(
         sellerid: sellerId.value,
         isopen: true,
@@ -215,9 +215,7 @@ class SellerSettingsController extends GetxController {
       if (response.success) {
         currentSettings.value = defaultSettings;
       }
-    } catch (e) {
-      
-    }
+  
   }
 
   void toggleBusinessStatus() {

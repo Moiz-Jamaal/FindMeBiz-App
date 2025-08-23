@@ -40,7 +40,7 @@ class SellerDashboardController extends GetxController {
         Get.snackbar(
           'Error',
           'No user found. Please login again.',
-          backgroundColor: Colors.red.withOpacity(0.1),
+          backgroundColor: Colors.red.withValues(alpha: 0.1),
           colorText: Colors.red,
         );
         return;
@@ -70,7 +70,7 @@ class SellerDashboardController extends GetxController {
       Get.snackbar(
         'Error',
         'Failed to load dashboard data',
-        backgroundColor: Colors.red.withOpacity(0.1),
+        backgroundColor: Colors.red.withValues(alpha: 0.1),
         colorText: Colors.red,
       );
       

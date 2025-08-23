@@ -44,7 +44,7 @@ class EnhancedNetworkImage extends StatelessWidget {
         return placeholder ?? _buildPlaceholder();
       },
       errorBuilder: (context, error, stackTrace) {
-        print('Image loading error: $error for URL: $imageUrl');
+        
         return _buildErrorWidget();
       },
       headers: {

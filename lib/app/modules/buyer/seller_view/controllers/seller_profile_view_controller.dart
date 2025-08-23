@@ -67,11 +67,11 @@ class SellerProfileViewController extends GetxController {
     
     // Get seller from arguments
     final sellerData = Get.arguments;
-    print('🔍 SellerProfileViewController: Received arguments: $sellerData (type: ${sellerData.runtimeType})');
+    
     
     if (sellerData is Seller) {
       // Full seller object passed (e.g., from search)
-      print('✅ SellerProfileViewController: Loading seller object directly');
+      
       seller.value = sellerData;
       _loadSellerProducts();
       _checkIfFavorite();
@@ -81,29 +81,29 @@ class SellerProfileViewController extends GetxController {
       isLoading.value = false;
     } else if (sellerData is String) {
       // Only seller ID passed (e.g., from home)
-      print('✅ SellerProfileViewController: Loading seller by string ID: $sellerData');
+      
       _loadSellerById(sellerData);
     } else if (sellerData is int) {
       // Seller ID as int
-      print('✅ SellerProfileViewController: Loading seller by int ID: $sellerData');
+      
       _loadSellerById(sellerData.toString());
     } else {
       // No valid data provided
-      print('❌ SellerProfileViewController: Invalid data provided - $sellerData');
+      
       _setError('Unable to load seller information. Invalid data provided.');
     }
   }
 
   void _loadSellerById(String sellerId) {
     isLoading.value = true;
-    print('🔄 SellerProfileViewController: Loading seller by ID: $sellerId');
+    
     
     // Use actual API service to fetch seller details
     final buyerService = Get.find<BuyerService>();
     final sellerIdInt = int.tryParse(sellerId);
     
     if (sellerIdInt == null) {
-      print('❌ SellerProfileViewController: Invalid seller ID format: $sellerId');
+      
       _setError('Invalid seller ID. Please try again.');
       return;
     }
@@ -111,7 +111,7 @@ class SellerProfileViewController extends GetxController {
     // Try the new API endpoint first (searches by sellerId)
     buyerService.getSellerDetailsBySellerId(sellerIdInt).then((response) {
       if (response.isSuccess && response.data != null) {
-        print('✅ SellerProfileViewController: Seller data loaded from sellerId API successfully');
+        
         
         // Convert SellerDetailsExtended to Seller model
         final sellerData = _convertToSellerModel(response.data!);
@@ -121,11 +121,11 @@ class SellerProfileViewController extends GetxController {
         _markAsViewed();
         isLoading.value = false;
       } else {
-        print('❌ SellerProfileViewController: API call failed: ${response.errorMessage}');
+        
         _setError(response.errorMessage ?? 'Failed to load seller information. Please try again.');
       }
     }).catchError((e) {
-      print('❌ SellerProfileViewController: Exception during API call: $e');
+      
       _setError('Network error. Please check your connection and try again.');
     });
   }
@@ -156,30 +156,26 @@ class SellerProfileViewController extends GetxController {
   // Helper method to parse latitude from geolocation string
   double _parseLatitude(String? geoLocation) {
     if (geoLocation == null || geoLocation.isEmpty) return 0.0;
-    try {
+
       // Assuming geolocation format is "lat,lng" or similar
       final parts = geoLocation.split(',');
       if (parts.length >= 2) {
         return double.tryParse(parts[0].trim()) ?? 0.0;
       }
-    } catch (e) {
-      print('Error parsing latitude from: $geoLocation');
-    }
+  
     return 0.0;
   }
 
   // Helper method to parse longitude from geolocation string
   double _parseLongitude(String? geoLocation) {
     if (geoLocation == null || geoLocation.isEmpty) return 0.0;
-    try {
+
       // Assuming geolocation format is "lat,lng" or similar
       final parts = geoLocation.split(',');
       if (parts.length >= 2) {
         return double.tryParse(parts[1].trim()) ?? 0.0;
       }
-    } catch (e) {
-      print('Error parsing longitude from: $geoLocation');
-    }
+   
     return 0.0;
   }
 
@@ -196,14 +192,14 @@ class SellerProfileViewController extends GetxController {
   void _loadSellerProducts() {
     if (seller.value == null) return;
     
-    print('🔄 SellerProfileViewController: Loading products for seller ID: ${seller.value!.id}');
+    
     
     // Use actual API service to fetch seller's products
     final buyerService = Get.find<BuyerService>();
     final sellerIdInt = int.tryParse(seller.value!.id);
     
     if (sellerIdInt == null) {
-      print('❌ SellerProfileViewController: Invalid seller ID for products: ${seller.value!.id}');
+      
       // Don't load any products if seller ID is invalid
       products.clear();
       _extractProductCategories();
@@ -215,18 +211,18 @@ class SellerProfileViewController extends GetxController {
       pageSize: 50, // Get more products for seller profile
     ).then((response) {
       if (response.isSuccess && response.data != null) {
-        print('✅ SellerProfileViewController: Products loaded from API successfully (${response.data!.products.length} products)');
+        
         products.clear();
         products.addAll(response.data!.products);
         _extractProductCategories();
       } else {
-        print('❌ SellerProfileViewController: Failed to load products from API: ${response.errorMessage}');
+        
         // Clear products if API call fails - no fallback to mock data
         products.clear();
         _extractProductCategories();
       }
     }).catchError((e) {
-      print('❌ SellerProfileViewController: Exception during products API call: $e');
+      
       // Clear products if API call fails - no fallback to mock data
       products.clear();
       _extractProductCategories();
@@ -265,14 +261,14 @@ class SellerProfileViewController extends GetxController {
     ).then((response) {
       if (response.isSuccess && response.data != null) {
         isFavorite.value = response.data!['isFavorite'] == true;
-        print('✅ Seller favorite status loaded: ${isFavorite.value}');
+        
       } else {
         isFavorite.value = false;
-        print('❌ Failed to check seller favorite status: ${response.errorMessage}');
+        
       }
     }).catchError((e) {
       isFavorite.value = false;
-      print('❌ Exception checking seller favorite status: $e');
+      
     });
   }
 
@@ -299,7 +295,7 @@ class SellerProfileViewController extends GetxController {
         totalReviews.value = data['totalReviews'] ?? 0;
       }
     } catch (e) {
-      print('Error loading review summary: $e');
+      
     }
   }
 
@@ -321,12 +317,12 @@ class SellerProfileViewController extends GetxController {
       type: 'S',
     ).then((response) {
       if (response.isSuccess) {
-        print('✅ Seller view tracked successfully');
+        
       } else {
-        print('❌ Failed to track seller view: ${response.errorMessage}');
+        
       }
     }).catchError((e) {
-      print('❌ Exception tracking seller view: $e');
+      
     });
   }
 
@@ -402,12 +398,12 @@ class SellerProfileViewController extends GetxController {
           message,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: isFavorite.value 
-              ? AppTheme.buyerPrimary.withOpacity(0.9)
-              : Colors.grey.withOpacity(0.9),
+              ? AppTheme.buyerPrimary.withValues(alpha: 0.9)
+              : Colors.grey.withValues(alpha: 0.9),
           colorText: Colors.white,
         );
         
-        print('✅ Seller favorite status updated successfully: ${isFavorite.value}');
+        
       } else {
         // Revert optimistic update on failure
         isFavorite.value = wasAlreadyFavorite;
@@ -418,7 +414,7 @@ class SellerProfileViewController extends GetxController {
           backgroundColor: Colors.red,
           colorText: Colors.white,
         );
-        print('❌ Failed to update seller favorite status: ${response.errorMessage}');
+        
       }
     }).catchError((e) {
       // Revert optimistic update on error
@@ -430,7 +426,7 @@ class SellerProfileViewController extends GetxController {
         backgroundColor: Colors.red,
         colorText: Colors.white,
       );
-      print('❌ Exception updating seller favorite status: $e');
+      
     });
   }
 
@@ -557,10 +553,10 @@ class SellerProfileViewController extends GetxController {
       type: 'P',
     ).then((response) {
       if (response.isSuccess) {
-        print('✅ Product view from seller page tracked successfully');
+        
       }
     }).catchError((e) {
-      print('❌ Exception tracking product view from seller: $e');
+      
     });
   }
 

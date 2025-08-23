@@ -105,7 +105,7 @@ class StallLocationView extends GetView<StallLocationController> {
               child: ListView.separated(
                 shrinkWrap: true,
                 itemCount: results.length,
-                separatorBuilder: (_, __) => Divider(height: 1, color: Colors.grey.shade200),
+                separatorBuilder: (_, _) => Divider(height: 1, color: Colors.grey.shade200),
                 itemBuilder: (context, index) {
                   final item = results[index];
                   return ListTile(
@@ -236,7 +236,7 @@ class StallLocationView extends GetView<StallLocationController> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.7),
+            color: Colors.black.withValues(alpha: 0.7),
             borderRadius: BorderRadius.circular(4),
           ),
           child: Text(
@@ -260,7 +260,7 @@ class StallLocationView extends GetView<StallLocationController> {
       child: ElevatedButton(
         onPressed: () => controller.selectQuickLocation(location),
         style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.white.withOpacity(0.9),
+          backgroundColor: Colors.white.withValues(alpha: 0.9),
           foregroundColor: AppTheme.textPrimary,
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           minimumSize: Size.zero,
@@ -283,7 +283,7 @@ class StallLocationView extends GetView<StallLocationController> {
         borderRadius: BorderRadius.circular(8),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -323,7 +323,7 @@ class StallLocationView extends GetView<StallLocationController> {
         borderRadius: BorderRadius.circular(8),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.2),
+            color: Colors.black.withValues(alpha: 0.2),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -428,10 +428,10 @@ class StallLocationView extends GetView<StallLocationController> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF0EA5A4).withOpacity(0.08),
+                  color: const Color(0xFF0EA5A4).withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color: const Color(0xFF0EA5A4).withOpacity(0.2),
+                    color: const Color(0xFF0EA5A4).withValues(alpha: 0.2),
                   ),
                 ),
                 child: Row(

@@ -134,7 +134,7 @@ class SellerProfileEditController extends GetxController {
   }
 
   Future<void> _loadSocialUrls(int sellerId) async {
-    try {
+  
       final response = await _sellerService.getSellerUrls(sellerId);
       if (response.success && response.data != null) {
         socialUrls.value = response.data!;
@@ -146,9 +146,7 @@ class SellerProfileEditController extends GetxController {
           _initializeSocialControllers();
         }
       }
-    } catch (e) {
-      
-    }
+  
   }
 
   Future<void> _loadSocialMediaPlatforms() async {
@@ -188,8 +186,6 @@ class SellerProfileEditController extends GetxController {
       } else {
         Get.snackbar('Error', 'Failed to load social media platforms');
       }
-      
-    } catch (e) {
       
     } finally {
       isLoadingSocialMedia.value = false;
@@ -356,7 +352,7 @@ class SellerProfileEditController extends GetxController {
       Get.snackbar(
         'Image Selected', 
         'Uploading business logo...',
-        backgroundColor: AppTheme.sellerPrimary.withOpacity(0.1),
+        backgroundColor: AppTheme.sellerPrimary.withValues(alpha: 0.1),
         colorText: AppTheme.sellerPrimary,
         duration: const Duration(seconds: 2),
       );
@@ -382,7 +378,7 @@ class SellerProfileEditController extends GetxController {
         Get.snackbar(
           'Success', 
           'Business logo updated successfully!',
-          backgroundColor: AppTheme.successColor.withOpacity(0.1),
+          backgroundColor: AppTheme.successColor.withValues(alpha: 0.1),
           colorText: AppTheme.successColor,
           duration: const Duration(seconds: 3),
         );
@@ -392,7 +388,7 @@ class SellerProfileEditController extends GetxController {
         Get.snackbar(
           'Upload Failed', 
           'Failed to upload business logo. Please try again.',
-          backgroundColor: AppTheme.errorColor.withOpacity(0.1),
+          backgroundColor: AppTheme.errorColor.withValues(alpha: 0.1),
           colorText: AppTheme.errorColor,
         );
       }
@@ -402,7 +398,7 @@ class SellerProfileEditController extends GetxController {
       Get.snackbar(
         'Error', 
         'Failed to upload business logo: ${e.toString()}',
-        backgroundColor: AppTheme.errorColor.withOpacity(0.1),
+        backgroundColor: AppTheme.errorColor.withValues(alpha: 0.1),
         colorText: AppTheme.errorColor,
       );
     } finally {
@@ -481,7 +477,7 @@ class SellerProfileEditController extends GetxController {
       Get.snackbar(
         'Getting Location',
         'Please wait while we get your current location...',
-        backgroundColor: Colors.blue.withOpacity(0.1),
+        backgroundColor: Colors.blue.withValues(alpha: 0.1),
         colorText: Colors.blue,
         duration: const Duration(seconds: 3),
       );
@@ -514,7 +510,7 @@ class SellerProfileEditController extends GetxController {
         Get.snackbar(
           'Location Updated',
           'Address fields have been filled with your current location.',
-          backgroundColor: Colors.green.withOpacity(0.1),
+          backgroundColor: Colors.green.withValues(alpha: 0.1),
           colorText: Colors.green,
           duration: const Duration(seconds: 3),
         );
@@ -523,7 +519,7 @@ class SellerProfileEditController extends GetxController {
       Get.snackbar(
         'Location Error',
         'Failed to get current location. Please try again.',
-        backgroundColor: Colors.red.withOpacity(0.1),
+        backgroundColor: Colors.red.withValues(alpha: 0.1),
         colorText: Colors.red,
       );
       
@@ -612,7 +608,7 @@ class SellerProfileEditController extends GetxController {
   }
 
   Future<void> _saveSocialUrls(int sellerId) async {
-    try {
+   
       for (var entry in socialControllers.entries) {
         final smId = int.tryParse(entry.key);
         final url = entry.value.text.trim();
@@ -648,9 +644,7 @@ class SellerProfileEditController extends GetxController {
       // Reload social URLs to refresh the list
       await _loadSocialUrls(sellerId);
       
-    } catch (e) {
-      
-    }
+  
   }
 
   void _onFieldChanged() {

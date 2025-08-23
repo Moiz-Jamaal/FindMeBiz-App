@@ -64,7 +64,7 @@ class BuyerProfileView extends GetView<BuyerProfileController> {
               children: [
                 Obx(() => CircleAvatar(
                   radius: 50,
-                  backgroundColor: AppTheme.buyerPrimary.withOpacity(0.1),
+                  backgroundColor: AppTheme.buyerPrimary.withValues(alpha: 0.1),
                   backgroundImage: controller.profileImagePath.value.isNotEmpty
                       ? AssetImage('assets/images/placeholder_profile.png') // Placeholder
                       : null,
@@ -88,7 +88,7 @@ class BuyerProfileView extends GetView<BuyerProfileController> {
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.2),
+                            color: Colors.black.withValues(alpha: 0.2),
                             blurRadius: 4,
                             offset: const Offset(0, 2),
                           ),

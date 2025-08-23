@@ -43,7 +43,7 @@ class OrdersView extends GetView<OrdersController> {
               selected: isSelected,
               onSelected: (_) => controller.filterByStatus(status),
               backgroundColor: Colors.white,
-              selectedColor: AppTheme.buyerPrimary.withOpacity(0.2),
+              selectedColor: AppTheme.buyerPrimary.withValues(alpha: 0.2),
               labelStyle: TextStyle(
                 color: isSelected ? AppTheme.buyerPrimary : AppTheme.textSecondary,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
@@ -113,7 +113,7 @@ class OrdersView extends GetView<OrdersController> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: order.status.color.withOpacity(0.1),
+                    color: order.status.color.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(order.statusText, style: TextStyle(

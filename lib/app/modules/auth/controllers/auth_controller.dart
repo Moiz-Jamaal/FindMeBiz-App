@@ -81,14 +81,12 @@ class AuthController extends GetxController {
     
     showEmailIcon.value = true;
     
-    try {
+   
       final response = await _authService.isEmailAvailable(email);
       if (response.success) {
         emailAvailable.value = response.data ?? false;
       }
-    } catch (e) {
-      
-    }
+  
   }
   
   // Check username availability
@@ -100,14 +98,12 @@ class AuthController extends GetxController {
     
     showUsernameIcon.value = true;
     
-    try {
+
       final response = await _authService.isUsernameAvailable(username);
       if (response.success) {
         usernameAvailable.value = response.data ?? false;
       }
-    } catch (e) {
-      
-    }
+    
   }
   
   // Login user
@@ -126,7 +122,7 @@ class AuthController extends GetxController {
         Get.snackbar(
           'Success',
           'Welcome back!',
-          backgroundColor: Colors.green.withOpacity(0.1),
+          backgroundColor: Colors.green.withValues(alpha: 0.1),
           colorText: Colors.green,
         );
         
@@ -136,7 +132,7 @@ class AuthController extends GetxController {
         Get.snackbar(
           'Login Failed',
           response.message ?? 'Invalid credentials',
-          backgroundColor: Colors.red.withOpacity(0.1),
+          backgroundColor: Colors.red.withValues(alpha: 0.1),
           colorText: Colors.red,
         );
       }
@@ -144,7 +140,7 @@ class AuthController extends GetxController {
       Get.snackbar(
         'Error',
         'Failed to login. Please try again.',
-        backgroundColor: Colors.red.withOpacity(0.1),
+        backgroundColor: Colors.red.withValues(alpha: 0.1),
         colorText: Colors.red,
       );
     } finally {
@@ -160,7 +156,7 @@ class AuthController extends GetxController {
       Get.snackbar(
         'Error',
         'Email is already taken',
-        backgroundColor: Colors.red.withOpacity(0.1),
+        backgroundColor: Colors.red.withValues(alpha: 0.1),
         colorText: Colors.red,
       );
       return;
@@ -170,7 +166,7 @@ class AuthController extends GetxController {
       Get.snackbar(
         'Error',
         'Username is already taken',
-        backgroundColor: Colors.red.withOpacity(0.1),
+        backgroundColor: Colors.red.withValues(alpha: 0.1),
         colorText: Colors.red,
       );
       return;
@@ -194,7 +190,7 @@ class AuthController extends GetxController {
         Get.snackbar(
           'Success',
           'Account created successfully!',
-          backgroundColor: Colors.green.withOpacity(0.1),
+          backgroundColor: Colors.green.withValues(alpha: 0.1),
           colorText: Colors.green,
         );
         
@@ -204,7 +200,7 @@ class AuthController extends GetxController {
         Get.snackbar(
           'Registration Failed',
           response.message ?? 'Failed to create account',
-          backgroundColor: Colors.red.withOpacity(0.1),
+          backgroundColor: Colors.red.withValues(alpha: 0.1),
           colorText: Colors.red,
         );
       }
@@ -212,7 +208,7 @@ class AuthController extends GetxController {
       Get.snackbar(
         'Error',
         'Failed to register. Please try again.',
-        backgroundColor: Colors.red.withOpacity(0.1),
+        backgroundColor: Colors.red.withValues(alpha: 0.1),
         colorText: Colors.red,
       );
     } finally {

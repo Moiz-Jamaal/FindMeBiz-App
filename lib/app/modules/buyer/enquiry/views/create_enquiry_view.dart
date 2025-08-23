@@ -58,8 +58,8 @@ class CreateEnquiryView extends GetView<EnquiryController> {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            AppTheme.buyerPrimary.withOpacity(0.1),
-            AppTheme.buyerPrimary.withOpacity(0.05),
+            AppTheme.buyerPrimary.withValues(alpha: 0.1),
+            AppTheme.buyerPrimary.withValues(alpha: 0.05),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -202,7 +202,7 @@ class CreateEnquiryView extends GetView<EnquiryController> {
                     selected: isSelected,
                     onSelected: (selected) => controller.toggleCategory(category),
                     backgroundColor: Colors.grey.shade100,
-                    selectedColor: AppTheme.buyerPrimary.withOpacity(0.2),
+                    selectedColor: AppTheme.buyerPrimary.withValues(alpha: 0.2),
                     checkmarkColor: AppTheme.buyerPrimary,
                     labelStyle: TextStyle(
                       color: isSelected ? AppTheme.buyerPrimary : AppTheme.textPrimary,
@@ -217,7 +217,7 @@ class CreateEnquiryView extends GetView<EnquiryController> {
                   ? Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: AppTheme.buyerPrimary.withOpacity(0.1),
+                        color: AppTheme.buyerPrimary.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Row(
@@ -241,7 +241,7 @@ class CreateEnquiryView extends GetView<EnquiryController> {
                   : Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: Colors.orange.withOpacity(0.1),
+                        color: Colors.orange.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Row(
@@ -374,7 +374,7 @@ class CreateEnquiryView extends GetView<EnquiryController> {
                       width: isSelected ? 2 : 1,
                     ),
                     borderRadius: BorderRadius.circular(8),
-                    color: isSelected ? AppTheme.buyerPrimary.withOpacity(0.05) : null,
+                    color: isSelected ? AppTheme.buyerPrimary.withValues(alpha: 0.05) : null,
                   ),
                   child: Row(
                     children: [

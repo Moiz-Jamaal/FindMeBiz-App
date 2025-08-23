@@ -94,7 +94,7 @@ class Product {
   }
 
   factory Product.fromJson(Map<String, dynamic> json) {
-    print('DEBUG: Parsing product JSON: $json'); // Debug log
+     // Debug log
     
     // Handle both old and new JSON structures
     final categoriesData = json['categories'] ?? json['Categories'];
@@ -137,7 +137,7 @@ class Product {
     final updatedAt = json['updatedAt'] ?? json['UpdatedAt'] ?? json['updated_at'];
     final customAttributes = json['customAttributes'] ?? json['CustomAttributes'] ?? {};
 
-    print('DEBUG: Mapped values - ID: $productId, Name: $productName, SellerId: $sellerId'); // Debug log
+     // Debug log
 
     return Product(
       id: productId.toString(),

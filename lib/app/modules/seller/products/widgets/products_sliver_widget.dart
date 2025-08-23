@@ -29,7 +29,7 @@ class ProductsSliverWidget extends GetView<ProductsController> {
 
         if (controller.isLoading.value) {
           return SliverToBoxAdapter(
-            child: Container(
+            child: SizedBox(
               height: 200,
               child: const Center(
                 child: CircularProgressIndicator(),
@@ -70,7 +70,7 @@ class ProductsSliverWidget extends GetView<ProductsController> {
 
   Widget _buildEmptyState() {
     return SliverToBoxAdapter(
-      child: Container(
+      child: SizedBox(
         height: 300,
         child: Center(
           child: Padding(
@@ -148,7 +148,7 @@ class ProductsCategoryFilterSliver extends GetView<ProductsController> {
                   label: Text(category),
                   selected: isSelected,
                   onSelected: (_) => controller.filterByCategory(category),
-                  selectedColor: AppTheme.sellerPrimary.withOpacity(0.2),
+                  selectedColor: AppTheme.sellerPrimary.withValues(alpha: 0.2),
                   checkmarkColor: AppTheme.sellerPrimary,
                   labelStyle: TextStyle(
                     color: isSelected 

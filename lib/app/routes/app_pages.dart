@@ -3,8 +3,6 @@ import 'package:souq/app/modules/buyer/favorites/bindings/favorites_binding.dart
 import 'package:souq/app/modules/buyer/favorites/views/favorites_view.dart';
 import 'package:souq/app/modules/seller/reviews/bindings/seller_reviews_binding.dart';
 import 'package:souq/app/modules/seller/reviews/views/seller_reviews_view.dart';
-import '../services/role_service.dart';
-import '../data/models/user_role.dart';
 import '../controllers/startup_controller.dart';
 import '../modules/startup/startup_view.dart';
 

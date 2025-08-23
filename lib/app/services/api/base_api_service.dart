@@ -15,12 +15,10 @@ abstract class BaseApiService extends GetxService {
   @override
   void onInit() {
     super.onInit();
-    try {
+  
       _apiClient = Get.find<ApiClient>();
       
-    } catch (e) {
-      
-    }
+    
   }
 
   // Handle HTTP response and convert to ApiResponse

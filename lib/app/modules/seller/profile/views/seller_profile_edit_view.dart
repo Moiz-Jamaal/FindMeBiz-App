@@ -106,7 +106,7 @@ class SellerProfileEditView extends GetView<SellerProfileEditController> {
             const SizedBox(height: 12),
             LinearProgressIndicator(
               value: controller.profileCompletionPercentage,
-              backgroundColor: AppTheme.sellerPrimary.withOpacity(0.2),
+              backgroundColor: AppTheme.sellerPrimary.withValues(alpha: 0.2),
               valueColor: AlwaysStoppedAnimation<Color>(AppTheme.sellerPrimary),
             ),
             const SizedBox(height: 8),
@@ -145,7 +145,7 @@ class SellerProfileEditView extends GetView<SellerProfileEditController> {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: AppTheme.successColor.withOpacity(0.1),
+                      color: AppTheme.successColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Row(
@@ -209,7 +209,7 @@ class SellerProfileEditView extends GetView<SellerProfileEditController> {
                     vertical: 8,
                   ),
                   decoration: BoxDecoration(
-                    color: AppTheme.sellerPrimary.withOpacity(0.1),
+                    color: AppTheme.sellerPrimary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
@@ -289,7 +289,7 @@ class SellerProfileEditView extends GetView<SellerProfileEditController> {
             ),
             borderRadius: BorderRadius.circular(12),
             color: !hasImage 
-                ? AppTheme.sellerPrimary.withOpacity(0.1) 
+                ? AppTheme.sellerPrimary.withValues(alpha: 0.1) 
                 : Colors.grey.shade200,
           ),
           child: !hasImage
@@ -316,7 +316,7 @@ class SellerProfileEditView extends GetView<SellerProfileEditController> {
                     // Display the actual image (local or network)
                     ClipRRect(
                       borderRadius: BorderRadius.circular(10),
-                      child: Container(
+                      child: SizedBox(
                         width: double.infinity,
                         height: double.infinity,
                         child: isLocalImage
@@ -409,7 +409,7 @@ class SellerProfileEditView extends GetView<SellerProfileEditController> {
                       Positioned.fill(
                         child: Container(
                           decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.5),
+                            color: Colors.black.withValues(alpha: 0.5),
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: const Center(
@@ -455,10 +455,10 @@ class SellerProfileEditView extends GetView<SellerProfileEditController> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppTheme.sellerPrimary.withOpacity(0.05),
+        color: AppTheme.sellerPrimary.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: AppTheme.sellerPrimary.withOpacity(0.2),
+          color: AppTheme.sellerPrimary.withValues(alpha: 0.2),
         ),
       ),
       child: Column(
@@ -531,8 +531,8 @@ class SellerProfileEditView extends GetView<SellerProfileEditController> {
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
                 color: controller.hasLocationSet
-                    ? AppTheme.sellerPrimary.withOpacity(0.3)
-                    : AppTheme.textHint.withOpacity(0.3),
+                    ? AppTheme.sellerPrimary.withValues(alpha: 0.3)
+                    : AppTheme.textHint.withValues(alpha: 0.3),
               ),
             ),
             child: Column(
@@ -849,10 +849,10 @@ class SellerProfileEditView extends GetView<SellerProfileEditController> {
                 return Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: AppTheme.sellerPrimary.withOpacity(0.1),
+                    color: AppTheme.sellerPrimary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
-                      color: AppTheme.sellerPrimary.withOpacity(0.3),
+                      color: AppTheme.sellerPrimary.withValues(alpha: 0.3),
                     ),
                   ),
                   child: Row(

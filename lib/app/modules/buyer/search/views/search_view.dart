@@ -30,7 +30,7 @@ class SearchView extends GetView<BuyerSearchController> {
     return AppBar(
       backgroundColor: Colors.white,
       elevation: 1,
-      title: Container(
+      title: SizedBox(
         height: 40,
         child: TextField(
           controller: controller.searchTextController,
@@ -103,7 +103,7 @@ class SearchView extends GetView<BuyerSearchController> {
                       label: Text(type),
                       selected: isSelected,
                       onSelected: (_) => controller.updateSearchType(type),
-                      selectedColor: AppTheme.buyerPrimary.withOpacity(0.2),
+                      selectedColor: AppTheme.buyerPrimary.withValues(alpha: 0.2),
                       checkmarkColor: AppTheme.buyerPrimary,
                     );
                   }).toList(),
@@ -274,7 +274,7 @@ class SearchView extends GetView<BuyerSearchController> {
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 4,
               offset: const Offset(0, 2),
             ),
@@ -287,7 +287,7 @@ class SearchView extends GetView<BuyerSearchController> {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: (category['color'] as Color).withOpacity(0.1),
+                color: (category['color'] as Color).withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(
@@ -314,9 +314,9 @@ class SearchView extends GetView<BuyerSearchController> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.blue.withOpacity(0.1),
+        color: Colors.blue.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.blue.withOpacity(0.3)),
+        border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -426,7 +426,7 @@ class SearchView extends GetView<BuyerSearchController> {
     return Obx(() => Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppTheme.buyerPrimary.withOpacity(0.1),
+        color: AppTheme.buyerPrimary.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
@@ -464,7 +464,7 @@ class SearchView extends GetView<BuyerSearchController> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
           decoration: BoxDecoration(
-            color: AppTheme.buyerPrimary.withOpacity(0.1),
+            color: AppTheme.buyerPrimary.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Text(
@@ -564,7 +564,7 @@ class SearchView extends GetView<BuyerSearchController> {
                 width: 60,
                 height: 60,
                 decoration: BoxDecoration(
-                  color: AppTheme.buyerPrimary.withOpacity(0.1),
+                  color: AppTheme.buyerPrimary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: seller.logo?.isNotEmpty == true
@@ -580,7 +580,7 @@ class SearchView extends GetView<BuyerSearchController> {
                             width: 60,
                             height: 60,
                             decoration: BoxDecoration(
-                              color: AppTheme.buyerPrimary.withOpacity(0.1),
+                              color: AppTheme.buyerPrimary.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Icon(

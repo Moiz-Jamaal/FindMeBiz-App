@@ -4,7 +4,7 @@ import '../controllers/auth_controller.dart';
 import '../../../core/constants/app_constants.dart';
 
 class AuthView extends GetView<AuthController> {
-  const AuthView({Key? key}) : super(key: key);
+  const AuthView({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -181,7 +181,7 @@ class AuthView extends GetView<AuthController> {
                 Get.snackbar(
                   'Coming Soon',
                   'Forgot password feature will be available soon',
-                  backgroundColor: Colors.blue.withOpacity(0.1),
+                  backgroundColor: Colors.blue.withValues(alpha: 0.1),
                   colorText: Colors.blue,
                 );
               },

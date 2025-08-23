@@ -1,4 +1,3 @@
-import 'package:get/get.dart';
 import 'api/base_api_service.dart';
 import 'api/api_exception.dart';
 import '../data/models/api/index.dart';

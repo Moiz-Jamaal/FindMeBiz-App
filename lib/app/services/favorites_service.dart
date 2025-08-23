@@ -1,6 +1,5 @@
 import 'package:get/get.dart';
 import '../data/models/api/index.dart';
-import '../data/models/product.dart';
 import 'api/base_api_service.dart';
 import 'api/api_exception.dart';
 import 'auth_service.dart';

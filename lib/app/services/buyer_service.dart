@@ -1,7 +1,6 @@
 import 'package:get/get.dart';
 import 'package:souq/app/services/auth_service.dart';
 
-import '../data/models/product.dart';
 import '../data/models/api/index.dart';
 import '../services/product_service.dart';
 import 'api/base_api_service.dart';

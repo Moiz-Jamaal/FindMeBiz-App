@@ -524,7 +524,7 @@ class BuyerHomeView extends GetView<BuyerHomeController> {
                             vertical: 2,
                           ),
                           decoration: BoxDecoration(
-                            color: AppTheme.buyerPrimary.withOpacity(0.1),
+                            color: AppTheme.buyerPrimary.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
@@ -607,7 +607,7 @@ class BuyerHomeView extends GetView<BuyerHomeController> {
       width: 90,
       margin: const EdgeInsets.only(right: 12),
       child: InkWell(
-        onTap: () => controller.browseCategory(category.catid ?? 0, category.catname ?? 'Category'),
+        onTap: () => controller.browseCategory(category.catid ?? 0, category.catname),
         borderRadius: BorderRadius.circular(12),
         child: Column(
           children: [
@@ -615,18 +615,18 @@ class BuyerHomeView extends GetView<BuyerHomeController> {
               width: 60,
               height: 60,
               decoration: BoxDecoration(
-                color: AppTheme.buyerPrimary.withOpacity(0.1),
+                color: AppTheme.buyerPrimary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
-                getIconForCategory(category.catname ?? ''),
+                getIconForCategory(category.catname ),
                 color: AppTheme.buyerPrimary,
                 size: 24,
               ),
             ),
             const SizedBox(height: 8),
             Text(
-              category.catname ?? 'Category',
+              category.catname ,
               style: Get.textTheme.bodySmall?.copyWith(
                 fontWeight: FontWeight.w500,
               ),
@@ -719,7 +719,7 @@ class BuyerHomeView extends GetView<BuyerHomeController> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: Colors.green.withOpacity(0.1),
+                color: Colors.green.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Text(

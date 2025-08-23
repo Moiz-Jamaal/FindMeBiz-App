@@ -97,15 +97,15 @@ class EnquiryDetailsView extends GetView<EnquiryController> {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            AppTheme.buyerPrimary.withOpacity(0.1),
-            AppTheme.buyerPrimary.withOpacity(0.05),
+            AppTheme.buyerPrimary.withValues(alpha: 0.1),
+            AppTheme.buyerPrimary.withValues(alpha: 0.05),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: AppTheme.buyerPrimary.withOpacity(0.2),
+          color: AppTheme.buyerPrimary.withValues(alpha: 0.2),
         ),
       ),
       child: Column(
@@ -146,7 +146,7 @@ class EnquiryDetailsView extends GetView<EnquiryController> {
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: enquiry.urgencyColor.withOpacity(0.2),
+                            color: enquiry.urgencyColor.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(
@@ -165,8 +165,8 @@ class EnquiryDetailsView extends GetView<EnquiryController> {
                           ),
                           decoration: BoxDecoration(
                             color: enquiry.isActive 
-                                ? Colors.green.withOpacity(0.1)
-                                : Colors.grey.withOpacity(0.1),
+                                ? Colors.green.withValues(alpha: 0.1)
+                                : Colors.grey.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(
@@ -218,7 +218,7 @@ class EnquiryDetailsView extends GetView<EnquiryController> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(6),
       ),
       child: Row(
@@ -256,7 +256,7 @@ class EnquiryDetailsView extends GetView<EnquiryController> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -301,7 +301,7 @@ class EnquiryDetailsView extends GetView<EnquiryController> {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: AppTheme.buyerPrimary.withOpacity(0.1),
+                  color: AppTheme.buyerPrimary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
@@ -329,7 +329,7 @@ class EnquiryDetailsView extends GetView<EnquiryController> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.green.withOpacity(0.1),
+                color: Colors.green.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
@@ -366,7 +366,7 @@ class EnquiryDetailsView extends GetView<EnquiryController> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.blue.withOpacity(0.1),
+                color: Colors.blue.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
@@ -500,7 +500,7 @@ class EnquiryDetailsView extends GetView<EnquiryController> {
         border: Border.all(color: Colors.grey.shade200),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 5,
             offset: const Offset(0, 1),
           ),
@@ -516,7 +516,7 @@ class EnquiryDetailsView extends GetView<EnquiryController> {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: AppTheme.buyerPrimary.withOpacity(0.1),
+                  color: AppTheme.buyerPrimary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Icon(
@@ -552,7 +552,7 @@ class EnquiryDetailsView extends GetView<EnquiryController> {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.green.withOpacity(0.1),
+                    color: Colors.green.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
@@ -638,7 +638,7 @@ class EnquiryDetailsView extends GetView<EnquiryController> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(6),
       ),
       child: Row(

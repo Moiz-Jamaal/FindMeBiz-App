@@ -6,7 +6,6 @@ import '../../../../services/category_service.dart';
 import '../../../../services/viewed_history_service.dart';
 import '../../../../services/product_service.dart';
 import '../../../../data/models/api/index.dart';
-import '../../../../data/models/product.dart';
 
 class BuyerSearchController extends GetxController {
   // Services
@@ -121,14 +120,12 @@ class BuyerSearchController extends GetxController {
   }
 
   Future<void> _loadCategories() async {
-    try {
+  
       final response = await _categoryService.getCategories();
       if (response.isSuccess && response.data != null) {
         availableCategories.assignAll(response.data!);
       }
-    } catch (e) {
-      print('Error loading categories: $e');
-    }
+ 
   }
 
   Future<void> _loadRecentSearches() async {
@@ -201,7 +198,7 @@ class BuyerSearchController extends GetxController {
   }
 
   Future<void> _searchSellers(String query) async {
-    try {
+ 
       final response = await _buyerService.searchSellers(
         businessName: query.isNotEmpty ? query : null,
         city: selectedCity.value.isNotEmpty ? selectedCity.value : null,
@@ -216,13 +213,11 @@ class BuyerSearchController extends GetxController {
           sellerResults.addAll(response.data!);
         }
       }
-    } catch (e) {
-      print('Error searching sellers: $e');
-    }
+   
   }
 
   Future<void> _searchProducts(String query) async {
-    try {
+ 
       final response = await _buyerService.searchProducts(
         productName: query.isNotEmpty ? query : null,
         categoryIds: selectedCategoryIds.isNotEmpty ? selectedCategoryIds : null,
@@ -247,9 +242,7 @@ class BuyerSearchController extends GetxController {
         
         hasMoreResults.value = response.data!.hasNextPage;
       }
-    } catch (e) {
-      print('Error searching products: $e');
-    }
+  
   }
 
   void loadMoreResults() async {
@@ -392,9 +385,9 @@ class BuyerSearchController extends GetxController {
       // Complete SellerDetails object passed - convert it to Seller model
       sellerId = sellerData.sellerid;
       sellerToPass = _convertSellerDetailsToSeller(sellerData);
-      print('🔄 BuyerSearchController: Converting SellerDetails to Seller model for ID: $sellerId');
+      
     } else {
-      print('❌ BuyerSearchController: Invalid seller data provided');
+      
       return;
     }
     
@@ -404,7 +397,7 @@ class BuyerSearchController extends GetxController {
         await _viewedHistoryService.recordSellerView(sellerId);
       }
     } catch (e) {
-      print('Error recording seller view: $e');
+      
       // Continue with navigation even if recording fails
     }
     
@@ -438,30 +431,26 @@ class BuyerSearchController extends GetxController {
   // Helper method to parse latitude from geolocation string
   double _parseLatitude(String? geoLocation) {
     if (geoLocation == null || geoLocation.isEmpty) return 0.0;
-    try {
+ 
       // Assuming geolocation format is "lat,lng" or similar
       final parts = geoLocation.split(',');
       if (parts.length >= 2) {
         return double.tryParse(parts[0].trim()) ?? 0.0;
       }
-    } catch (e) {
-      print('Error parsing latitude from: $geoLocation');
-    }
+  
     return 0.0;
   }
 
   // Helper method to parse longitude from geolocation string  
   double _parseLongitude(String? geoLocation) {
     if (geoLocation == null || geoLocation.isEmpty) return 0.0;
-    try {
+
       // Assuming geolocation format is "lat,lng" or similar
       final parts = geoLocation.split(',');
       if (parts.length >= 2) {
         return double.tryParse(parts[1].trim()) ?? 0.0;
       }
-    } catch (e) {
-      print('Error parsing longitude from: $geoLocation');
-    }
+   
     return 0.0;
   }
 
@@ -502,7 +491,7 @@ class BuyerSearchController extends GetxController {
     
     // Validate product ID before proceeding
     if (productId == null || productId <= 0) {
-      print('❌ BuyerSearchController: Invalid product ID: $productData');
+      
       Get.snackbar(
         'Error',
         'Invalid product information. Please try again.',
@@ -517,12 +506,12 @@ class BuyerSearchController extends GetxController {
       // Record the view
       await _viewedHistoryService.recordProductView(productId);
     } catch (e) {
-      print('Error recording product view: $e');
+      
       // Continue with navigation even if recording fails
     }
     
     // Navigate to product view with the product ID
-    print('✅ BuyerSearchController: Navigating to product view with ID: $productId');
+    
     Get.toNamed('/buyer-product-view', arguments: productId);
   }
 

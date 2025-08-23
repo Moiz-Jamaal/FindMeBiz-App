@@ -35,7 +35,7 @@ class _ReviewWidgetState extends State<ReviewWidget> {
 
   void loadReviews() async {
     isLoading.value = true;
-    try {
+    
       final buyerService = Get.find<BuyerService>();
       final response = widget.type == 'P'
           ? await buyerService.getProductReviews(widget.refId)
@@ -44,14 +44,12 @@ class _ReviewWidgetState extends State<ReviewWidget> {
       if (response.isSuccess && response.data != null) {
         reviews.value = List<Map<String, dynamic>>.from(response.data ?? []);
       }
-    } catch (e) {
-      print('Error loading reviews: $e');
-    }
+   
     isLoading.value = false;
   }
 
   void loadReviewSummary() async {
-    try {
+  
       final buyerService = Get.find<BuyerService>();
       final response = widget.type == 'P'
           ? await buyerService.getProductReviewSummary(widget.refId)
@@ -60,9 +58,7 @@ class _ReviewWidgetState extends State<ReviewWidget> {
       if (response.isSuccess && response.data != null) {
         reviewSummary.value = response.data;
       }
-    } catch (e) {
-      print('Error loading review summary: $e');
-    }
+   
   }
 
   @override
@@ -373,6 +369,7 @@ class _WriteReviewDialogState extends State<WriteReviewDialog> {
             );
       
       if (response.isSuccess) {
+        // ignore: use_build_context_synchronously
         Navigator.of(context).pop();
         widget.onReviewSubmitted();
         Get.snackbar('Success', 'Review submitted successfully');

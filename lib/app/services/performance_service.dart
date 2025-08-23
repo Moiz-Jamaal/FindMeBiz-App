@@ -26,14 +26,12 @@ class PerformanceService extends GetxService {
   void _initializePerformanceMonitoring() {
     // Start monitoring app performance
     // Monitor theme changes if available
-    try {
+
       // Listen to theme mode changes instead
       ever(RxBool(Get.isDarkMode).obs, (_) {
         _optimizeThemeTransitions();
       });
-    } catch (e) {
-      
-    }
+  
   }
 
   /// Cache management for API responses
@@ -217,7 +215,7 @@ class PerformanceService extends GetxService {
 
   /// App startup optimization
   Future<void> preloadCriticalData() async {
-    try {
+  
       // Preload categories
       await optimizedApiCall(
         apiCall: () async {
@@ -240,9 +238,7 @@ class PerformanceService extends GetxService {
         cacheExpiry: const Duration(hours: 1),
       );
       
-    } catch (e) {
-      
-    }
+   
   }
 
   /// UI performance helpers

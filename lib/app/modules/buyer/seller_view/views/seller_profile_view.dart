@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:souq/app/data/models/seller.dart';
-import 'package:flutter/foundation.dart';
-import 'package:souq/app/modules/buyer/product_view/views/buyer_product_view.dart' ;
+
 import 'package:souq/core/widgets/enhanced_network_image.dart';
 import 'package:souq/app/widgets/reviews/review_widget.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -503,7 +502,7 @@ class SellerProfileView extends GetView<SellerProfileViewController> {
               label: Text(category),
               selected: isSelected,
               onSelected: (_) => controller.filterProductsByCategory(index),
-              selectedColor: AppTheme.buyerPrimary.withOpacity(0.2),
+              selectedColor: AppTheme.buyerPrimary.withValues(alpha: 0.2),
               checkmarkColor: AppTheme.buyerPrimary,
             ),
           );
@@ -624,6 +623,7 @@ class SellerProfileView extends GetView<SellerProfileViewController> {
     );
   }
 
+  // ignore: strict_top_level_inference
   Widget _buildProductImage(product) {
     // Check if product has images
     if (product.images != null && product.images.isNotEmpty) {
@@ -635,7 +635,7 @@ class SellerProfileView extends GetView<SellerProfileViewController> {
           width: double.infinity,
           height: double.infinity,
           errorBuilder: (context, error, stackTrace) {
-            debugPrint('Error loading product image: $error');
+            
             return Container(
               color: Colors.grey.shade200,
               child: const Center(

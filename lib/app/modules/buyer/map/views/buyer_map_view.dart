@@ -138,6 +138,7 @@ class BuyerMapView extends GetView<BuyerMapController> {
     );
   }
 
+  // ignore: strict_top_level_inference
   Widget _buildSellerPin(seller) {
     // Calculate pin position based on seller location
     // This is simplified - in real app, convert lat/lng to screen coordinates
@@ -169,7 +170,7 @@ class BuyerMapView extends GetView<BuyerMapController> {
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.3),
+                        color: Colors.black.withValues(alpha: 0.3),
                         blurRadius: isSelected ? 8 : 4,
                         offset: const Offset(0, 2),
                       ),
@@ -250,7 +251,7 @@ class BuyerMapView extends GetView<BuyerMapController> {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.2),
+            color: Colors.black.withValues(alpha: 0.2),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -285,7 +286,7 @@ class BuyerMapView extends GetView<BuyerMapController> {
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.1),
+                color: Colors.black.withValues(alpha: 0.1),
                 blurRadius: 8,
                 offset: const Offset(0, -2),
               ),
@@ -317,7 +318,7 @@ class BuyerMapView extends GetView<BuyerMapController> {
                           width: 48,
                           height: 48,
                           decoration: BoxDecoration(
-                            color: AppTheme.sellerPrimary.withOpacity(0.1),
+                            color: AppTheme.sellerPrimary.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(24),
                           ),
                           child: const Icon(
@@ -334,7 +335,7 @@ class BuyerMapView extends GetView<BuyerMapController> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                seller.businessName ?? 'Business Name',
+                                seller.businessName ,
                                 style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
@@ -583,11 +584,11 @@ class BuyerMapView extends GetView<BuyerMapController> {
             vertical: 8,
           ),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.9),
+            color: Colors.white.withValues(alpha: 0.9),
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.1),
+                color: Colors.black.withValues(alpha: 0.1),
                 blurRadius: 4,
                 offset: const Offset(0, 2),
               ),
@@ -612,7 +613,7 @@ class MapGridPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.white.withOpacity(0.3)
+      ..color = Colors.white.withValues(alpha: 0.3)
       ..strokeWidth = 1;
 
     // Draw grid lines

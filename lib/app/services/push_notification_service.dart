@@ -47,7 +47,7 @@ class PushNotificationService extends GetxService {
     try {
       final token = await getFcmToken();
       if (token != null) {
-        Get.log('FCM token: ' + token);
+        Get.log('FCM token: $token');
       }
     } catch (_) {}
     return this;
@@ -127,7 +127,7 @@ class PushNotificationService extends GetxService {
 
     // Handle when user taps a notification and opens the app
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) async {
-      Get.log('Notification tapped with data: ' + message.data.toString());
+      Get.log('Notification tapped with data: ${message.data}');
       // TODO: Navigate based on message.data if needed
     });
   }

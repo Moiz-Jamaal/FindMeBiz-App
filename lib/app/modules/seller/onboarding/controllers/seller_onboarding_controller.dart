@@ -97,7 +97,7 @@ class SellerOnboardingController extends GetxController {
         Get.snackbar(
           'Error',
           'Failed to load categories',
-          backgroundColor: Colors.red.withOpacity(0.1),
+          backgroundColor: Colors.red.withValues(alpha: 0.1),
           colorText: Colors.red,
         );
       }
@@ -105,7 +105,7 @@ class SellerOnboardingController extends GetxController {
       Get.snackbar(
         'Error',
         'Failed to connect to server',
-        backgroundColor: Colors.red.withOpacity(0.1),
+        backgroundColor: Colors.red.withValues(alpha: 0.1),
         colorText: Colors.red,
       );
     } finally {
@@ -181,7 +181,7 @@ class SellerOnboardingController extends GetxController {
         Get.snackbar(
           'Location Found',
           'Address updated with your current location',
-          backgroundColor: Colors.green.withOpacity(0.1),
+          backgroundColor: Colors.green.withValues(alpha: 0.1),
           colorText: Colors.green,
         );
       }
@@ -189,7 +189,7 @@ class SellerOnboardingController extends GetxController {
       Get.snackbar(
         'Location Error',
         'Failed to get current location',
-        backgroundColor: Colors.red.withOpacity(0.1),
+        backgroundColor: Colors.red.withValues(alpha: 0.1),
         colorText: Colors.red,
       );
     } finally {
@@ -216,7 +216,7 @@ class SellerOnboardingController extends GetxController {
         Get.snackbar(
           'Error',
           'No user found. Please login again.',
-          backgroundColor: Colors.red.withOpacity(0.1),
+          backgroundColor: Colors.red.withValues(alpha: 0.1),
           colorText: Colors.red,
         );
         return;
@@ -249,7 +249,7 @@ class SellerOnboardingController extends GetxController {
         Get.snackbar(
           'Error',
           sellerResponse.message ?? 'Failed to create seller profile',
-          backgroundColor: Colors.red.withOpacity(0.1),
+          backgroundColor: Colors.red.withValues(alpha: 0.1),
           colorText: Colors.red,
         );
         return;
@@ -260,7 +260,7 @@ class SellerOnboardingController extends GetxController {
         Get.snackbar(
           'Error',
           'Invalid seller ID received',
-          backgroundColor: Colors.red.withOpacity(0.1),
+          backgroundColor: Colors.red.withValues(alpha: 0.1),
           colorText: Colors.red,
         );
         return;
@@ -294,7 +294,7 @@ class SellerOnboardingController extends GetxController {
       Get.snackbar(
         'Success',
         'Seller profile created successfully!',
-        backgroundColor: Colors.green.withOpacity(0.1),
+        backgroundColor: Colors.green.withValues(alpha: 0.1),
         colorText: Colors.green,
       );
       
@@ -305,7 +305,7 @@ class SellerOnboardingController extends GetxController {
       Get.snackbar(
         'Error',
         'Failed to complete onboarding. Please try again.',
-        backgroundColor: Colors.red.withOpacity(0.1),
+        backgroundColor: Colors.red.withValues(alpha: 0.1),
         colorText: Colors.red,
       );
       

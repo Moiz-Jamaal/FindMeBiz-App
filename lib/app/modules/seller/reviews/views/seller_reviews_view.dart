@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/seller_reviews_controller.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../../../core/constants/app_constants.dart';
 
 class SellerReviewsView extends GetView<SellerReviewsController> {
   const SellerReviewsView({super.key});
@@ -161,7 +160,7 @@ class SellerReviewsView extends GetView<SellerReviewsController> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: AppTheme.sellerPrimary.withOpacity(0.1),
+                  color: AppTheme.sellerPrimary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text('Product: $productName', style: Get.textTheme.bodySmall?.copyWith(color: AppTheme.sellerPrimary)),

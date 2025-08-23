@@ -26,7 +26,7 @@ class NativeAdCard extends StatelessWidget {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: AppTheme.buyerPrimary.withOpacity(0.1),
+                  color: AppTheme.buyerPrimary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(

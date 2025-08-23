@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../../../../data/models/product.dart';
-import '../../../../data/models/seller.dart';
+
 import '../../../../services/buyer_service.dart';
 import '../../../../services/auth_service.dart';
-import '../../../../core/theme/app_theme.dart';
+
 
 class FavoriteItem {
   final int refId;

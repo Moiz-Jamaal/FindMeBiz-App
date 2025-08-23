@@ -10,14 +10,14 @@ class Buyer extends User {
   final Map<String, dynamic> preferences;
 
   Buyer({
-    required String id,
-    required String email,
-    required String fullName,
-    String? profileImage,
-    String? phoneNumber,
-    required DateTime createdAt,
-    required DateTime updatedAt,
-    bool isActive = true,
+    required super.id,
+    required super.email,
+    required super.fullName,
+    super.profileImage,
+    super.phoneNumber,
+    required super.createdAt,
+    required super.updatedAt,
+    super.isActive,
     this.address,
     this.preferredLanguage = 'English',
     this.favoriteSellerIds = const [],
@@ -25,15 +25,7 @@ class Buyer extends User {
     this.lastLoginAt,
     this.preferences = const {},
   }) : super(
-          id: id,
-          email: email,
-          fullName: fullName,
           role: UserRole.buyer,
-          profileImage: profileImage,
-          phoneNumber: phoneNumber,
-          createdAt: createdAt,
-          updatedAt: updatedAt,
-          isActive: isActive,
         );
 
   factory Buyer.fromJson(Map<String, dynamic> json) {

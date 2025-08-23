@@ -137,7 +137,7 @@ class BuyerFavoritesView extends GetView<BuyerFavoritesController> {
                       label: Text(category),
                       selected: isSelected,
                       onSelected: (_) => controller.updateCategoryFilter(category),
-                      selectedColor: AppTheme.buyerPrimary.withOpacity(0.2),
+                      selectedColor: AppTheme.buyerPrimary.withValues(alpha: 0.2),
                       checkmarkColor: AppTheme.buyerPrimary,
                       backgroundColor: Colors.grey.shade100,
                     ),

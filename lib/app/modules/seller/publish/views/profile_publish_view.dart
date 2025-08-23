@@ -92,10 +92,10 @@ class ProfilePublishView extends GetView<ProfilePublishController> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppTheme.sellerPrimary.withOpacity(0.1),
+        color: AppTheme.sellerPrimary.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: AppTheme.sellerPrimary.withOpacity(0.3),
+          color: AppTheme.sellerPrimary.withValues(alpha: 0.3),
         ),
       ),
       child: Column(
@@ -162,7 +162,7 @@ class ProfilePublishView extends GetView<ProfilePublishController> {
             const SizedBox(height: 12),
             Obx(() => LinearProgressIndicator(
               value: controller.profileCompletionScore,
-              backgroundColor: AppTheme.sellerPrimary.withOpacity(0.2),
+              backgroundColor: AppTheme.sellerPrimary.withValues(alpha: 0.2),
               valueColor: AlwaysStoppedAnimation<Color>(AppTheme.sellerPrimary),
             )),
             const SizedBox(height: 12),
@@ -223,7 +223,7 @@ class ProfilePublishView extends GetView<ProfilePublishController> {
                     width: 60,
                     height: 60,
                     decoration: BoxDecoration(
-                      color: AppTheme.sellerPrimary.withOpacity(0.1),
+                      color: AppTheme.sellerPrimary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(
@@ -342,10 +342,10 @@ class ProfilePublishView extends GetView<ProfilePublishController> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.orange.withOpacity(0.1),
+        color: Colors.orange.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: Colors.orange.withOpacity(0.3),
+          color: Colors.orange.withValues(alpha: 0.3),
         ),
       ),
       child: Row(
@@ -459,7 +459,7 @@ class ProfilePublishView extends GetView<ProfilePublishController> {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: AppTheme.sellerPrimary.withOpacity(0.1),
+              color: AppTheme.sellerPrimary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(
@@ -524,7 +524,7 @@ class ProfilePublishView extends GetView<ProfilePublishController> {
                   Text(
                     'One-time fee to make your profile visible',
                     style: Get.textTheme.bodySmall?.copyWith(
-                      color: Colors.white.withOpacity(0.9),
+                      color: Colors.white.withValues(alpha: 0.9),
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -573,7 +573,7 @@ class ProfilePublishView extends GetView<ProfilePublishController> {
                 height: 48,
                 decoration: BoxDecoration(
                   color: controller.selectedPaymentMethod.value == method['id']
-                      ? AppTheme.sellerPrimary.withOpacity(0.1)
+                      ? AppTheme.sellerPrimary.withValues(alpha: 0.1)
                       : Colors.grey.shade100,
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -605,7 +605,7 @@ class ProfilePublishView extends GetView<ProfilePublishController> {
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: Colors.green.withOpacity(0.1),
+                              color: Colors.green.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
@@ -651,16 +651,16 @@ class ProfilePublishView extends GetView<ProfilePublishController> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: controller.paymentCompleted.value
-            ? AppTheme.successColor.withOpacity(0.1)
+            ? AppTheme.successColor.withValues(alpha: 0.1)
             : controller.isProcessingPayment.value
-                ? Colors.blue.withOpacity(0.1)
+                ? Colors.blue.withValues(alpha: 0.1)
                 : Colors.grey.shade50,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: controller.paymentCompleted.value
-              ? AppTheme.successColor.withOpacity(0.3)
+              ? AppTheme.successColor.withValues(alpha: 0.3)
               : controller.isProcessingPayment.value
-                  ? Colors.blue.withOpacity(0.3)
+                  ? Colors.blue.withValues(alpha: 0.3)
                   : Colors.grey.shade300,
         ),
       ),
@@ -708,7 +708,7 @@ class ProfilePublishView extends GetView<ProfilePublishController> {
             width: 120,
             height: 120,
             decoration: BoxDecoration(
-              color: AppTheme.successColor.withOpacity(0.1),
+              color: AppTheme.successColor.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: const Icon(
@@ -825,7 +825,7 @@ class ProfilePublishView extends GetView<ProfilePublishController> {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: AppTheme.successColor.withOpacity(0.1),
+              color: AppTheme.successColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(

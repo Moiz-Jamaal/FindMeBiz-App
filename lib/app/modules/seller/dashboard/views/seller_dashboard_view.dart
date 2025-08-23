@@ -166,7 +166,7 @@ class SellerDashboardView extends GetView<SellerDashboardController> {
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: AppTheme.buyerLight.withOpacity(0.2),
+              color: AppTheme.buyerLight.withValues(alpha: 0.2),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -202,7 +202,7 @@ class SellerDashboardView extends GetView<SellerDashboardController> {
                   width: 60,
                   height: 60,
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
+                    color: Colors.white.withValues(alpha: 0.2),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
@@ -216,7 +216,7 @@ class SellerDashboardView extends GetView<SellerDashboardController> {
             const SizedBox(height: 16),
             Obx(() => LinearProgressIndicator(
               value: controller.profileCompletion.value,
-              backgroundColor: Colors.white.withOpacity(0.3),
+              backgroundColor: Colors.white.withValues(alpha: 0.3),
               valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
             )),
             const SizedBox(height: 12),
@@ -287,7 +287,7 @@ class SellerDashboardView extends GetView<SellerDashboardController> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: AppTheme.buyerLight.withOpacity(0.1),
+                color: AppTheme.buyerLight.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(

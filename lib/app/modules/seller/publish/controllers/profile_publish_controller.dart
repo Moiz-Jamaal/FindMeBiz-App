@@ -101,7 +101,7 @@ class ProfilePublishController extends GetxController {
         
         // Set default subscription to 'basic' if available
         final basicSubscription = availableSubscriptions.firstWhereOrNull(
-          (sub) => sub.subname?.toLowerCase() == 'basic',
+          (sub) => sub.subname.toLowerCase() == 'basic',
         );
         
         if (basicSubscription != null) {
@@ -121,15 +121,13 @@ class ProfilePublishController extends GetxController {
   }
 
   Future<void> _createBasicSubscription() async {
-    try {
+   
       final response = await _subscriptionService.ensureBasicSubscription();
       if (response.success && response.data != null) {
         selectedSubscription.value = response.data;
         availableSubscriptions.add(response.data!);
       }
-    } catch (e) {
-      
-    }
+   
   }
 
   void selectSubscription(SubscriptionMaster subscription) {
@@ -199,7 +197,7 @@ class ProfilePublishController extends GetxController {
       // Parse subscription config to get amount details
       Map<String, dynamic> subscriptionConfig = {};
       try {
-        subscriptionConfig = jsonDecode(selectedSubscription.value!.subconfig ?? '{}');
+        subscriptionConfig = jsonDecode(selectedSubscription.value!.subconfig );
       } catch (e) {
         subscriptionConfig = {'amount': 250, 'currency': 'INR'};
       }
@@ -270,7 +268,7 @@ class ProfilePublishController extends GetxController {
     Get.snackbar(
       'Coming Soon',
       'Product management will be available in the next update',
-      backgroundColor: Colors.blue.withOpacity(0.1),
+      backgroundColor: Colors.blue.withValues(alpha: 0.1),
       colorText: Colors.blue,
     );
   }
@@ -295,7 +293,7 @@ class ProfilePublishController extends GetxController {
     if (selectedSubscription.value?.subconfig == null) return 250.0;
     
     try {
-      final config = jsonDecode(selectedSubscription.value!.subconfig!);
+      final config = jsonDecode(selectedSubscription.value!.subconfig);
       return (config['amount'] as num?)?.toDouble() ?? 250.0;
     } catch (e) {
       return 250.0;
@@ -306,7 +304,7 @@ class ProfilePublishController extends GetxController {
     if (selectedSubscription.value?.subconfig == null) return 'INR';
     
     try {
-      final config = jsonDecode(selectedSubscription.value!.subconfig!);
+      final config = jsonDecode(selectedSubscription.value!.subconfig);
       return config['currency'] as String? ?? 'INR';
     } catch (e) {
       return 'INR';
@@ -331,7 +329,7 @@ class ProfilePublishController extends GetxController {
       case 0:
         return 'Review your profile before publishing';
       case 1:
-        return 'Pay ${subscriptionCurrency} ${subscriptionAmount.toStringAsFixed(0)} to make your profile visible';
+        return 'Pay $subscriptionCurrency ${subscriptionAmount.toStringAsFixed(0)} to make your profile visible';
       case 2:
         return 'Your profile is now live and visible to buyers';
       default:

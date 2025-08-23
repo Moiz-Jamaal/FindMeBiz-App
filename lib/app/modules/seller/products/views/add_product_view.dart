@@ -57,7 +57,7 @@ class AddProductView extends GetView<AddProductController> {
               decoration: BoxDecoration(
                 color: isActive 
                     ? AppTheme.sellerPrimary 
-                    : AppTheme.sellerPrimary.withOpacity(0.2),
+                    : AppTheme.sellerPrimary.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -164,7 +164,7 @@ class AddProductView extends GetView<AddProductController> {
             
             // Info Card
             Card(
-              color: AppTheme.sellerPrimary.withOpacity(0.1),
+              color: AppTheme.sellerPrimary.withValues(alpha: 0.1),
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Row(
@@ -286,7 +286,7 @@ class AddProductView extends GetView<AddProductController> {
           
           // Tips Card
           Card(
-            color: Colors.blue.withOpacity(0.1),
+            color: Colors.blue.withValues(alpha: 0.1),
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -427,12 +427,12 @@ class AddProductView extends GetView<AddProductController> {
       child: Container(
         decoration: BoxDecoration(
           border: Border.all(
-            color: AppTheme.sellerPrimary.withOpacity(0.3),
+            color: AppTheme.sellerPrimary.withValues(alpha: 0.3),
             width: 2,
             style: BorderStyle.solid,
           ),
           borderRadius: BorderRadius.circular(8),
-          color: AppTheme.sellerPrimary.withOpacity(0.1),
+          color: AppTheme.sellerPrimary.withValues(alpha: 0.1),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -475,7 +475,7 @@ class AddProductView extends GetView<AddProductController> {
             child: Image.memory(
               base64Decode(img.base64Content),
               fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => const Center(
+              errorBuilder: (_, _, _) => const Center(
                 child: Icon(
                   Icons.broken_image,
                   size: 32,

@@ -1,5 +1,4 @@
 import 'package:get/get.dart';
-import '../../../../services/buyer_service.dart';
 import '../../../../services/category_service.dart';
 import '../../../../services/viewed_history_service.dart';
 import '../../../../services/favorites_service.dart';
@@ -7,9 +6,9 @@ import '../../../../data/models/api/index.dart';
 
 class BuyerHomeController extends GetxController {
   // Services
-  final BuyerService _buyerService = Get.find<BuyerService>();
   final CategoryService _categoryService = Get.find<CategoryService>();
   final ViewedHistoryService _viewedHistoryService = Get.find<ViewedHistoryService>();
+  // ignore: unused_field
   final FavoritesService _favoritesService = Get.find<FavoritesService>();
   
   // Current navigation index
@@ -60,18 +59,16 @@ class BuyerHomeController extends GetxController {
   }
 
   Future<void> _loadCategories() async {
-    try {
+   
       final response = await _categoryService.getCategories();
       if (response.isSuccess && response.data != null) {
         categories.assignAll(response.data!);
       }
-    } catch (e) {
-      print('Error loading categories: $e');
-    }
+   
   }
 
   Future<void> _loadRecentlyViewed() async {
-    try {
+    
       final response = await _viewedHistoryService.getRecentlyViewedItems(
         sellersLimit: 5,
         productsLimit: 5,
@@ -80,27 +77,11 @@ class BuyerHomeController extends GetxController {
         recentlyViewedSellers.assignAll(response.data!.sellers);
         recentlyViewedProducts.assignAll(response.data!.products);
       }
-    } catch (e) {
-      print('Error loading recently viewed: $e');
-    }
+    
   }
 
   // Load some featured sellers (for future use)
-  Future<void> _loadFeaturedSellers() async {
-    try {
-      final response = await _buyerService.searchSellers();
-      if (response.isSuccess && response.data != null) {
-        // Take first 5 as featured
-        featuredSellers.assignAll(response.data!.take(5).toList());
-        // Take next 3 as new sellers  
-        if (response.data!.length > 5) {
-          newSellers.assignAll(response.data!.skip(5).take(3).toList());
-        }
-      }
-    } catch (e) {
-      print('Error loading featured sellers: $e');
-    }
-  }
+
 
   void updateSearchQuery(String query) {
     searchQuery.value = query;
@@ -157,7 +138,7 @@ class BuyerHomeController extends GetxController {
       // Navigate to seller view
       Get.toNamed('/buyer-seller-view', arguments: sellerId);
     } catch (e) {
-      print('Error recording seller view: $e');
+      
       // Still navigate even if recording fails
       Get.toNamed('/buyer-seller-view', arguments: sellerId);
     }
@@ -171,7 +152,7 @@ class BuyerHomeController extends GetxController {
       // Navigate to product view
       Get.toNamed('/buyer-product-view', arguments: productId);
     } catch (e) {
-      print('Error recording product view: $e');
+      
       // Still navigate even if recording fails
       Get.toNamed('/buyer-product-view', arguments: productId);
     }

@@ -14,11 +14,6 @@ class SellerOnboardingController extends GetxController {
   // UI state
   final RxBool isLoading = false.obs;
 
-  @override
-  void onInit() {
-    super.onInit();
-    // Initialize any needed data
-  }
 
   void nextStep() {
     if (currentStep.value < 3) {

@@ -160,12 +160,12 @@ class WelcomeView extends GetView<WelcomeController> {
               color: isSelected ? null : Colors.white,
               borderRadius: BorderRadius.circular(AppConstants.defaultRadius),
               border: Border.all(
-                color: isSelected ? Colors.transparent : color.withOpacity(0.3),
+                color: isSelected ? Colors.transparent : color.withValues(alpha: 0.3),
                 width: 2,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: (isSelected ? color : Colors.grey).withOpacity(0.1),
+                  color: (isSelected ? color : Colors.grey).withValues(alpha: 0.1),
                   blurRadius: isSelected ? 15 : 5,
                   offset: const Offset(0, 4),
                 ),
@@ -179,8 +179,8 @@ class WelcomeView extends GetView<WelcomeController> {
                   height: 50,
                   decoration: BoxDecoration(
                     color: isSelected 
-                        ? Colors.white.withOpacity(0.2) 
-                        : color.withOpacity(0.1),
+                        ? Colors.white.withValues(alpha: 0.2) 
+                        : color.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
@@ -209,7 +209,7 @@ class WelcomeView extends GetView<WelcomeController> {
                         description,
                         style: Get.textTheme.bodyMedium?.copyWith(
                           color: isSelected 
-                              ? Colors.white.withOpacity(0.9) 
+                              ? Colors.white.withValues(alpha: 0.9) 
                               : AppTheme.textSecondary,
                         ),
                       ),

@@ -14,14 +14,14 @@ class Seller extends User {
   final double profileCompletionScore;
 
   Seller({
-    required String id,
-    required String email,
-    required String fullName,
-    String? profileImage,
-    String? phoneNumber,
-    required DateTime createdAt,
-    required DateTime updatedAt,
-    bool isActive = true,
+    required super.id,
+    required super.email,
+    required super.fullName,
+    super.profileImage,
+    super.phoneNumber,
+    required super.createdAt,
+    required super.updatedAt,
+    super.isActive,
     required this.businessName,
     this.bio,
     this.businessLogo,
@@ -33,15 +33,7 @@ class Seller extends User {
     this.publishedAt,
     this.profileCompletionScore = 0.0,
   }) : super(
-          id: id,
-          email: email,
-          fullName: fullName,
           role: UserRole.seller,
-          profileImage: profileImage,
-          phoneNumber: phoneNumber,
-          createdAt: createdAt,
-          updatedAt: updatedAt,
-          isActive: isActive,
         );
 
   factory Seller.fromJson(Map<String, dynamic> json) {

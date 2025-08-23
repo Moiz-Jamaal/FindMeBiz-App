@@ -86,7 +86,7 @@ class SellerOnboardingView extends GetView<SellerOnboardingController> {
               decoration: BoxDecoration(
                 color: isActive 
                     ? AppTheme.sellerPrimary 
-                    : AppTheme.sellerPrimary.withOpacity(0.2),
+                    : AppTheme.sellerPrimary.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -263,7 +263,7 @@ class SellerOnboardingView extends GetView<SellerOnboardingController> {
           label: Text(category.catname),
           selected: selectedCategories.contains(category),
           onSelected: (_) => controller.toggleCategory(category),
-          selectedColor: const Color(0xFF0EA5A4).withOpacity(0.2),
+          selectedColor: const Color(0xFF0EA5A4).withValues(alpha: 0.2),
           checkmarkColor: const Color(0xFF0EA5A4),
         );
       }).toList(),
@@ -280,7 +280,7 @@ class SellerOnboardingView extends GetView<SellerOnboardingController> {
             width: 100,
             height: 100,
             decoration: BoxDecoration(
-              color: AppTheme.sellerPrimary.withOpacity(0.1),
+              color: AppTheme.sellerPrimary.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: const Icon(

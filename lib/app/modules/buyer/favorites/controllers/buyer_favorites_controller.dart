@@ -4,7 +4,6 @@ import '../../../../services/favorites_service.dart';
 import '../../../../services/category_service.dart';
 import '../../../../services/viewed_history_service.dart';
 import '../../../../data/models/api/index.dart';
-import '../../../../data/models/product.dart';
 import '../../../../core/theme/app_theme.dart';
 
 class BuyerFavoritesController extends GetxController {
@@ -59,25 +58,21 @@ class BuyerFavoritesController extends GetxController {
   }
 
   Future<void> _loadCategories() async {
-    try {
+ 
       final response = await _categoryService.getCategories();
       if (response.isSuccess && response.data != null) {
         availableCategories.assignAll(response.data!);
       }
-    } catch (e) {
-      print('Error loading categories: $e');
-    }
+   
   }
 
   Future<void> _loadFavoritesCount() async {
-    try {
+   
       final response = await _favoritesService.getFavoritesCount();
       if (response.isSuccess && response.data != null) {
         favoritesCount.value = response.data!;
       }
-    } catch (e) {
-      print('Error loading favorites count: $e');
-    }
+ 
   }
 
   Future<void> _loadFavorites() async {
@@ -90,13 +85,13 @@ class BuyerFavoritesController extends GetxController {
       
       isEmpty.value = (currentTab.value == 'sellers' ? favoriteSellers.isEmpty : favoriteProducts.isEmpty);
     } catch (e) {
-      print('Error loading favorites: $e');
+      
       errorMessage.value = 'Failed to load favorites: ${e.toString()}';
     }
   }
 
   Future<void> _loadFavoriteSellers() async {
-    try {
+    
       final response = await _favoritesService.getFavoriteSellers();
       if (response.isSuccess && response.data != null) {
         favoriteSellers.assignAll(response.data!);
@@ -104,13 +99,11 @@ class BuyerFavoritesController extends GetxController {
       } else {
         errorMessage.value = response.errorMessage ?? 'Failed to load favorite sellers';
       }
-    } catch (e) {
-      print('Error loading favorite sellers: $e');
-    }
+  
   }
 
   Future<void> _loadFavoriteProducts() async {
-    try {
+   
       final response = await _favoritesService.getFavoriteProducts();
       if (response.isSuccess && response.data != null) {
         favoriteProducts.assignAll(response.data!);
@@ -118,9 +111,7 @@ class BuyerFavoritesController extends GetxController {
       } else {
         errorMessage.value = response.errorMessage ?? 'Failed to load favorite products';
       }
-    } catch (e) {
-      print('Error loading favorite products: $e');
-    }
+   
   }
 
   void switchTab(String tab) {
@@ -141,7 +132,7 @@ class BuyerFavoritesController extends GetxController {
             'Added to Favorites',
             '$businessName added to your favorites',
             snackPosition: SnackPosition.BOTTOM,
-            backgroundColor: AppTheme.buyerPrimary.withOpacity(0.9),
+            backgroundColor: AppTheme.buyerPrimary.withValues(alpha: 0.9),
             colorText: Colors.white,
             duration: const Duration(seconds: 2),
           );
@@ -154,7 +145,7 @@ class BuyerFavoritesController extends GetxController {
             'Removed from Favorites',
             '$businessName removed from your favorites',
             snackPosition: SnackPosition.BOTTOM,
-            backgroundColor: Colors.red.withOpacity(0.9),
+            backgroundColor: Colors.red.withValues(alpha: 0.9),
             colorText: Colors.white,
             duration: const Duration(seconds: 2),
           );
@@ -167,7 +158,7 @@ class BuyerFavoritesController extends GetxController {
           'Error',
           response.errorMessage ?? 'Failed to update favorites',
           snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red.withOpacity(0.9),
+          backgroundColor: Colors.red.withValues(alpha: 0.9),
           colorText: Colors.white,
         );
       }
@@ -176,7 +167,7 @@ class BuyerFavoritesController extends GetxController {
         'Error',
         'Failed to update favorites: ${e.toString()}',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red.withOpacity(0.9),
+        backgroundColor: Colors.red.withValues(alpha: 0.9),
         colorText: Colors.white,
       );
     }
@@ -193,7 +184,7 @@ class BuyerFavoritesController extends GetxController {
             'Added to Favorites',
             '$productName added to your favorites',
             snackPosition: SnackPosition.BOTTOM,
-            backgroundColor: AppTheme.buyerPrimary.withOpacity(0.9),
+            backgroundColor: AppTheme.buyerPrimary.withValues(alpha: 0.9),
             colorText: Colors.white,
             duration: const Duration(seconds: 2),
           );
@@ -206,7 +197,7 @@ class BuyerFavoritesController extends GetxController {
             'Removed from Favorites',
             '$productName removed from your favorites',
             snackPosition: SnackPosition.BOTTOM,
-            backgroundColor: Colors.red.withOpacity(0.9),
+            backgroundColor: Colors.red.withValues(alpha: 0.9),
             colorText: Colors.white,
             duration: const Duration(seconds: 2),
           );
@@ -219,7 +210,7 @@ class BuyerFavoritesController extends GetxController {
           'Error',
           response.errorMessage ?? 'Failed to update favorites',
           snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red.withOpacity(0.9),
+          backgroundColor: Colors.red.withValues(alpha: 0.9),
           colorText: Colors.white,
         );
       }
@@ -228,7 +219,7 @@ class BuyerFavoritesController extends GetxController {
         'Error',
         'Failed to update favorites: ${e.toString()}',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red.withOpacity(0.9),
+        backgroundColor: Colors.red.withValues(alpha: 0.9),
         colorText: Colors.white,
       );
     }
@@ -320,7 +311,7 @@ class BuyerFavoritesController extends GetxController {
       // Navigate to seller view
       Get.toNamed('/buyer-seller-view', arguments: sellerId);
     } catch (e) {
-      print('Error recording seller view: $e');
+      
       // Still navigate even if recording fails
       Get.toNamed('/buyer-seller-view', arguments: sellerId);
     }
@@ -334,7 +325,7 @@ class BuyerFavoritesController extends GetxController {
       // Navigate to product view
       Get.toNamed('/buyer-product-view', arguments: productId);
     } catch (e) {
-      print('Error recording product view: $e');
+      
       // Still navigate even if recording fails
       Get.toNamed('/buyer-product-view', arguments: productId);
     }
@@ -403,7 +394,7 @@ class BuyerFavoritesController extends GetxController {
                 'Favorites Cleared',
                 'All ${currentTab.value} have been removed from favorites',
                 snackPosition: SnackPosition.BOTTOM,
-                backgroundColor: Colors.red.withOpacity(0.9),
+                backgroundColor: Colors.red.withValues(alpha: 0.9),
                 colorText: Colors.white,
               );
             },

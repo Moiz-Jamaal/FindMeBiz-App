@@ -62,11 +62,11 @@ class ProductsController extends GetxController {
     try {
       // Get current seller ID from auth service
       final sellerId = _authService.currentSeller?.sellerId;
-      print('DEBUG: Loading products for seller ID: $sellerId'); // Debug log
+       // Debug log
       
       if (sellerId == null) {
         Get.snackbar('Error', 'Seller not found. Please login again.');
-        print('DEBUG: Seller ID is null'); // Debug log
+         // Debug log
         return;
       }
 
@@ -78,14 +78,14 @@ class ProductsController extends GetxController {
         sortOrder: 'desc',
       );
 
-      print('DEBUG: API Response - Success: ${response.isSuccess}, Status: ${response.statusCode}'); // Debug log
-      print('DEBUG: Response data type: ${response.data.runtimeType}'); // Debug log
+       // Debug log
+       // Debug log
 
       if (response.isSuccess && response.data != null) {
         final searchResponse = response.data!;
         
-        print('DEBUG: Products count in response: ${searchResponse.products.length}'); // Debug log
-        print('DEBUG: Total count: ${searchResponse.totalCount}'); // Debug log
+         // Debug log
+         // Debug log
         
         if (refresh) {
           products.assignAll(searchResponse.products);
@@ -103,11 +103,11 @@ class ProductsController extends GetxController {
         
         _showSuccessMessage('${searchResponse.products.length} products loaded', showSnackbar: false);
       } else {
-        print('DEBUG: API Error - ${response.errorMessage}'); // Debug log
+         // Debug log
         _showErrorMessage(response.errorMessage ?? 'Failed to load products');
       }
     } catch (e) {
-      print('DEBUG: Exception in loadProducts: $e'); // Debug log
+       // Debug log
       _showErrorMessage('Error loading products: $e');
     } finally {
       isLoading.value = false;
@@ -129,10 +129,10 @@ class ProductsController extends GetxController {
 
   void addProduct() {
     Get.toNamed('/seller-add-product')?.then((result) async {
-      print('DEBUG: Add product returned with result: $result'); // Debug log
+       // Debug log
       if (result != null) {
         // If a product was created, refresh the list from page 1
-        print('DEBUG: Refreshing products after add'); // Debug log
+         // Debug log
         await refreshProducts();
       }
     });
@@ -254,10 +254,10 @@ class ProductsController extends GetxController {
           }
         }
         
-        print('DEBUG: Updated ${products.length} products with category names'); // Debug log
+         // Debug log
       }
     } catch (e) {
-      print('DEBUG: Error loading category names: $e'); // Debug log
+       // Debug log
     }
   }
 

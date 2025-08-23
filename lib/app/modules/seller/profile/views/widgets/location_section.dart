@@ -3,7 +3,7 @@ import 'package:get/get.dart';
 import '../../controllers/seller_profile_edit_controller.dart';
 
 class LocationSection extends GetView<SellerProfileEditController> {
-  const LocationSection({Key? key}) : super(key: key);
+  const LocationSection({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -26,8 +26,8 @@ class LocationSection extends GetView<SellerProfileEditController> {
             border: Border.all(color: Colors.grey.shade300),
             borderRadius: BorderRadius.circular(8),
             color: controller.hasLocationSet 
-                ? Colors.green.withOpacity(0.05)
-                : Colors.grey.withOpacity(0.05),
+                ? Colors.green.withValues(alpha: 0.05)
+                : Colors.grey.withValues(alpha: 0.05),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -154,9 +154,9 @@ class LocationSection extends GetView<SellerProfileEditController> {
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.blue.withOpacity(0.05),
+            color: Colors.blue.withValues(alpha: 0.05),
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.blue.withOpacity(0.2)),
+            border: Border.all(color: Colors.blue.withValues(alpha: 0.2)),
           ),
           child: Row(
             children: [
