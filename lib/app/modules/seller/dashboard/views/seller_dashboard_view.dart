@@ -25,7 +25,7 @@ class SellerDashboardView extends GetView<SellerDashboardController> {
             children: [
               Container(
                 width: 80,
-                color: Colors.white,
+                color: Colors.grey[800],
                 child: Column(
                   children: [
                     const Padding(
@@ -65,7 +65,7 @@ class SellerDashboardView extends GetView<SellerDashboardController> {
         floatingActionButton: FloatingActionButton(
           onPressed: controller.addProduct,
           backgroundColor: AppTheme.primaryDark,
-          child: const Icon(Icons.add, color: Colors.white),
+          child:  Icon(Icons.add, color: Colors.grey[800]),
         ),
       );
     }
@@ -76,7 +76,7 @@ class SellerDashboardView extends GetView<SellerDashboardController> {
       floatingActionButton: FloatingActionButton(
         onPressed: controller.addProduct,
         backgroundColor: const Color(0xFFC4DFAA),
-        child: const Icon(Icons.add, color: Colors.white),
+        child:  Icon(Icons.add, color: Colors.grey[800]),
       ),
     );
   }
@@ -115,7 +115,7 @@ class SellerDashboardView extends GetView<SellerDashboardController> {
       expandedHeight: 100,
       floating: true,
       pinned: false,
-      backgroundColor: Colors.white,
+      backgroundColor: Colors.grey[800],
       elevation: 1,
       flexibleSpace: FlexibleSpaceBar(
         background: Container(
@@ -166,20 +166,14 @@ class SellerDashboardView extends GetView<SellerDashboardController> {
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
-              AppTheme.primaryDark,
-              AppTheme.primaryDark.withValues(alpha: 0.8),
+                  AppTheme.buyerPrimary.withValues(alpha: 0.5),
+                AppTheme.buyerPrimary.withValues(alpha: 0.2),
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
           borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: AppTheme.buyerLight.withValues(alpha: 0.3),
-              blurRadius: 15,
-              offset: const Offset(0, 5),
-            ),
-          ],
+        
         ),
         child: Column(
           children: [
@@ -192,7 +186,7 @@ class SellerDashboardView extends GetView<SellerDashboardController> {
                       Text(
                         'Profile Completion',
                         style: Get.textTheme.titleMedium?.copyWith(
-                          color: Colors.white,
+                          color: Colors.grey[800],
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -200,7 +194,7 @@ class SellerDashboardView extends GetView<SellerDashboardController> {
                       Obx(() => Text(
                         '${(controller.profileCompletion.value * 100).toInt()}%',
                         style: Get.textTheme.headlineLarge?.copyWith(
-                          color: Colors.white,
+                          color: Colors.grey[800],
                           fontWeight: FontWeight.bold,
                         ),
                       )),
@@ -210,13 +204,10 @@ class SellerDashboardView extends GetView<SellerDashboardController> {
                 Container(
                   width: 60,
                   height: 60,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
+                
+                  child:  Icon(
                     Icons.person_outline,
-                    color: Colors.white,
+                    color: Colors.grey[800],
                     size: 30,
                   ),
                 ),
@@ -225,8 +216,8 @@ class SellerDashboardView extends GetView<SellerDashboardController> {
             const SizedBox(height: 16),
             Obx(() => LinearProgressIndicator(
               value: controller.profileCompletion.value,
-              backgroundColor: Colors.white.withValues(alpha: 0.3),
-              valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+              backgroundColor: Colors.grey[800],
+              valueColor:  AlwaysStoppedAnimation<Color>(Colors.grey[800]!),
             )),
             const SizedBox(height: 12),
             Row(
@@ -235,15 +226,13 @@ class SellerDashboardView extends GetView<SellerDashboardController> {
                   child: OutlinedButton(
                     onPressed: controller.editProfile,
                     style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: Colors.white),
-                      backgroundColor: Colors.white.withValues(alpha: 0.1),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
                     ),
-                    child: const Text(
+                    child:  Text(
                       'Edit Profile',
-                      style: TextStyle(color: Colors.white),
+                      style: TextStyle(color: Colors.grey[800]),
                     ),
                   ),
                 ),
@@ -253,7 +242,7 @@ class SellerDashboardView extends GetView<SellerDashboardController> {
                     onPressed: controller.publishProfile,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF90C8AC),
-                      foregroundColor: Colors.white,
+                      foregroundColor: Colors.grey[800],
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
@@ -321,7 +310,7 @@ class SellerDashboardView extends GetView<SellerDashboardController> {
               child: Icon(
                 icon,
                 size: 24,
-                color: Colors.white,
+                color: Colors.grey[800],
               ),
             ),
             const SizedBox(height: 12),
@@ -380,7 +369,7 @@ class SellerDashboardView extends GetView<SellerDashboardController> {
               child: Icon(
                 icon,
                 size: 24,
-                color: Colors.white,
+                color: Colors.grey[800],
               ),
             ),
             const SizedBox(height: 12),
@@ -490,7 +479,7 @@ class SellerDashboardView extends GetView<SellerDashboardController> {
               ),
               child: Icon(
                 icon,
-                color: Colors.white,
+                color: Colors.grey[800],
                 size: 20,
               ),
             ),
@@ -595,14 +584,14 @@ class SellerDashboardView extends GetView<SellerDashboardController> {
                   children: [
                     Icon(
                       Icons.verified,
-                      color: Colors.white,
+                      color: Colors.grey[800],
                       size: 24,
                     ),
                     const SizedBox(width: 8),
                     Text(
                       'Profile Published',
                       style: Get.textTheme.titleMedium?.copyWith(
-                        color: Colors.white,
+                        color: Colors.grey[800],
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -613,13 +602,13 @@ class SellerDashboardView extends GetView<SellerDashboardController> {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.2),
+                        color: Colors.grey[800],
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
                         'ACTIVE',
                         style: Get.textTheme.bodySmall?.copyWith(
-                          color: Colors.white,
+                          color: Colors.grey[800],
                           fontWeight: FontWeight.w600,
                           fontSize: 10,
                         ),
@@ -631,14 +620,14 @@ class SellerDashboardView extends GetView<SellerDashboardController> {
                 Text(
                   'Your profile is live and visible to buyers',
                   style: Get.textTheme.bodyMedium?.copyWith(
-                    color: Colors.white.withValues(alpha: 0.9),
+                    color: Colors.grey[800],
                   ),
                 ),
                 const SizedBox(height: 16),
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.1),
+                    color: Colors.grey[800],
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Column(
@@ -647,7 +636,7 @@ class SellerDashboardView extends GetView<SellerDashboardController> {
                       Text(
                         'Current Plan',
                         style: Get.textTheme.bodySmall?.copyWith(
-                          color: Colors.white.withValues(alpha: 0.8),
+                          color: Colors.grey[800],
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -657,7 +646,7 @@ class SellerDashboardView extends GetView<SellerDashboardController> {
                             child: Text(
                               controller.subscriptionPlanName.toUpperCase(),
                               style: Get.textTheme.titleLarge?.copyWith(
-                                color: Colors.white,
+                                color: Colors.grey[800],
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -665,7 +654,7 @@ class SellerDashboardView extends GetView<SellerDashboardController> {
                           Text(
                             '${controller.subscriptionCurrency} ${controller.subscriptionAmount.toStringAsFixed(0)}',
                             style: Get.textTheme.titleMedium?.copyWith(
-                              color: Colors.white,
+                              color: Colors.grey[800],
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -678,14 +667,14 @@ class SellerDashboardView extends GetView<SellerDashboardController> {
                           children: [
                             Icon(
                               Icons.schedule,
-                              color: Colors.white.withValues(alpha: 0.8),
+                              color: Colors.grey[800],
                               size: 16,
                             ),
                             const SizedBox(width: 4),
                             Text(
                               '${controller.subscriptionStartDate} - ${controller.subscriptionEndDate}',
                               style: Get.textTheme.bodySmall?.copyWith(
-                                color: Colors.white.withValues(alpha: 0.8),
+                                color: Colors.grey[800]
                               ),
                             ),
                           ],
