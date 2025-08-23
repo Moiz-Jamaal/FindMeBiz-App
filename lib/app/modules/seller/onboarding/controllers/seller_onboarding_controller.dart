@@ -47,6 +47,7 @@ class SellerOnboardingController extends GetxController {
   final RxString currentLocation = ''.obs;
   final RxBool isLoadingLocation = false.obs;
   final RxBool hasLocationPermission = false.obs;
+  final RxBool isGettingLocation = false.obs;
   
   // UI state
   final RxBool isLoading = false.obs;
@@ -171,29 +172,57 @@ class SellerOnboardingController extends GetxController {
   // Location management
   Future<void> getCurrentLocation() async {
     try {
-      isLoadingLocation.value = true;
+      isGettingLocation.value = true;
       
-      final locationData = await _locationService.getCurrentLocationWithAddress();
-      if (locationData != null) {
-        addressController.text = locationData.formattedAddress;
-        currentLocation.value = locationData.geoLocationString;
+      Get.snackbar(
+        'Getting Location',
+        'Please wait while we get your current location...',
+        backgroundColor: Colors.blue.withValues(alpha: 0.1),
+        colorText: Colors.blue,
+        duration: const Duration(seconds: 3),
+      );
+
+      final locationDetails = await _locationService.getCurrentLocationWithAddress();
+      
+      if (locationDetails != null) {
+        // Auto-fill address fields from location
+        if (locationDetails.area.isNotEmpty) {
+          areaController.text = locationDetails.area;
+        }
+        if (locationDetails.city.isNotEmpty) {
+          cityController.text = locationDetails.city;
+        }
+        if (locationDetails.state.isNotEmpty) {
+          stateController.text = locationDetails.state;
+        }
+        if (locationDetails.pincode.isNotEmpty) {
+          pincodeController.text = locationDetails.pincode;
+        }
+        if (addressController.text.isEmpty && locationDetails.formattedAddress.isNotEmpty) {
+          // Only set address if it's empty, don't overwrite existing address
+          addressController.text = locationDetails.formattedAddress;
+        }
+        
+        // Save geolocation coordinates
+        currentLocation.value = locationDetails.geoLocationString;
         
         Get.snackbar(
-          'Location Found',
-          'Address updated with your current location',
+          'Location Updated',
+          'Address fields have been filled with your current location.',
           backgroundColor: Colors.green.withValues(alpha: 0.1),
           colorText: Colors.green,
+          duration: const Duration(seconds: 3),
         );
       }
     } catch (e) {
       Get.snackbar(
         'Location Error',
-        'Failed to get current location',
+        'Failed to get current location. Please try again.',
         backgroundColor: Colors.red.withValues(alpha: 0.1),
         colorText: Colors.red,
       );
     } finally {
-      isLoadingLocation.value = false;
+      isGettingLocation.value = false;
     }
   }
 
@@ -203,6 +232,21 @@ class SellerOnboardingController extends GetxController {
       await getCurrentLocation();
     }
   }
+
+  // Get formatted location display
+  String get currentLocationDisplay {
+    if (currentLocation.value.isEmpty) return 'No location set';
+    
+    final coords = _locationService.parseGeoLocation(currentLocation.value);
+    if (coords != null) {
+      return 'Lat: ${coords['latitude']!.toStringAsFixed(6)}, Lng: ${coords['longitude']!.toStringAsFixed(6)}';
+    }
+    
+    return 'No location set';
+  }
+
+  // Check if location is set
+  bool get hasLocationSet => currentLocation.value.isNotEmpty;
 
   // Complete onboarding process
   Future<void> completeOnboarding() async {

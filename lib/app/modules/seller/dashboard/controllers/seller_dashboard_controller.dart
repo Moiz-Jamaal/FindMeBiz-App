@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
+import 'dart:convert';
 import '../../../../services/auth_service.dart';
 import '../../../../services/seller_service.dart';
 import '../../../../data/models/api/index.dart';
@@ -21,6 +22,9 @@ class SellerDashboardController extends GetxController {
   final Rx<SellerDetailsExtended?> sellerProfile = Rx<SellerDetailsExtended?>(null);
   final RxString businessName = 'My Business'.obs;
   final RxBool isProfilePublished = false.obs;
+  
+  // Subscription data
+  final Rx<Map<String, dynamic>?> currentSubscription = Rx<Map<String, dynamic>?>(null);
   
   // UI state
   final RxBool isLoading = false.obs;
@@ -56,6 +60,11 @@ class SellerDashboardController extends GetxController {
         
         // Calculate profile completion based on filled fields
         profileCompletion.value = _calculateProfileCompletion(response.data!);
+        
+        // Load subscription details if published
+        if (isProfilePublished.value) {
+          await _loadSubscriptionDetails(response.data!.sellerid!);
+        }
       } else {
         // If no seller profile exists yet, user needs to complete onboarding
         businessName.value = currentUser.fullname ?? 'My Business';
@@ -84,6 +93,30 @@ class SellerDashboardController extends GetxController {
     totalProducts.value = 5;
     totalViews.value = 120;
     totalReviews.value = 8;
+  }
+
+  Future<void> _loadSubscriptionDetails(int sellerId) async {
+    try {
+      final settings = sellerProfile.value?.settings?.firstOrNull;
+      if (settings?.subscriptionDetails != null) {
+        try {
+          final details = jsonDecode(settings!.subscriptionDetails!);
+          currentSubscription.value = details;
+        } catch (e) {
+          // If JSON parsing fails, create a basic subscription object
+          currentSubscription.value = {
+            'planId': null,
+            'name': settings!.subscriptionPlan ?? 'Basic',
+            'amount': 250,
+            'currency': 'INR',
+            'startDate': null,
+            'endDate': null,
+          };
+        }
+      }
+    } catch (e) {
+      // Handle error gracefully
+    }
   }
 
   double _calculateProfileCompletion(SellerDetailsExtended seller) {
@@ -149,5 +182,44 @@ class SellerDashboardController extends GetxController {
 
   void refreshData() {
     _loadDashboardData();
+  }
+
+  // Subscription helper methods
+  String get subscriptionPlanName {
+    return currentSubscription.value?['name'] ?? 'Basic';
+  }
+
+  double get subscriptionAmount {
+    return (currentSubscription.value?['amount'] as num?)?.toDouble() ?? 250.0;
+  }
+
+  String get subscriptionCurrency {
+    return currentSubscription.value?['currency'] ?? 'INR';
+  }
+
+  String? get subscriptionStartDate {
+    final startDate = currentSubscription.value?['startDate'];
+    if (startDate != null) {
+      try {
+        final date = DateTime.parse(startDate.toString());
+        return '${date.day}/${date.month}/${date.year}';
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  }
+
+  String? get subscriptionEndDate {
+    final endDate = currentSubscription.value?['endDate'];
+    if (endDate != null) {
+      try {
+        final date = DateTime.parse(endDate.toString());
+        return '${date.day}/${date.month}/${date.year}';
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
   }
 }

@@ -181,6 +181,11 @@ class SellerOnboardingView extends GetView<SellerOnboardingController> {
             
             const SizedBox(height: 16),
             
+            // Geolocation Section
+            _buildGeolocationSection(),
+            
+            const SizedBox(height: 16),
+            
             TextFormField(
               controller: controller.addressController,
               decoration: const InputDecoration(
@@ -305,6 +310,143 @@ class SellerOnboardingView extends GetView<SellerOnboardingController> {
               color: AppTheme.textSecondary,
             ),
             textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGeolocationSection() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.sellerPrimary.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: AppTheme.sellerPrimary.withValues(alpha: 0.2),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.my_location,
+                color: AppTheme.sellerPrimary,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Current Location',
+                style: Get.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.sellerPrimary,
+                ),
+              ),
+              const Spacer(),
+              Obx(() => controller.isGettingLocation.value
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AppTheme.sellerPrimary,
+                      ),
+                    )
+                  : GestureDetector(
+                      onTap: controller.getCurrentLocation,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppTheme.sellerPrimary,
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.location_searching,
+                              size: 16,
+                              color: Colors.white,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Get Location',
+                              style: Get.textTheme.bodySmall?.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Obx(() => Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: controller.hasLocationSet
+                    ? AppTheme.sellerPrimary.withValues(alpha: 0.3)
+                    : AppTheme.textHint.withValues(alpha: 0.3),
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      controller.hasLocationSet
+                          ? Icons.location_on
+                          : Icons.location_off,
+                      size: 16,
+                      color: controller.hasLocationSet
+                          ? AppTheme.sellerPrimary
+                          : AppTheme.textHint,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      controller.hasLocationSet
+                          ? 'Location Set'
+                          : 'No location set',
+                      style: Get.textTheme.bodySmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: controller.hasLocationSet
+                            ? AppTheme.sellerPrimary
+                            : AppTheme.textHint,
+                      ),
+                    ),
+                  ],
+                ),
+                if (controller.hasLocationSet) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    controller.currentLocationDisplay,
+                    style: Get.textTheme.bodySmall?.copyWith(
+                      color: AppTheme.textSecondary,
+                      fontFamily: 'monospace',
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          )),
+          const SizedBox(height: 8),
+          Text(
+            'Get your current location to auto-fill address fields and help buyers find you on the map.',
+            style: Get.textTheme.bodySmall?.copyWith(
+              color: AppTheme.textSecondary,
+            ),
           ),
         ],
       ),

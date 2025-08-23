@@ -88,6 +88,9 @@ class SellerDashboardView extends GetView<SellerDashboardController> {
         slivers: [
           _buildDashboardAppBar(),
           _buildProfileStatusCard(),
+          Obx(() => controller.isProfilePublished.value
+              ? _buildPlanDetailsCard()
+              : const SliverToBoxAdapter(child: SizedBox())),
           _buildStatsCards(),
           _buildQuickActions(),
           _buildProductsSectionHeader(),
@@ -459,6 +462,140 @@ class SellerDashboardView extends GetView<SellerDashboardController> {
   Widget _buildBottomSpacing() {
     return const SliverToBoxAdapter(
       child: SizedBox(height: 80), // Space for floating action button
+    );
+  }
+
+  Widget _buildPlanDetailsCard() {
+    return SliverToBoxAdapter(
+      child: Container(
+        margin: const EdgeInsets.all(AppConstants.defaultPadding),
+        child: Card(
+          elevation: 2,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              gradient: LinearGradient(
+                colors: [
+                  Colors.green.shade600,
+                  Colors.green.shade500,
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.verified,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Profile Published',
+                      style: Get.textTheme.titleMedium?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        'ACTIVE',
+                        style: Get.textTheme.bodySmall?.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 10,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Your profile is live and visible to buyers',
+                  style: Get.textTheme.bodyMedium?.copyWith(
+                    color: Colors.white.withValues(alpha: 0.9),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Current Plan',
+                        style: Get.textTheme.bodySmall?.copyWith(
+                          color: Colors.white.withValues(alpha: 0.8),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              controller.subscriptionPlanName.toUpperCase(),
+                              style: Get.textTheme.titleLarge?.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            '${controller.subscriptionCurrency} ${controller.subscriptionAmount.toStringAsFixed(0)}',
+                            style: Get.textTheme.titleMedium?.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (controller.subscriptionStartDate != null &&
+                          controller.subscriptionEndDate != null) ...[
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.schedule,
+                              color: Colors.white.withValues(alpha: 0.8),
+                              size: 16,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              '${controller.subscriptionStartDate} - ${controller.subscriptionEndDate}',
+                              style: Get.textTheme.bodySmall?.copyWith(
+                                color: Colors.white.withValues(alpha: 0.8),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
