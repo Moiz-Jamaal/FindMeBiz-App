@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:souq/app/services/api/api_exception.dart';
-// import 'package:url_launcher/url_launcher.dart'; // Add this dependency to pubspec.yaml
+import 'package:url_launcher/url_launcher.dart';
 import '../../../../data/models/seller.dart';
 import '../../../../data/models/product.dart';
 import '../../../../data/models/api/seller_details.dart';
@@ -481,7 +481,10 @@ class SellerProfileViewController extends GetxController {
   }
 
   void contactSeller() {
-    if (seller.value?.whatsappNumber == null) {
+    final seller = this.seller.value!;
+    final phoneNumber = seller.whatsappNumber ?? seller.phoneNumber;
+    
+    if (phoneNumber == null) {
       Get.snackbar(
         'Contact Info',
         'No contact information available',
@@ -493,36 +496,30 @@ class SellerProfileViewController extends GetxController {
     }
 
     hasContacted.value = true;
-    _launchWhatsApp();
+    _launchPhoneDialer(phoneNumber);
   }
 
-  void _launchWhatsApp() async {
-    final seller = this.seller.value!;
+  void _launchPhoneDialer(String phoneNumber) async {
+    final cleanNumber = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
+    final url = 'tel:$cleanNumber';
     
-    // Placeholder implementation - In real app, add url_launcher dependency
-    Get.snackbar(
-      'WhatsApp',
-      'Opening WhatsApp to contact ${seller.businessName}...\nNumber: ${seller.whatsappNumber}',
-      snackPosition: SnackPosition.BOTTOM,
-      duration: const Duration(seconds: 3),
-    );
-    
-    // TODO: Uncomment when url_launcher is added to pubspec.yaml
-    /*
-    const message = 'Hi, I found your profile on FindMeBiz and I\'m interested in your products.';
-    final whatsappNumber = seller.whatsappNumber!.replaceAll(RegExp(r'[^\d]'), '');
-    final url = 'https://wa.me/$whatsappNumber?text=${Uri.encodeComponent(message)}';
     try {
       if (await canLaunchUrl(Uri.parse(url))) {
-        await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+        await launchUrl(Uri.parse(url));
       } else {
-        _showContactAlternatives();
+        throw 'Could not launch $url';
       }
     } catch (e) {
-      _showContactAlternatives();
+      Get.snackbar(
+        'Phone Call',
+        'Could not open phone dialer',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
     }
-    */
   }
+  
 
   void getDirections() {
     if (seller.value?.stallLocation == null) {
@@ -541,31 +538,25 @@ class SellerProfileViewController extends GetxController {
   }
 
   void _launchMaps(double lat, double lng) async {
-    // Placeholder implementation - In real app, add url_launcher dependency
-    Get.snackbar(
-      'Maps',
-      'Opening maps for location: $lat, $lng',
-      snackPosition: SnackPosition.BOTTOM,
-    );
+    final url = 'https://www.google.com/maps/dir/?api=1&destination=$lat,$lng';
     
-    // TODO: Uncomment when url_launcher is added to pubspec.yaml
-    /*
-    final url = 'https://www.google.com/maps/search/?api=1&query=$lat,$lng';
     try {
       if (await canLaunchUrl(Uri.parse(url))) {
-        await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+        await launchUrl(Uri.parse(url));
+      } else {
+        throw 'Could not launch $url';
       }
     } catch (e) {
       Get.snackbar(
-        'Maps',
-        'Could not open maps',
+        'Google Maps',
+        'Could not open Google Maps',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red,
         colorText: Colors.white,
       );
     }
-    */
   }
+  
 
   void filterProductsByCategory(int categoryIndex) {
     selectedProductCategory.value = categoryIndex;
