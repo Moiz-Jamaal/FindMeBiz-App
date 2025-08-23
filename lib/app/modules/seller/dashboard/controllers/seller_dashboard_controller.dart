@@ -3,18 +3,20 @@ import 'package:flutter/material.dart';
 import 'dart:convert';
 import '../../../../services/auth_service.dart';
 import '../../../../services/seller_service.dart';
+import '../../../../services/product_service.dart';
 import '../../../../data/models/api/index.dart';
 
 class SellerDashboardController extends GetxController {
   final AuthService _authService = Get.find<AuthService>();
   final SellerService _sellerService = Get.find<SellerService>();
+  final ProductService _productService = ProductService.instance;
   
   // Current navigation index
   final RxInt currentIndex = 0.obs;
   
   // Dashboard statistics (keeping as dummy for now as requested)
   final RxInt totalProducts = 0.obs;
-  final RxInt totalViews = 0.obs;
+  final RxDouble averageRating = 0.0.obs;
   final RxInt totalReviews = 0.obs;
   final RxDouble profileCompletion = 0.75.obs;
   
@@ -65,15 +67,18 @@ class SellerDashboardController extends GetxController {
         if (isProfilePublished.value) {
           await _loadSubscriptionDetails(response.data!.sellerid!);
         }
+
+        // Load real statistics
+        await _loadSellerStatistics(response.data!.sellerid!);
       } else {
         // If no seller profile exists yet, user needs to complete onboarding
         businessName.value = currentUser.fullname ?? 'My Business';
         isProfilePublished.value = false;
         profileCompletion.value = 0.0;
+        _loadDummyStatistics(); // Keep as fallback
       }
-      
-      // Load dummy statistics (as requested)
-      _loadDummyStatistics();
+      // Load real statistics
+      await _loadSellerStatistics(response.data!.sellerid!);
       
     } catch (e) {
       Get.snackbar(
@@ -82,18 +87,93 @@ class SellerDashboardController extends GetxController {
         backgroundColor: Colors.red.withValues(alpha: 0.1),
         colorText: Colors.red,
       );
-      
+      _loadDummyStatistics(); // Fallback to dummy data
     } finally {
       isLoading.value = false;
     }
   }
 
-  void _loadDummyStatistics() {
-    // Mock data as requested
-    totalProducts.value = 5;
-    totalViews.value = 120;
-    totalReviews.value = 8;
+  Future<void> _loadSellerStatistics(int sellerId) async {
+    try {
+      // Load real product count
+      final productsResponse = await _productService.getProductsBySeller(sellerId, pageSize: 1);
+      if (productsResponse.isSuccess && productsResponse.data != null) {
+        totalProducts.value = productsResponse.data!.totalCount;
+      }
+
+      // Load seller reviews from seller service
+      try {
+        final reviewsResponse = await _sellerService.getSellerReviews(sellerId);
+        if (reviewsResponse.isSuccess && reviewsResponse.data != null) {
+          final reviewData = reviewsResponse.data!;
+          // Extract review counts and ratings from API response
+          totalReviews.value = (reviewData['totalReviews'] as int?) ?? 0;
+          
+          // Calculate average rating if available
+          if (reviewData.containsKey('averageRating')) {
+            averageRating.value = (reviewData['averageRating'] as num?)?.toDouble() ?? 0.0;
+          } else if (reviewData.containsKey('sellerReviews') || reviewData.containsKey('productReviews')) {
+            // Calculate from individual reviews if average not provided
+            _calculateAverageRating(reviewData);
+          }
+        }
+      } catch (e) {
+        // Reviews API might not be available yet, keep defaults
+        totalReviews.value = 0;
+        averageRating.value = 0.0;
+      }
+
+    } catch (e) {
+      // If statistics loading fails, keep current values or set to 0
+      totalProducts.value = 0;
+      averageRating.value = 0.0;
+      totalReviews.value = 0;
+    }
   }
+
+  void _calculateAverageRating(Map<String, dynamic> reviewData) {
+    try {
+      final sellerReviews = reviewData['sellerReviews'] as List?;
+      final productReviews = reviewData['productReviews'] as List?;
+      
+      double totalRating = 0;
+      int reviewCount = 0;
+      
+      // Calculate from seller reviews
+      if (sellerReviews != null) {
+        for (var review in sellerReviews) {
+          final rating = (review['rating'] as num?)?.toDouble();
+          if (rating != null) {
+            totalRating += rating;
+            reviewCount++;
+          }
+        }
+      }
+      
+      // Calculate from product reviews
+      if (productReviews != null) {
+        for (var review in productReviews) {
+          final rating = (review['rating'] as num?)?.toDouble();
+          if (rating != null) {
+            totalRating += rating;
+            reviewCount++;
+          }
+        }
+      }
+      
+      averageRating.value = reviewCount > 0 ? (totalRating / reviewCount) : 0.0;
+    } catch (e) {
+      averageRating.value = 0.0;
+    }
+  }
+
+  void _loadDummyStatistics() {
+    // Fallback dummy data only when APIs fail
+    totalProducts.value = 0;
+    averageRating.value = 0.0;
+    totalReviews.value = 0;
+  }
+  
 
   Future<void> _loadSubscriptionDetails(int sellerId) async {
     try {

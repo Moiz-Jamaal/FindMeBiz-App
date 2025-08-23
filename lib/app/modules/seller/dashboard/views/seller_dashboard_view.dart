@@ -75,7 +75,7 @@ class SellerDashboardView extends GetView<SellerDashboardController> {
       body: _buildDashboardContent(),
       floatingActionButton: FloatingActionButton(
         onPressed: controller.addProduct,
-        backgroundColor: AppTheme.buyerLight,
+        backgroundColor: const Color(0xFF7ED321),
         child: const Icon(Icons.add, color: Colors.white),
       ),
     );
@@ -164,14 +164,20 @@ class SellerDashboardView extends GetView<SellerDashboardController> {
         margin: const EdgeInsets.all(AppConstants.defaultPadding),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AppTheme.buyerLight,
-          // gradient: AppTheme.sellerGradient,
+          gradient: LinearGradient(
+            colors: [
+              AppTheme.buyerLight,
+              AppTheme.buyerLight.withValues(alpha: 0.8),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: AppTheme.buyerLight.withValues(alpha: 0.2),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
+              color: AppTheme.buyerLight.withValues(alpha: 0.3),
+              blurRadius: 15,
+              offset: const Offset(0, 5),
             ),
           ],
         ),
@@ -230,6 +236,7 @@ class SellerDashboardView extends GetView<SellerDashboardController> {
                     onPressed: controller.editProfile,
                     style: OutlinedButton.styleFrom(
                       side: const BorderSide(color: Colors.white),
+                      backgroundColor: Colors.white.withValues(alpha: 0.1),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
@@ -245,8 +252,8 @@ class SellerDashboardView extends GetView<SellerDashboardController> {
                   child: ElevatedButton(
                     onPressed: controller.publishProfile,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      foregroundColor: AppTheme.buyerLight,
+                      backgroundColor: const Color(0xFF7ED321),
+                      foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
@@ -268,49 +275,127 @@ class SellerDashboardView extends GetView<SellerDashboardController> {
         padding: const EdgeInsets.symmetric(horizontal: AppConstants.defaultPadding),
         child: Row(
           children: [
-            Expanded(child: _buildStatCard('Products', controller.totalProducts, Icons.inventory_2)),
+            Expanded(child: _buildStatCard('Products', controller.totalProducts, Icons.inventory_2, const Color(0xFF4A90E2))),
             const SizedBox(width: 12),
-            Expanded(child: _buildStatCard('Views', controller.totalViews, Icons.visibility)),
+            Expanded(child: _buildRatingStatCard('Rating', controller.averageRating, Icons.star, const Color(0xFFF5A623))),
             const SizedBox(width: 12),
-            Expanded(child: _buildStatCard('Reviews', controller.totalReviews, Icons.star)),
+            Expanded(child: _buildStatCard('Reviews', controller.totalReviews, Icons.reviews, const Color(0xFF7ED321))),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildStatCard(String title, RxInt value, IconData icon) {
+  Widget _buildStatCard(String title, RxInt value, IconData icon, Color color) {
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
+      child: Container(
         padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          gradient: LinearGradient(
+            colors: [
+              color.withValues(alpha: 0.1),
+              color.withValues(alpha: 0.05),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
         child: Column(
           children: [
             Container(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: AppTheme.buyerLight.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
+                color: color,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: color.withValues(alpha: 0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
               child: Icon(
                 icon,
                 size: 24,
-                color: AppTheme.buyerLight,
+                color: Colors.white,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
             Obx(() => Text(
               value.value.toString(),
               style: Get.textTheme.headlineMedium?.copyWith(
                 fontWeight: FontWeight.bold,
-                color: AppTheme.textPrimary,
+                color: color,
               ),
             )),
             Text(
               title,
               style: Get.textTheme.bodySmall?.copyWith(
                 color: AppTheme.textSecondary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRatingStatCard(String title, RxDouble value, IconData icon, Color color) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          gradient: LinearGradient(
+            colors: [
+              color.withValues(alpha: 0.1),
+              color.withValues(alpha: 0.05),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: color.withValues(alpha: 0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Icon(
+                icon,
+                size: 24,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Obx(() => Text(
+              value.value == 0.0 ? '-' : value.value.toStringAsFixed(1),
+              style: Get.textTheme.headlineMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            )),
+            Text(
+              title,
+              style: Get.textTheme.bodySmall?.copyWith(
+                color: AppTheme.textSecondary,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ],
@@ -346,6 +431,7 @@ class SellerDashboardView extends GetView<SellerDashboardController> {
                         'Add Product',
                         Icons.add_box,
                         controller.addProduct,
+                        const Color(0xFF7ED321),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -354,6 +440,7 @@ class SellerDashboardView extends GetView<SellerDashboardController> {
                         'Edit Profile',
                         Icons.edit,
                         controller.editProfile,
+                        const Color(0xFF4A90E2),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -362,6 +449,7 @@ class SellerDashboardView extends GetView<SellerDashboardController> {
                         'Reviews',
                         Icons.star,
                         () => Get.toNamed('/seller-reviews'),
+                        const Color(0xFFF5A623),
                       ),
                     ),
                   ],
@@ -374,29 +462,44 @@ class SellerDashboardView extends GetView<SellerDashboardController> {
     );
   }
 
-  Widget _buildQuickActionButton(String label, IconData icon, VoidCallback onTap) {
+  Widget _buildQuickActionButton(String label, IconData icon, VoidCallback onTap, Color color) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(12),
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
         decoration: BoxDecoration(
-          border: Border.all(color: AppTheme.borderColor),
-          borderRadius: BorderRadius.circular(8),
+          gradient: LinearGradient(
+            colors: [
+              color.withValues(alpha: 0.1),
+              color.withValues(alpha: 0.05),
+            ],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withValues(alpha: 0.3)),
         ),
         child: Column(
           children: [
-            Icon(
-              icon,
-              color: AppTheme.buyerLight,
-              size: 20,
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                icon,
+                color: Colors.white,
+                size: 20,
+              ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 8),
             Text(
               label,
               style: Get.textTheme.bodySmall?.copyWith(
-                color: AppTheme.textSecondary,
-                fontWeight: FontWeight.w500,
+                color: color,
+                fontWeight: FontWeight.w600,
               ),
               textAlign: TextAlign.center,
             ),
@@ -447,8 +550,8 @@ class SellerDashboardView extends GetView<SellerDashboardController> {
           icon: const Icon(Icons.arrow_forward),
           label: const Text('View All Products'),
           style: OutlinedButton.styleFrom(
-            foregroundColor: AppTheme.buyerLight,
-            side: BorderSide(color: AppTheme.buyerLight),
+            foregroundColor: const Color(0xFF4A90E2),
+            side: const BorderSide(color: Color(0xFF4A90E2)),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),
             ),
