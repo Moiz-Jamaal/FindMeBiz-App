@@ -34,13 +34,15 @@ class ApiClient extends GetxService {
   }
 
   // POST request
-  Future<http.Response> post(String endpoint, {dynamic body, Map<String, String>? queryParams}) async {
+  Future<http.Response> post(String endpoint, {dynamic body, Map<String, String>? queryParams, Map<String, String>? customHeaders}) async {
     final uri = _buildUri(endpoint, queryParams);
     final jsonBody = body != null ? jsonEncode(body) : null;
+    final headers = {..._headers};
+    if (customHeaders != null) headers.addAll(customHeaders);
     
     try {
     final response = await _httpClient
-      .post(uri, headers: _headers, body: jsonBody)
+      .post(uri, headers: headers, body: jsonBody)
       .timeout(ApiConfig.requestTimeout);
       _logRequest('POST', uri.toString(), jsonBody, response);
       return response;

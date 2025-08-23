@@ -1,3 +1,6 @@
+import 'package:get/get.dart';
+import 'package:souq/app/services/auth_service.dart';
+
 import '../data/models/product.dart';
 import '../data/models/api/index.dart';
 import '../services/product_service.dart';
@@ -110,63 +113,7 @@ class BuyerService extends BaseApiService {
     return response;
   }
 
-  // Favorites Management
-  Future<ApiResponse<Map<String, dynamic>>> addToFavorites({
-    required int userId,
-    required int refId,
-    required String type, // 'P' for product, 'S' for seller
-  }) async {
-    final body = {
-      'userId': userId,
-      'refId': refId,
-      'pType': type,
-      'active': true,
-    };
-
-    return await post<Map<String, dynamic>>(
-      '/UserFavorite',
-      body: body,
-      fromJson: (json) => json as Map<String, dynamic>,
-    );
-  }
-
-  Future<ApiResponse<Map<String, dynamic>>> removeFromFavorites({
-    required int userId,
-    required int refId,
-    required String type, // 'P' for product, 'S' for seller
-  }) async {
-    final body = {
-      'userId': userId,
-      'refId': refId,
-      'pType': type,
-      'active': false,
-    };
-
-    return await put<Map<String, dynamic>>(
-      '/UserFavorite',
-      body: body,
-      fromJson: (json) => json as Map<String, dynamic>,
-    );
-  }
-
-  Future<ApiResponse<Map<String, dynamic>>> checkIfFavorite({
-    required int userId,
-    required int refId,
-    required String type, // 'P' for product, 'S' for seller
-  }) async {
-    final queryParams = {
-      'userId': userId.toString(),
-      'refId': refId.toString(),
-      'p_s': type,
-    };
-
-    return await get<Map<String, dynamic>>(
-      '/UserFavoriteCheck',
-      queryParams: queryParams,
-      fromJson: (json) => json as Map<String, dynamic>,
-    );
-  }
-
+ 
   // Get products by seller for buyer view
   Future<ApiResponse<ProductSearchResponse>> getSellerProducts(
     int sellerId, {
@@ -253,6 +200,147 @@ class BuyerService extends BaseApiService {
     } catch (e) {
       return ApiResponse.error('Search failed: ${e.toString()}');
     }
+  }
+
+  // Favorites API
+  Future<ApiResponse<Map<String, dynamic>>> addToFavorites({
+    required int userId,
+    required int refId,
+    required String type,
+  }) async {
+    return await post<Map<String, dynamic>>(
+      '/AddToFavorites',
+      body: {'refId': refId, 'type': type},
+      customHeaders: {'X-User-Id': userId.toString()},
+      fromJson: (json) => json,
+    );
+  }
+
+  Future<ApiResponse<Map<String, dynamic>>> removeFromFavorites({
+    required int userId,
+    required int refId,
+    required String type,
+  }) async {
+    return await post<Map<String, dynamic>>(
+      '/RemoveFromFavorites',
+      body: {'refId': refId, 'type': type},
+      customHeaders: {'X-User-Id': userId.toString()},
+      fromJson: (json) => json,
+    );
+  }
+
+  Future<ApiResponse<Map<String, dynamic>>> checkIfFavorite({
+    required int userId,
+    required int refId,
+    required String type,
+  }) async {
+    return await get<Map<String, dynamic>>(
+      '/CheckFavorite',
+      queryParams: {
+        'userId': userId.toString(),
+        'refId': refId.toString(),
+        'type': type,
+      },
+      fromJson: (json) => json,
+    );
+  }
+
+  Future<ApiResponse<Map<String, dynamic>>> getUserFavorites(int userId) async {
+    return await get<Map<String, dynamic>>(
+      '/UserFavorites/$userId',
+      fromJson: (json) => json,
+    );
+  }
+
+  // Reviews API
+  Future<ApiResponse<Map<String, dynamic>>> createProductReview(
+    int productId,
+    int rating,
+    String reviewText,
+    String reviewTitle,
+    bool isAnonymous,
+  ) async {
+    final authService = Get.find<AuthService>();
+    final userId = authService.currentUser?.userid;
+    if (userId == null) return ApiResponse.error('User ID required');
+
+    return await post<Map<String, dynamic>>(
+      '/ProductReview?productId=$productId',
+      body: {
+        'rating': rating,
+        'reviewText': reviewText,
+        'reviewTitle': reviewTitle,
+        'isAnonymous': isAnonymous,
+      },
+      customHeaders: {'X-User-Id': userId.toString()},
+      fromJson: (json) => json,
+    );
+  }
+
+  Future<ApiResponse<Map<String, dynamic>>> createSellerReview(
+    int sellerId,
+    int rating,
+    String reviewText,
+    String reviewTitle,
+    bool isAnonymous,
+  ) async {
+    final authService = Get.find<AuthService>();
+    final userId = authService.currentUser?.userid;
+    if (userId == null) return ApiResponse.error('User ID required');
+
+    return await post<Map<String, dynamic>>(
+      '/SellerReview?sellerId=$sellerId',
+      body: {
+        'rating': rating,
+        'reviewText': reviewText,
+        'reviewTitle': reviewTitle,
+        'isAnonymous': isAnonymous,
+      },
+      customHeaders: {'X-User-Id': userId.toString()},
+      fromJson: (json) => json,
+    );
+  }
+
+  Future<ApiResponse<List<Map<String, dynamic>>>> getProductReviews(int productId) async {
+    return await getList<Map<String, dynamic>>(
+      '/ProductReviews/$productId',
+      fromJson: (json) => json,
+    );
+  }
+
+  Future<ApiResponse<List<Map<String, dynamic>>>> getSellerReviews(int sellerId) async {
+    return await getList<Map<String, dynamic>>(
+      '/SellerReviews/$sellerId',
+      fromJson: (json) => json,
+    );
+  }
+
+  Future<ApiResponse<Map<String, dynamic>>> getProductReviewSummary(int productId) async {
+    return await get<Map<String, dynamic>>(
+      '/ProductReviewSummary/$productId',
+      fromJson: (json) => json,
+    );
+  }
+
+  Future<ApiResponse<Map<String, dynamic>>> getSellerReviewSummary(int sellerId) async {
+    return await get<Map<String, dynamic>>(
+      '/SellerReviewSummary/$sellerId',
+      fromJson: (json) => json,
+    );
+  }
+
+  // View Tracking API
+  Future<ApiResponse<Map<String, dynamic>>> trackView({
+    required int userId,
+    required int refId,
+    required String type,
+  }) async {
+    return await post<Map<String, dynamic>>(
+      '/TrackView',
+      body: {'refId': refId, 'type': type},
+      customHeaders: {'X-User-Id': userId.toString()},
+      fromJson: (json) => json,
+    );
   }
 }
 

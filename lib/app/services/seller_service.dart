@@ -218,4 +218,22 @@ class SellerService extends BaseApiService {
     
     return response;
   }
+
+  // Review Management
+  Future<ApiResponse<Map<String, dynamic>>> getSellerReviews(int sellerId) async {
+    return await get<Map<String, dynamic>>(
+      '/SellerManagement/MyReviews/$sellerId',
+      fromJson: (json) => json,
+    );
+  }
+
+  Future<ApiResponse<Map<String, dynamic>>> deleteSellerReview(int reviewId, int sellerId) async {
+    final response = await delete('/SellerManagement/DeleteSellerReview/$reviewId?sellerId=$sellerId');
+    return ApiResponse.success({'success': true}, statusCode: response.statusCode);
+  }
+
+  Future<ApiResponse<Map<String, dynamic>>> deleteProductReview(int reviewId, int sellerId) async {
+    final response = await delete('/SellerManagement/DeleteProductReview/$reviewId?sellerId=$sellerId');
+    return ApiResponse.success({'success': true}, statusCode: response.statusCode);
+  }
 }

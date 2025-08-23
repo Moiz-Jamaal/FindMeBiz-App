@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:souq/core/widgets/enhanced_network_image.dart';
+import 'package:souq/app/widgets/reviews/review_widget.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/constants/app_constants.dart';
 
@@ -96,6 +97,7 @@ class BuyerProductView extends GetView<BuyerProductViewController> {
             _buildProductInfo(),
             _buildSellerInfo(),
             _buildActionButtons(),
+            _buildReviews(),
             _buildRelatedProducts(),
           ],
         );
@@ -526,6 +528,32 @@ class BuyerProductView extends GetView<BuyerProductViewController> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildReviews() {
+    return SliverToBoxAdapter(
+      child: Obx(() {
+        final product = controller.product.value;
+        if (product == null) return const SizedBox();
+        
+        final productId = int.tryParse(product.id);
+        if (productId == null) return const SizedBox();
+        
+        return Container(
+          margin: const EdgeInsets.all(AppConstants.defaultPadding),
+          child: Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: ReviewWidget(
+                refId: productId,
+                type: 'P',
+                entityName: product.name,
+              ),
+            ),
+          ),
+        );
+      }),
     );
   }
 

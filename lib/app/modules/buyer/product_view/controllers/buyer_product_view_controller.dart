@@ -142,6 +142,9 @@ class BuyerProductViewController extends GetxController {
       // Check if favorited by current user
       _checkIfFavorited();
       
+      // Track this view
+      _trackProductView();
+      
       isLoading.value = false;
     } catch (e) {
       _setError('Failed to load product information');
@@ -179,6 +182,33 @@ class BuyerProductViewController extends GetxController {
     }).catchError((e) {
       isFavorite.value = false;
       print('❌ Exception checking favorite status: $e');
+    });
+  }
+
+  void _trackProductView() {
+    final authService = Get.find<AuthService>();
+    final currentUser = authService.currentUser;
+    
+    if (currentUser?.userid == null || product.value?.id == null) {
+      return; // Don't track if user not logged in or no product
+    }
+    
+    final productId = int.tryParse(product.value!.id);
+    if (productId == null) return;
+    
+    final buyerService = Get.find<BuyerService>();
+    buyerService.trackView(
+      userId: currentUser!.userid!,
+      refId: productId,
+      type: 'P',
+    ).then((response) {
+      if (response.isSuccess) {
+        print('✅ Product view tracked successfully');
+      } else {
+        print('❌ Failed to track product view: ${response.errorMessage}');
+      }
+    }).catchError((e) {
+      print('❌ Exception tracking product view: $e');
     });
   }
 
@@ -513,8 +543,33 @@ class BuyerProductViewController extends GetxController {
   }
 
   void viewRelatedProduct(Product relatedProduct) {
+    // Track view before navigation
+    _trackRelatedProductView(relatedProduct);
     // Navigate to product view with new product
     Get.toNamed('/buyer-product-view', arguments: relatedProduct);
+  }
+
+  void _trackRelatedProductView(Product product) {
+    final authService = Get.find<AuthService>();
+    final currentUser = authService.currentUser;
+    
+    if (currentUser?.userid == null) return;
+    
+    final productId = int.tryParse(product.id);
+    if (productId == null) return;
+    
+    final buyerService = Get.find<BuyerService>();
+    buyerService.trackView(
+      userId: currentUser!.userid!,
+      refId: productId,
+      type: 'P',
+    ).then((response) {
+      if (response.isSuccess) {
+        print('✅ Related product view tracked successfully');
+      }
+    }).catchError((e) {
+      print('❌ Exception tracking related product view: $e');
+    });
   }
 
   void inquireAboutProduct() {

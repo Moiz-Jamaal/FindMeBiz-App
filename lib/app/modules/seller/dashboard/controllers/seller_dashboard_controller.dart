@@ -14,7 +14,7 @@ class SellerDashboardController extends GetxController {
   // Dashboard statistics (keeping as dummy for now as requested)
   final RxInt totalProducts = 0.obs;
   final RxInt totalViews = 0.obs;
-  final RxInt totalContacts = 0.obs;
+  final RxInt totalReviews = 0.obs;
   final RxDouble profileCompletion = 0.75.obs;
   
   // Profile data
@@ -83,7 +83,7 @@ class SellerDashboardController extends GetxController {
     // Mock data as requested
     totalProducts.value = 5;
     totalViews.value = 120;
-    totalContacts.value = 8;
+    totalReviews.value = 8;
   }
 
   double _calculateProfileCompletion(SellerDetailsExtended seller) {

@@ -27,6 +27,10 @@ class SellerProfileViewController extends GetxController {
   // Interaction tracking
   final RxBool hasContacted = false.obs;
   final RxBool hasViewed = false.obs;
+  
+  // Review data
+  final RxDouble averageRating = 0.0.obs;
+  final RxInt totalReviews = 0.obs;
 
   @override
   void onInit() {
@@ -72,6 +76,8 @@ class SellerProfileViewController extends GetxController {
       _loadSellerProducts();
       _checkIfFavorite();
       _markAsViewed();
+      _trackSellerView();
+      _loadReviewSummary();
       isLoading.value = false;
     } else if (sellerData is String) {
       // Only seller ID passed (e.g., from home)
@@ -275,6 +281,53 @@ class SellerProfileViewController extends GetxController {
       hasViewed.value = true;
       // TODO: Track this view for analytics via API
     }
+  }
+
+  void _loadReviewSummary() async {
+    if (seller.value?.id == null) return;
+    
+    final sellerId = int.tryParse(seller.value!.id);
+    if (sellerId == null) return;
+    
+    try {
+      final buyerService = Get.find<BuyerService>();
+      final response = await buyerService.getSellerReviewSummary(sellerId);
+      
+      if (response.isSuccess && response.data != null) {
+        final data = response.data!;
+        averageRating.value = (data['averageRating'] ?? 0.0).toDouble();
+        totalReviews.value = data['totalReviews'] ?? 0;
+      }
+    } catch (e) {
+      print('Error loading review summary: $e');
+    }
+  }
+
+  void _trackSellerView() {
+    final authService = Get.find<AuthService>();
+    final currentUser = authService.currentUser;
+    
+    if (currentUser?.userid == null || seller.value?.id == null) {
+      return; // Don't track if user not logged in or no seller
+    }
+    
+    final sellerId = int.tryParse(seller.value!.id);
+    if (sellerId == null) return;
+    
+    final buyerService = Get.find<BuyerService>();
+    buyerService.trackView(
+      userId: currentUser!.userid!,
+      refId: sellerId,
+      type: 'S',
+    ).then((response) {
+      if (response.isSuccess) {
+        print('✅ Seller view tracked successfully');
+      } else {
+        print('❌ Failed to track seller view: ${response.errorMessage}');
+      }
+    }).catchError((e) {
+      print('❌ Exception tracking seller view: $e');
+    });
   }
 
   void toggleFavorite() {
@@ -483,7 +536,32 @@ class SellerProfileViewController extends GetxController {
   }
 
   void viewProduct(Product product) {
+    // Track view before navigation
+    _trackProductViewFromSeller(product);
     Get.toNamed('/buyer-product-view', arguments: product);
+  }
+
+  void _trackProductViewFromSeller(Product product) {
+    final authService = Get.find<AuthService>();
+    final currentUser = authService.currentUser;
+    
+    if (currentUser?.userid == null) return;
+    
+    final productId = int.tryParse(product.id);
+    if (productId == null) return;
+    
+    final buyerService = Get.find<BuyerService>();
+    buyerService.trackView(
+      userId: currentUser!.userid!,
+      refId: productId,
+      type: 'P',
+    ).then((response) {
+      if (response.isSuccess) {
+        print('✅ Product view from seller page tracked successfully');
+      }
+    }).catchError((e) {
+      print('❌ Exception tracking product view from seller: $e');
+    });
   }
 
   void shareProfile() {

@@ -269,7 +269,7 @@ class SellerDashboardView extends GetView<SellerDashboardController> {
             const SizedBox(width: 12),
             Expanded(child: _buildStatCard('Views', controller.totalViews, Icons.visibility)),
             const SizedBox(width: 12),
-            Expanded(child: _buildStatCard('Contacts', controller.totalContacts, Icons.message)),
+            Expanded(child: _buildStatCard('Reviews', controller.totalReviews, Icons.star)),
           ],
         ),
       ),
@@ -356,9 +356,9 @@ class SellerDashboardView extends GetView<SellerDashboardController> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: _buildQuickActionButton(
-                        'View Products',
-                        Icons.visibility,
-                        () => Get.to(() => const ProductsView()),
+                        'Reviews',
+                        Icons.star,
+                        () => Get.toNamed('/seller-reviews'),
                       ),
                     ),
                   ],

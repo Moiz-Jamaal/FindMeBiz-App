@@ -139,11 +139,12 @@ abstract class BaseApiService extends GetxService {
     String endpoint, {
     dynamic body,
     Map<String, String>? queryParams,
+    Map<String, String>? customHeaders,
     T Function(dynamic json)? fromJson,
   }) async {
     try {
       
-      final response = await apiClient.post(endpoint, body: body, queryParams: queryParams);
+      final response = await apiClient.post(endpoint, body: body, queryParams: queryParams, customHeaders: customHeaders);
       
       return _handleResponse(response, fromJson);
     } catch (e) {

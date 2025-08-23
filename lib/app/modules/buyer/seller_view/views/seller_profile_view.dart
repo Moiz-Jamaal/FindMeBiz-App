@@ -4,6 +4,7 @@ import 'package:souq/app/data/models/seller.dart';
 import 'package:flutter/foundation.dart';
 import 'package:souq/app/modules/buyer/product_view/views/buyer_product_view.dart' ;
 import 'package:souq/core/widgets/enhanced_network_image.dart';
+import 'package:souq/app/widgets/reviews/review_widget.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../controllers/seller_profile_view_controller.dart';
@@ -116,6 +117,7 @@ class SellerProfileView extends GetView<SellerProfileViewController> {
             _buildActionButtons(),
             _buildStallInfo(),
             _buildProductsSection(),
+            _buildReviews(),
           ],
         );
       }),
@@ -212,8 +214,8 @@ class SellerProfileView extends GetView<SellerProfileViewController> {
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
                         _buildStatColumn('Products', '${controller.products.length}'),
-                        _buildStatColumn('Rating', '4.8'),
-                        _buildStatColumn('Reviews', '24'),
+                        Obx(() => _buildStatColumn('Rating', controller.averageRating.value.toStringAsFixed(1))),
+                        Obx(() => _buildStatColumn('Reviews', '${controller.totalReviews.value}')),
                       ],
                     ),
                   ),
@@ -757,21 +759,47 @@ class SellerProfileView extends GetView<SellerProfileViewController> {
                     
                     const Spacer(),
                     
-                    if (product.price != null)
-                      Text(
-                        '₹${product.price!.toStringAsFixed(0)}',
-                        style: Get.textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.buyerPrimary,
+                      if (product.price != null)
+                        Text(
+                          '₹${product.price!.toStringAsFixed(0)}',
+                          style: Get.textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.buyerPrimary,
+                          ),
                         ),
-                      ),
-                  ],
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    Widget _buildReviews() {
+      return SliverToBoxAdapter(
+        child: () {
+          final seller = controller.seller.value;
+          if (seller == null) return const SizedBox();
+          
+          final sellerId = int.tryParse(seller.id);
+          if (sellerId == null) return const SizedBox();
+          
+          return Container(
+            margin: const EdgeInsets.all(AppConstants.defaultPadding),
+            child: Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: ReviewWidget(
+                  refId: sellerId,
+                  type: 'S',
+                  entityName: seller.businessName,
                 ),
               ),
             ),
-          ],
-        ),
-      ),
-    );
+          );
+        }(),
+      );
+    }
   }
-}
