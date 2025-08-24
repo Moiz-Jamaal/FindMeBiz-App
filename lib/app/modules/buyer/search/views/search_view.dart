@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:souq/app/data/models/api/category_master.dart';
 import 'package:souq/core/widgets/enhanced_network_image.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/constants/app_constants.dart';
@@ -236,37 +237,57 @@ class SearchView extends GetView<BuyerSearchController> {
   }
 
   Widget _buildCategoryGrid() {
-    final popularCategories = [
-      {'name': 'Apparel', 'icon': Icons.checkroom, 'color': Colors.pink},
-      {'name': 'Jewelry', 'icon': Icons.diamond, 'color': Colors.amber},
-      {'name': 'Food & Beverages', 'icon': Icons.restaurant, 'color': Colors.orange},
-      {'name': 'Art & Crafts', 'icon': Icons.palette, 'color': Colors.purple},
-      {'name': 'Home Decor', 'icon': Icons.home, 'color': Colors.teal},
-      {'name': 'Electronics', 'icon': Icons.devices, 'color': Colors.blue},
-    ];
-
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        childAspectRatio: 1,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-      ),
-      itemCount: popularCategories.length,
-      itemBuilder: (context, index) {
-        final category = popularCategories[index];
-        return _buildCategoryCard(category);
-      },
-    );
+    return Obx(() {
+      if (controller.availableCategories.isEmpty) {
+        return const Center(
+          child: CircularProgressIndicator(),
+        );
+      }
+      
+      final categories = controller.availableCategories.take(6).toList();
+      
+      return GridView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 3,
+          childAspectRatio: 1,
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
+        ),
+        itemCount: categories.length,
+        itemBuilder: (context, index) {
+          final category = categories[index];
+          return _buildCategoryCard(category);
+        },
+      );
+    });
   }
 
-  Widget _buildCategoryCard(Map<String, dynamic> category) {
+  Widget _buildCategoryCard(CategoryMaster category) {
+    // Map category names to icons and colors
+    final categoryMap = {
+      'Apparel': {'icon': Icons.checkroom, 'color': Colors.pink},
+      'Jewelry': {'icon': Icons.diamond, 'color': Colors.amber},
+      'Food & Beverages': {'icon': Icons.restaurant, 'color': Colors.orange},
+      'Art & Crafts': {'icon': Icons.palette, 'color': Colors.purple},
+      'Home Decor': {'icon': Icons.home, 'color': Colors.teal},
+      'Electronics': {'icon': Icons.devices, 'color': Colors.blue},
+      'Fashion': {'icon': Icons.checkroom, 'color': Colors.pink},
+      'Accessories': {'icon': Icons.diamond, 'color': Colors.amber},
+      'Food': {'icon': Icons.restaurant, 'color': Colors.orange},
+      'Crafts': {'icon': Icons.palette, 'color': Colors.purple},
+      'Home': {'icon': Icons.home, 'color': Colors.teal},
+      'Technology': {'icon': Icons.devices, 'color': Colors.blue},
+    };
+    
+    final categoryData = categoryMap[category.catname] ?? 
+        {'icon': Icons.category, 'color': Colors.grey};
+    
     return GestureDetector(
       onTap: () {
-        controller.searchTextController.text = category['name'];
-        controller.performSearch(query: category['name']);
+        controller.searchTextController.text = category.catname ?? '';
+        controller.performSearch(query: category.catname ?? '');
       },
       child: Container(
         decoration: BoxDecoration(
@@ -287,22 +308,24 @@ class SearchView extends GetView<BuyerSearchController> {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: (category['color'] as Color).withValues(alpha: 0.1),
+                color: (categoryData['color'] as Color).withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(
-                category['icon'],
-                color: category['color'],
+                categoryData['icon'] as IconData,
+                color: categoryData['color'] as Color,
                 size: 24,
               ),
             ),
             const SizedBox(height: 8),
             Text(
-              category['name'],
+              category.catname ?? 'Category',
               style: Get.textTheme.bodySmall?.copyWith(
                 fontWeight: FontWeight.w500,
               ),
               textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),
