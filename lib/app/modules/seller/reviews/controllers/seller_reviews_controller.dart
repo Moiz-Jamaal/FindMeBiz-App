@@ -31,7 +31,38 @@ class SellerReviewsController extends GetxController {
         final data = response.data!;
         sellerReviews.value = List<Map<String, dynamic>>.from(data['sellerReviews'] ?? []);
         productReviews.value = List<Map<String, dynamic>>.from(data['productReviews'] ?? []);
-        statistics.value = Map<String, dynamic>.from(data['statistics'] ?? {});
+        
+        // Calculate statistics from actual review data
+        final sellerReviewsList = sellerReviews;
+        final productReviewsList = productReviews;
+        
+        // Calculate seller review statistics
+        double sellerTotalRating = 0.0;
+        int sellerReviewCount = sellerReviewsList.length;
+        for (var review in sellerReviewsList) {
+          sellerTotalRating += (review['rating'] ?? 0).toDouble();
+        }
+        double sellerAvgRating = sellerReviewCount > 0 ? sellerTotalRating / sellerReviewCount : 0.0;
+        
+        // Calculate product review statistics
+        double productTotalRating = 0.0;
+        int productReviewCount = productReviewsList.length;
+        for (var review in productReviewsList) {
+          productTotalRating += (review['rating'] ?? 0).toDouble();
+        }
+        double productAvgRating = productReviewCount > 0 ? productTotalRating / productReviewCount : 0.0;
+        
+        // Use calculated statistics when API statistics are 0
+        statistics.value = {
+          'totalSellerReviews': sellerReviewCount,
+          'avgSellerRating': sellerAvgRating,
+          'totalProductReviews': productReviewCount,
+          'avgProductRating': productAvgRating,
+          'totalReviews': sellerReviewCount + productReviewCount,
+          'averageRating': (sellerReviewCount + productReviewCount) > 0 
+              ? (sellerTotalRating + productTotalRating) / (sellerReviewCount + productReviewCount) 
+              : 0.0,
+        };
       }
     } catch (e) {
       Get.snackbar('Error', 'Failed to load reviews');

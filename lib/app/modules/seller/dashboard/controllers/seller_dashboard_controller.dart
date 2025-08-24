@@ -106,15 +106,16 @@ class SellerDashboardController extends GetxController {
         final reviewsResponse = await _sellerService.getSellerReviews(sellerId);
         if (reviewsResponse.isSuccess && reviewsResponse.data != null) {
           final reviewData = reviewsResponse.data!;
-          // Extract review counts and ratings from API response
-          totalReviews.value = (reviewData['totalReviews'] as int?) ?? 0;
           
-          // Calculate average rating if available
-          if (reviewData.containsKey('averageRating')) {
-            averageRating.value = (reviewData['averageRating'] as num?)?.toDouble() ?? 0.0;
-          } else if (reviewData.containsKey('sellerReviews') || reviewData.containsKey('productReviews')) {
-            // Calculate from individual reviews if average not provided
-            _calculateAverageRating(reviewData);
+          // Always calculate from actual review data when available
+          _calculateReviewStatistics(reviewData);
+          
+          // Fallback to API statistics if no individual reviews found
+          if (totalReviews.value == 0) {
+            totalReviews.value = (reviewData['totalReviews'] as int?) ?? 
+                               (reviewData['totalSellerReviews'] as int?) ?? 0;
+            averageRating.value = (reviewData['averageRating'] as num?)?.toDouble() ?? 
+                                 (reviewData['avgSellerRating'] as num?)?.toDouble() ?? 0.0;
           }
         }
       } catch (e) {
@@ -131,7 +132,7 @@ class SellerDashboardController extends GetxController {
     }
   }
 
-  void _calculateAverageRating(Map<String, dynamic> reviewData) {
+  void _calculateReviewStatistics(Map<String, dynamic> reviewData) {
     try {
       final sellerReviews = reviewData['sellerReviews'] as List?;
       final productReviews = reviewData['productReviews'] as List?;
@@ -142,7 +143,9 @@ class SellerDashboardController extends GetxController {
       // Calculate from seller reviews
       if (sellerReviews != null) {
         for (var review in sellerReviews) {
-          final rating = (review['rating'] as num?)?.toDouble();
+          final rating = (review['sellerRating'] as num?)?.toDouble() ??
+                         (review['rating'] as num?)?.toDouble() ??
+                         (review['Rating'] as num?)?.toDouble();
           if (rating != null) {
             totalRating += rating;
             reviewCount++;
@@ -153,7 +156,9 @@ class SellerDashboardController extends GetxController {
       // Calculate from product reviews
       if (productReviews != null) {
         for (var review in productReviews) {
-          final rating = (review['rating'] as num?)?.toDouble();
+          final rating = (review['productRating'] as num?)?.toDouble() ??
+                         (review['rating'] as num?)?.toDouble() ??
+                         (review['Rating'] as num?)?.toDouble();
           if (rating != null) {
             totalRating += rating;
             reviewCount++;
@@ -161,8 +166,10 @@ class SellerDashboardController extends GetxController {
         }
       }
       
+      totalReviews.value = reviewCount;
       averageRating.value = reviewCount > 0 ? (totalRating / reviewCount) : 0.0;
     } catch (e) {
+      totalReviews.value = 0;
       averageRating.value = 0.0;
     }
   }

@@ -293,8 +293,10 @@ class SellerProfileViewController extends GetxController {
       
       if (response.isSuccess && response.data != null) {
         final data = response.data!;
-        final apiRating = (data['averageRating'] ?? 0.0).toDouble();
-        final apiReviews = data['totalReviews'] ?? 0;
+        
+        // Handle statistics from API response structure
+        final apiRating = (data['averageRating'] ?? data['avgSellerRating'] ?? 0.0).toDouble();
+        final apiReviews = data['totalReviews'] ?? data['totalSellerReviews'] ?? 0;
         
         // Use API data if valid, otherwise calculate from individual reviews
         if (apiRating > 0 || apiReviews > 0) {
@@ -331,7 +333,7 @@ class SellerProfileViewController extends GetxController {
         // Calculate average rating from individual reviews
         double totalRating = 0.0;
         for (final review in reviews) {
-          final rating = review['rating'] ?? review['Rating'] ?? 0;
+          final rating = review['rating'] ?? review['sellerRating'] ?? review['productRating'] ?? 0;
           totalRating += rating.toDouble();
         }
         

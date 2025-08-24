@@ -127,11 +127,11 @@ class SellerReviewsView extends GetView<SellerReviewsController> {
   Widget _buildReviewCard(Map<String, dynamic> review) {
     final isSellerReview = controller.selectedTab.value == 'seller';
     final rating = review['rating'] ?? 0;
-    final userName = review['userName'] ?? 'Anonymous';
-    final reviewText = review['reviewText'] ?? '';
-    final reviewTitle = review['reviewTitle'] ?? 'No title';
-    final productName = review['productName'];
-    final createdAt = DateTime.tryParse(review['createdAt'] ?? '');
+    final userName = review['username'] ?? review['userfullname'] ?? 'Anonymous';
+    final reviewText = review['reviewtext'] ?? '';
+    final reviewTitle = review['reviewtitle'] ?? 'No title';
+    final productName = review['productname'];
+    final createdAt = DateTime.tryParse(review['createdat'] ?? '');
 
     return Card(
       child: Padding(
