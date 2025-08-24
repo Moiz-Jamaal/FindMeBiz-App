@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -70,13 +72,24 @@ class ProfilePublishView extends GetView<ProfilePublishController> {
           
           const SizedBox(height: 20),
           
+          // Validation Status Card
+          Obx(() => controller.isProfileValid 
+              ? const SizedBox() 
+              : _buildValidationErrorsCard()),
+          
+          const SizedBox(height: 20),
+          
           // Profile Preview Card
           _buildProfilePreviewCard(),
           
           const SizedBox(height: 20),
           
           // Products Preview
-          _buildProductsPreviewCard(),
+          
+          const SizedBox(height: 20),
+          
+          // Subscription Selection
+          _buildSubscriptionCard(),
           
           const SizedBox(height: 20),
           
@@ -181,9 +194,9 @@ class ProfilePublishView extends GetView<ProfilePublishController> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: OutlinedButton.icon(
-                    onPressed: controller.previewAsbuyer,
-                    icon: const Icon(Icons.visibility, size: 18),
-                    label: const Text('Preview'),
+                    onPressed: controller.refreshProfileData,
+                    icon: const Icon(Icons.refresh, size: 18),
+                    label: const Text('Refresh'),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppTheme.textSecondary,
                     ),
@@ -292,122 +305,7 @@ class ProfilePublishView extends GetView<ProfilePublishController> {
       );
     });
   }
-  Widget _buildProductsPreviewCard() {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Text(
-                  'Your Products',
-                  style: Get.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const Spacer(),
-                Obx(() => Text(
-                  '${controller.products.length} products',
-                  style: Get.textTheme.bodyMedium?.copyWith(
-                    color: AppTheme.textSecondary,
-                  ),
-                )),
-              ],
-            ),
-            const SizedBox(height: 12),
-            
-            Obx(() => controller.products.isEmpty
-                ? _buildNoProductsMessage()
-                : _buildProductsList()),
-            
-            const SizedBox(height: 12),
-            
-            OutlinedButton.icon(
-              onPressed: controller.addMoreProducts,
-              icon: const Icon(Icons.add, size: 18),
-              label: const Text('Add More Products'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppTheme.sellerPrimary,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
-  Widget _buildNoProductsMessage() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.orange.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: Colors.orange.withValues(alpha: 0.3),
-        ),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            Icons.warning_outlined,
-            color: Colors.orange,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              'Add at least one product to make your profile more attractive to buyers',
-              style: Get.textTheme.bodySmall?.copyWith(
-                color: Colors.orange.shade700,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildProductsList() {
-    return SizedBox(
-      height: 100,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: controller.products.length,
-        itemBuilder: (context, index) {
-          final product = controller.products[index];
-          return Container(
-            width: 80,
-            margin: const EdgeInsets.only(right: 8),
-            child: Column(
-              children: [
-                Container(
-                  width: 60,
-                  height: 60,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade200,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(
-                    Icons.image,
-                    color: AppTheme.textHint,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  product.name,
-                  style: Get.textTheme.bodySmall,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          );
-        },
-      ),
-    );
-  }
 
   Widget _buildBenefitsCard() {
     return Card(
@@ -492,6 +390,181 @@ class ProfilePublishView extends GetView<ProfilePublishController> {
       ),
     );
   }
+
+  Widget _buildSubscriptionCard() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.card_membership,
+                  color: AppTheme.sellerPrimary,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Selected Subscription Plan',
+                  style: Get.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            
+            Obx(() {
+              if (controller.selectedSubscription.value == null) {
+                return Text('Loading subscription plans...');
+              }
+              
+              return Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppTheme.sellerPrimary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: AppTheme.sellerPrimary.withValues(alpha: 0.3),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      controller.selectedSubscription.value!.subname.toUpperCase(),
+                      style: Get.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.sellerPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    ...controller.subscriptionDetails.map((detail) =>
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: _isArrayValue(detail.value) 
+                            ? Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '${detail.key}:',
+                                    style: Get.textTheme.bodySmall?.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                      color: AppTheme.textPrimary,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Padding(
+                                    padding: const EdgeInsets.only(left: 8),
+                                    child: _buildSubscriptionValue(detail.value),
+                                  ),
+                                ],
+                              )
+                            : Row(
+                                children: [
+                                  Text(
+                                    '${detail.key}: ',
+                                    style: Get.textTheme.bodySmall?.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                      color: AppTheme.textPrimary,
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: Text(
+                                      detail.value,
+                                      style: Get.textTheme.bodySmall?.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                        color: AppTheme.sellerPrimary,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
+          ],
+        ),
+      ),
+    );
+  }
+
+  bool _isArrayValue(String value) {
+    // Check if it's a JSON array
+    if (value.startsWith('[') && value.endsWith(']')) {
+      try {
+        final parsed = jsonDecode(value);
+        return parsed is List && parsed.isNotEmpty;
+      } catch (e) {
+        return false;
+      }
+    }
+    
+    // Check if it's a comma-separated string with multiple values
+    return value.contains(',') && value.split(',').length > 1;
+  }
+
+  Widget _buildSubscriptionValue(String value) {
+    // Try to parse as JSON array or handle string arrays
+    try {
+      dynamic parsedValue;
+      
+      if (value.startsWith('[') && value.endsWith(']')) {
+        parsedValue = jsonDecode(value);
+      } else if (value.contains(',')) {
+        // Handle comma-separated values
+        parsedValue = value.split(',').map((e) => e.trim()).toList();
+      }
+      
+      if (parsedValue is List) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: parsedValue.map<Widget>((item) => 
+            Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '• ',
+                    style: Get.textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.sellerPrimary,
+                    ),
+                  ),
+                  Expanded(
+                    child: Text(
+                      item.toString(),
+                      style: Get.textTheme.bodySmall?.copyWith(
+                        fontWeight: FontWeight.w500,
+                        color: AppTheme.sellerPrimary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ).toList(),
+        );
+      }
+    } catch (e) {
+      // If parsing fails, fall through to regular text
+    }
+    
+    // Regular text value
+    return Text(
+      value,
+      style: Get.textTheme.bodySmall?.copyWith(
+        fontWeight: FontWeight.w600,
+        color: AppTheme.sellerPrimary,
+      ),
+    );
+  }
+
   Widget _buildPaymentStep() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(AppConstants.defaultPadding),
@@ -506,7 +579,7 @@ class ProfilePublishView extends GetView<ProfilePublishController> {
               child: Column(
                 children: [
                   Text(
-                    'Publishing Fee',
+                    'Subscription Plan',
                     style: Get.textTheme.titleMedium?.copyWith(
                       color: Colors.white,
                       fontWeight: FontWeight.w600,
@@ -520,13 +593,52 @@ class ProfilePublishView extends GetView<ProfilePublishController> {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'One-time fee to make your profile visible',
-                    style: Get.textTheme.bodySmall?.copyWith(
-                      color: Colors.white.withValues(alpha: 0.9),
+                  const SizedBox(height: 8),
+                  // Display subscription details in key:value format
+                  ...controller.subscriptionDetails.map((detail) => 
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 2),
+                      child: _isArrayValue(detail.value)
+                          ? Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '${detail.key}:',
+                                  style: Get.textTheme.bodySmall?.copyWith(
+                                    color: Colors.white.withValues(alpha: 0.9),
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Padding(
+                                  padding: const EdgeInsets.only(left: 8),
+                                  child: _buildPaymentSubscriptionValue(detail.value),
+                                ),
+                              ],
+                            )
+                          : Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  '${detail.key}:',
+                                  style: Get.textTheme.bodySmall?.copyWith(
+                                    color: Colors.white.withValues(alpha: 0.9),
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                Flexible(
+                                  child: Text(
+                                    detail.value,
+                                    style: Get.textTheme.bodySmall?.copyWith(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                    textAlign: TextAlign.end,
+                                  ),
+                                ),
+                              ],
+                            ),
                     ),
-                    textAlign: TextAlign.center,
                   ),
                 ],
               ),
@@ -554,6 +666,60 @@ class ProfilePublishView extends GetView<ProfilePublishController> {
           
           const SizedBox(height: 80), // Space for bottom navigation
         ],
+      ),
+    );
+  }
+
+  Widget _buildPaymentSubscriptionValue(String value) {
+    try {
+      dynamic parsedValue;
+      
+      if (value.startsWith('[') && value.endsWith(']')) {
+        parsedValue = jsonDecode(value);
+      } else if (value.contains(',')) {
+        parsedValue = value.split(',').map((e) => e.trim()).toList();
+      }
+      
+      if (parsedValue is List) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: parsedValue.map<Widget>((item) => 
+            Padding(
+              padding: const EdgeInsets.only(bottom: 2),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '• ',
+                    style: Get.textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                  Expanded(
+                    child: Text(
+                      item.toString(),
+                      style: Get.textTheme.bodySmall?.copyWith(
+                        fontWeight: FontWeight.w500,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ).toList(),
+        );
+      }
+    } catch (e) {
+      // If parsing fails, fall through to regular text
+    }
+    
+    return Text(
+      value,
+      style: Get.textTheme.bodySmall?.copyWith(
+        fontWeight: FontWeight.w600,
+        color: Colors.white,
       ),
     );
   }
@@ -814,6 +980,62 @@ class ProfilePublishView extends GetView<ProfilePublishController> {
         ],
       ),
     );
+  }
+
+  Widget _buildValidationErrorsCard() {
+    return Card(
+      color: Colors.red.shade50,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.error_outline, color: Colors.red),
+                const SizedBox(width: 8),
+                Text(
+                  'Required Fields Missing',
+                  style: Get.textTheme.titleMedium?.copyWith(
+                    color: Colors.red,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            ...controller.validationErrors.map((error) => 
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Row(
+                  children: [
+                    Icon(Icons.circle, size: 6, color: Colors.red),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        error,
+                        style: Get.textTheme.bodyMedium?.copyWith(
+                          color: Colors.red.shade700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            ElevatedButton.icon(
+              onPressed: controller.editProfile,
+              icon: const Icon(Icons.edit, size: 18),
+              label: const Text('Complete Profile'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+              ),
+            ),
+          ],
+        ),
+      ));
   }
 
   Widget _buildSuccessItem(IconData icon, String title, String description) {

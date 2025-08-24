@@ -276,6 +276,14 @@ class SellerDashboardController extends GetxController {
   String get subscriptionCurrency {
     return currentSubscription.value?['currency'] ?? 'INR';
   }
+  
+  String get subscriptionPeriod {
+    return currentSubscription.value?['period'] ?? 'year';
+  }
+  
+  int get subscriptionInterval {
+    return currentSubscription.value?['interval'] ?? 1;
+  }
 
   String? get subscriptionStartDate {
     final startDate = currentSubscription.value?['startDate'];

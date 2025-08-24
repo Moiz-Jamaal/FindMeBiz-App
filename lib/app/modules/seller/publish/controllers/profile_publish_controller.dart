@@ -59,6 +59,18 @@ class ProfilePublishController extends GetxController {
     _loadSubscriptions();
   }
 
+  @override
+  void onReady() {
+    super.onReady();
+    // Refresh data when page becomes ready (e.g., returning from edit)
+    refreshProfileData();
+  }
+
+  /// Refresh profile data - call when returning from edit
+  Future<void> refreshProfileData() async {
+    await _loadProfileData();
+  }
+
   Future<void> _loadProfileData() async {
     try {
       isLoading.value = true;
@@ -97,16 +109,12 @@ class ProfilePublishController extends GetxController {
       final response = await _subscriptionService.getSubscriptions();
       
       if (response.success && response.data != null) {
-        availableSubscriptions.value = response.data!;
+        // Sort by subid to ensure consistent order
+        availableSubscriptions.value = response.data!
+          ..sort((a, b) => (a.subid ?? 0).compareTo(b.subid ?? 0));
         
-        // Set default subscription to 'basic' if available
-        final basicSubscription = availableSubscriptions.firstWhereOrNull(
-          (sub) => sub.subname.toLowerCase() == 'basic',
-        );
-        
-        if (basicSubscription != null) {
-          selectedSubscription.value = basicSubscription;
-        } else if (availableSubscriptions.isNotEmpty) {
+        // Auto-select first subscription by subid
+        if (availableSubscriptions.isNotEmpty) {
           selectedSubscription.value = availableSubscriptions.first;
         }
       } else {
@@ -251,7 +259,10 @@ class ProfilePublishController extends GetxController {
   }
 
   void editProfile() {
-    Get.toNamed('/seller-profile-edit');
+    Get.toNamed('/seller-profile-edit')?.then((_) {
+      // Refresh data when returning from edit profile
+      refreshProfileData();
+    });
   }
 
   void previewProfile() {
@@ -264,12 +275,12 @@ class ProfilePublishController extends GetxController {
   }
 
   void addMoreProducts() {
-    // Since products module is skipped, show info message
+    // Products module is skipped - redirect to dashboard
     Get.snackbar(
-      'Coming Soon',
-      'Product management will be available in the next update',
-      backgroundColor: Colors.blue.withValues(alpha: 0.1),
-      colorText: Colors.blue,
+      'Feature Unavailable',
+      'Product management has been temporarily disabled',
+      backgroundColor: Colors.grey.withValues(alpha: 0.1),
+      colorText: Colors.grey[600],
     );
   }
 
@@ -288,27 +299,84 @@ class ProfilePublishController extends GetxController {
     }
   }
 
-  // Getters
-  double get subscriptionAmount {
-    if (selectedSubscription.value?.subconfig == null) return 250.0;
+  // Validation Methods
+  bool get isProfileValid {
+    final profile = sellerProfile.value;
+    if (profile == null) return false;
+    
+    return isBusinessNameValid && isBusinessLocationValid && isContactInfoValid;
+  }
+  
+  bool get isBusinessNameValid {
+    final profile = sellerProfile.value;
+    return profile?.businessname?.trim().isNotEmpty == true;
+  }
+  
+  bool get isBusinessLocationValid {
+    final profile = sellerProfile.value;
+    return profile?.address?.trim().isNotEmpty == true &&
+           profile?.city?.trim().isNotEmpty == true &&
+           profile?.geolocation?.trim().isNotEmpty == true;
+  }
+  
+  bool get isContactInfoValid {
+    final profile = sellerProfile.value;
+    return profile?.contactno?.trim().isNotEmpty == true &&
+           profile?.mobileno?.trim().isNotEmpty == true &&
+           profile?.whatsappno?.trim().isNotEmpty == true;
+  }
+  
+  List<String> get validationErrors {
+    List<String> errors = [];
+    if (!isBusinessNameValid) errors.add('Business Name is required');
+    if (!isBusinessLocationValid) {
+      if (sellerProfile.value?.address?.trim().isEmpty != false) errors.add('Business Address is required');
+      if (sellerProfile.value?.city?.trim().isEmpty != false) errors.add('Business City is required');
+      if (sellerProfile.value?.geolocation?.trim().isEmpty != false) errors.add('Business Location coordinates are required');
+    }
+    if (!isContactInfoValid) {
+      if (sellerProfile.value?.contactno?.trim().isEmpty != false) errors.add('Contact Number is required');
+      if (sellerProfile.value?.mobileno?.trim().isEmpty != false) errors.add('Mobile Number is required');
+      if (sellerProfile.value?.whatsappno?.trim().isEmpty != false) errors.add('WhatsApp Number is required');
+    }
+    return errors;
+  }
+
+  // Subscription Getters with JSON parsing
+  Map<String, dynamic> get subscriptionConfig {
+    if (selectedSubscription.value?.subconfig == null) {
+      return {'amount': 250, 'currency': 'INR', 'period': 'year', 'interval': 1};
+    }
     
     try {
-      final config = jsonDecode(selectedSubscription.value!.subconfig);
-      return (config['amount'] as num?)?.toDouble() ?? 250.0;
+      return jsonDecode(selectedSubscription.value!.subconfig);
     } catch (e) {
-      return 250.0;
+      return {'amount': 250, 'currency': 'INR', 'period': 'year', 'interval': 1};
     }
   }
 
+  double get subscriptionAmount {
+    return (subscriptionConfig['amount'] as num?)?.toDouble() ?? 250.0;
+  }
+
   String get subscriptionCurrency {
-    if (selectedSubscription.value?.subconfig == null) return 'INR';
-    
-    try {
-      final config = jsonDecode(selectedSubscription.value!.subconfig);
-      return config['currency'] as String? ?? 'INR';
-    } catch (e) {
-      return 'INR';
-    }
+    return subscriptionConfig['currency'] as String? ?? 'INR';
+  }
+  
+  String get subscriptionPeriod {
+    return subscriptionConfig['period'] as String? ?? 'year';
+  }
+  
+  int get subscriptionInterval {
+    return subscriptionConfig['interval'] as int? ?? 1;
+  }
+  
+  // Formatted subscription details for display
+  List<MapEntry<String, String>> get subscriptionDetails {
+    final config = subscriptionConfig;
+    return config.entries
+        .map((entry) => MapEntry(entry.key, entry.value.toString()))
+        .toList();
   }
 
   String get stepTitle {
@@ -340,7 +408,7 @@ class ProfilePublishController extends GetxController {
   bool get canProceed {
     switch (currentStep.value) {
       case 0:
-        return sellerProfile.value != null && profileCompletionScore >= 0.6; // At least 60% complete
+        return sellerProfile.value != null && isProfileValid;
       case 1:
         return selectedPaymentMethod.value.isNotEmpty && !isProcessingPayment.value;
       case 2:

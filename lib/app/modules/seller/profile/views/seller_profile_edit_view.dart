@@ -965,28 +965,84 @@ class SellerProfileEditView extends GetView<SellerProfileEditController> {
 
   Widget _buildSaveButton() {
     return Obx(() => controller.hasChanges.value
-        ? FloatingActionButton.extended(
-            onPressed: controller.canSave ? controller.saveProfile : null,
-            backgroundColor: controller.canSave 
-                ? AppTheme.sellerPrimary 
-                : AppTheme.textHint,
-            icon: controller.isSaving.value
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                    ),
-                  )
-                : const Icon(Icons.save, color: Colors.white),
-            label: Text(
-              controller.isSaving.value ? 'Saving...' : 'Save Changes',
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
+        ? Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Validation errors when button is disabled
+              if (!controller.canSave && controller.validationErrors.isNotEmpty)
+                Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.red.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.red.shade200),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.error_outline, 
+                               color: Colors.red, size: 16),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Please complete required fields:',
+                            style: Get.textTheme.bodySmall?.copyWith(
+                              color: Colors.red.shade700,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      ...controller.validationErrors.map((error) =>
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 4),
+                          child: Row(
+                            children: [
+                              Icon(Icons.circle, size: 4, color: Colors.red),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  error,
+                                  style: Get.textTheme.bodySmall?.copyWith(
+                                    color: Colors.red.shade600,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              
+              FloatingActionButton.extended(
+                onPressed: controller.canSave ? controller.saveProfile : null,
+                backgroundColor: controller.canSave 
+                    ? AppTheme.sellerPrimary 
+                    : AppTheme.textHint,
+                icon: controller.isSaving.value
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      )
+                    : const Icon(Icons.save, color: Colors.white),
+                label: Text(
+                  controller.isSaving.value ? 'Saving...' : 'Save Changes',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ),
-            ),
+            ],
           )
         : const SizedBox());
   }

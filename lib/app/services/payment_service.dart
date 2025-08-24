@@ -64,7 +64,7 @@ class RazorpayPaymentService extends GetxService implements PaymentService {
       'key': const String.fromEnvironment('RAZORPAY_KEY', defaultValue: ''),
       'amount': amountInPaise, // paise
       'currency': 'INR',
-  'name': name ?? 'FindMeBiz',
+      'name': name ?? 'FindMeBiz',
       'description': description,
       'order_id': null, // backend-generated order id recommended
       'timeout': 180, // seconds

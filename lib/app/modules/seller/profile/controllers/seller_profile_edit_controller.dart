@@ -52,6 +52,9 @@ class SellerProfileEditController extends GetxController {
   final RxString currentGeoLocation = ''.obs; // Format: "latitude,longitude"
   final RxBool isGettingLocation = false.obs;
   
+  // Validation state - reactive
+  final RxBool _validationUpdateTrigger = false.obs;
+  
   // UI state
   final RxBool isLoading = false.obs;
   final RxBool isSaving = false.obs;
@@ -651,6 +654,8 @@ class SellerProfileEditController extends GetxController {
     // Safety check to prevent errors after disposal
     if (_isDisposed) return;
     hasChanges.value = true;
+    // Trigger validation update
+    _validationUpdateTrigger.toggle();
   }
 
   void discardChanges() {
@@ -680,9 +685,62 @@ class SellerProfileEditController extends GetxController {
 
   bool get canSave {
     return hasChanges.value && 
-           businessNameController.text.trim().isNotEmpty &&
-           profileNameController.text.trim().isNotEmpty &&
+           isProfileValid &&
            !isSaving.value;
+  }
+
+  // Validation Methods
+  bool get isProfileValid {
+    _validationUpdateTrigger.value; // Make reactive
+    return isBusinessNameValid && isBusinessLocationValid && isContactInfoValid;
+  }
+  
+  bool get isBusinessNameValid {
+    _validationUpdateTrigger.value; // Make reactive
+    return businessNameController.text.trim().isNotEmpty;
+  }
+  
+  bool get isBusinessLocationValid {
+    _validationUpdateTrigger.value; // Make reactive
+    return addressController.text.trim().isNotEmpty &&
+           cityController.text.trim().isNotEmpty &&
+           currentGeoLocation.value.trim().isNotEmpty;
+  }
+  
+  bool get isContactInfoValid {
+    _validationUpdateTrigger.value; // Make reactive
+    return contactController.text.trim().isNotEmpty &&
+           mobileController.text.trim().isNotEmpty &&
+           whatsappController.text.trim().isNotEmpty;
+  }
+  
+  List<String> get validationErrors {
+    _validationUpdateTrigger.value; // Make reactive
+    List<String> errors = [];
+    if (!isBusinessNameValid) errors.add('Business Name is required');
+    if (!isBusinessLocationValid) {
+      if (addressController.text.trim().isEmpty) errors.add('Business Address is required');
+      if (cityController.text.trim().isEmpty) errors.add('Business City is required');
+      if (currentGeoLocation.value.trim().isEmpty) errors.add('Business Location coordinates are required');
+    }
+    if (!isContactInfoValid) {
+      if (contactController.text.trim().isEmpty) errors.add('Contact Number is required');
+      if (mobileController.text.trim().isEmpty) errors.add('Mobile Number is required');
+      if (whatsappController.text.trim().isEmpty) errors.add('WhatsApp Number is required');
+    }
+   
+    if (!isBusinessNameValid) errors.add('Business Name is required');
+    if (!isBusinessLocationValid) {
+      if (addressController.text.trim().isEmpty) errors.add('Business Address is required');
+      if (cityController.text.trim().isEmpty) errors.add('Business City is required');
+      if (currentGeoLocation.value.trim().isEmpty) errors.add('Business Location coordinates are required');
+    }
+    if (!isContactInfoValid) {
+      if (contactController.text.trim().isEmpty) errors.add('Contact Number is required');
+      if (mobileController.text.trim().isEmpty) errors.add('Mobile Number is required');
+      if (whatsappController.text.trim().isEmpty) errors.add('WhatsApp Number is required');
+    }
+    return errors;
   }
 
   double get profileCompletionPercentage {
