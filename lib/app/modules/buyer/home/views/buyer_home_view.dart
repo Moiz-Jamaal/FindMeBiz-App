@@ -18,116 +18,9 @@ class BuyerHomeView extends GetView<BuyerHomeController> {
 
   @override
   Widget build(BuildContext context) {
-    final width = MediaQuery.of(context).size.width;
-    final bool isWideWeb = kIsWeb && width >= 900;
-
-    final Widget stackedTabs = Obx(() => IndexedStack(
-          index: controller.currentIndex.value,
-          children: [
-            _buildHomeTab(),
-            _buildSearchTab(),
-            _buildEnquiryTab(),
-            _buildMapTab(),
-            _buildProfileTab(),
-          ],
-        ));
-
-  if (isWideWeb) {
-      return Scaffold(
-        backgroundColor: AppTheme.backgroundColor,
-        body: SafeArea(
-          child: Row(
-            children: [
-              Obx(() => NavigationRail(
-                    backgroundColor: Colors.white,
-                    selectedIndex: controller.currentIndex.value,
-                    onDestinationSelected: controller.changeTab,
-                    labelType: NavigationRailLabelType.all,
-                    leading: const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 12),
-                      child: AppLogo(size: 36),
-                    ),
-                    selectedIconTheme: IconThemeData(color: AppTheme.buyerPrimary),
-                    selectedLabelTextStyle: TextStyle(
-                      color: AppTheme.buyerPrimary,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    destinations: const [
-                      NavigationRailDestination(
-                        icon: Icon(Icons.home_outlined),
-                        selectedIcon: Icon(Icons.home),
-                        label: Text('Home'),
-                      ),
-                      NavigationRailDestination(
-                        icon: Icon(Icons.search),
-                        selectedIcon: Icon(Icons.search),
-                        label: Text('Search'),
-                      ),
-                      NavigationRailDestination(
-                        icon: Icon(Icons.help_outline),
-                        selectedIcon: Icon(Icons.help),
-                        label: Text('Enquiry'),
-                      ),
-                      NavigationRailDestination(
-                        icon: Icon(Icons.map_outlined),
-                        selectedIcon: Icon(Icons.map),
-                        label: Text('Map'),
-                      ),
-                      NavigationRailDestination(
-                        icon: Icon(Icons.person_outline),
-                        selectedIcon: Icon(Icons.person),
-                        label: Text('Profile'),
-                      ),
-                    ],
-                  )),
-              const VerticalDivider(width: 1),
-              Expanded(
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 560),
-                    child: stackedTabs,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    // Mobile/tablet: keep bottom navigation
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
-      body: stackedTabs,
-      bottomNavigationBar: Obx(() => BottomNavigationBar(
-            currentIndex: controller.currentIndex.value,
-            onTap: controller.changeTab,
-            type: BottomNavigationBarType.fixed,
-            selectedItemColor: AppTheme.buyerPrimary,
-            unselectedItemColor: AppTheme.textHint,
-            items: const [
-              BottomNavigationBarItem(
-                icon: Icon(Icons.home),
-                label: 'Home',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.search),
-                label: 'Search',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.help_outline),
-                label: 'Enquiry',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.map),
-                label: 'Map',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.person),
-                label: 'Profile',
-              ),
-            ],
-          )),
+      body: _buildHomeTab(),
     );
   }
 
@@ -242,46 +135,13 @@ class BuyerHomeView extends GetView<BuyerHomeController> {
                 ),
                 const ModuleSwitchButton(),
                 IconButton(
-                  icon: Stack(
-                    children: [
-                      const Icon(
-                        Icons.notifications_outlined,
-                        color: AppTheme.textPrimary,
-                        size: 28,
-                      ),
-                      // Notification badge (mock)
-                      Positioned(
-                        right: 0,
-                        top: 0,
-                        child: Container(
-                          width: 12,
-                          height: 12,
-                          decoration: const BoxDecoration(
-                            color: Colors.red,
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Center(
-                            child: Text(
-                              '3',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 8,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
+                  icon: const Icon(
+                    Icons.person_outline,
+                    color: AppTheme.textPrimary,
+                    size: 28,
                   ),
                   onPressed: () {
-                    // Navigate to notifications
-                    Get.snackbar(
-                      'Notifications',
-                      'Opening notifications...',
-                      snackPosition: SnackPosition.BOTTOM,
-                    );
-                    // In future: Get.toNamed('/buyer-notifications');
+                    Get.toNamed('/buyer-profile');
                   },
                 ),
               ],
@@ -303,76 +163,35 @@ class BuyerHomeView extends GetView<BuyerHomeController> {
             GestureDetector(
               onTap: () => Get.toNamed('/buyer-search'), // Navigate to search screen
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
+                  color: AppTheme.buyerPrimary.withValues(alpha: 0.05),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey.shade300),
+                  border: Border.all(color: AppTheme.buyerPrimary.withValues(alpha: 0.3)),
                 ),
                 child: Row(
                   children: [
                     Icon(
                       Icons.search,
-                      color: AppTheme.textHint,
-                      size: 20,
+                      color: AppTheme.buyerPrimary,
+                      size: 24,
                     ),
                     const SizedBox(width: 12),
                     Text(
                       'Search for products, sellers...',
-                      style: Get.textTheme.bodyMedium?.copyWith(
+                      style: Get.textTheme.bodyLarge?.copyWith(
                         color: AppTheme.textHint,
                       ),
                     ),
                     const Spacer(),
                     Icon(
                       Icons.filter_list,
-                      color: AppTheme.textHint,
+                      color: AppTheme.buyerPrimary,
                       size: 20,
                     ),
                   ],
                 ),
               ),
-            ),
-            
-            const SizedBox(height: 12),
-            
-            // Quick Actions Row
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () => Get.toNamed('/buyer-map'),
-                    icon: const Icon(Icons.map, size: 18),
-                    label: const Text('View Map'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.buyerPrimary,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () => Get.toNamed('/buyer-create-enquiry'),
-                    icon: const Icon(Icons.help_outline, size: 18),
-                    label: const Text('Post Enquiry'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.orange,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-              
-              ],
             ),
           ],
         ),
@@ -744,28 +563,5 @@ class BuyerHomeView extends GetView<BuyerHomeController> {
     );
   }
 
-  // Replace placeholder search tab with actual SearchView
-  Widget _buildSearchTab() {
-    return const Center(
-      child: Text('Redirecting to Search...'),
-    );
-  }
 
-  Widget _buildEnquiryTab() {
-    return const Center(
-      child: Text('Redirecting to Enquiry...'),
-    );
-  }
-
-  Widget _buildMapTab() {
-    return const Center(
-      child: Text('Map Tab - Coming Soon'),
-    );
-  }
-
-  Widget _buildProfileTab() {
-    return const Center(
-      child: Text('Redirecting to Profile...'),
-    );
-  }
 }
