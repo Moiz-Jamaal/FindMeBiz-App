@@ -7,6 +7,7 @@ import '../../../../data/models/api/index.dart';
 import '../controllers/buyer_home_controller.dart';
 import '../../../shared/widgets/module_switcher.dart';
 import '../../../../services/ad_service.dart';
+import '../../../../services/url_handler_service.dart';
 import '../../../shared/widgets/ads/banner_ad_tile.dart';
 import '../../../shared/widgets/ads/native_ad_card.dart';
 import '../../../shared/widgets/ads/rotating_banner_carousel.dart';
@@ -43,56 +44,82 @@ class BuyerHomeView extends GetView<BuyerHomeController> {
 
   Widget _buildTopBannerCarousel() {
     final adService = Get.find<AdService>();
-    final ads = adService.getSponsoredForSlot(AdSlot.homeHeaderBanner, limit: 5);
-    if (ads.isEmpty) return const SliverToBoxAdapter(child: SizedBox.shrink());
-    // If only one ad, show banner tile; else carousel
-    final widgetToShow = ads.length == 1
-        ? BannerAdTile(
-            ad: ads.first,
-            onTap: () {
-              final ad = ads.first;
-              if (ad.deeplinkRoute != null) {
-                Get.toNamed(ad.deeplinkRoute!, arguments: ad.payload);
-              }
-            },
-          )
-        : RotatingBannerCarousel(
-            items: ads,
-            height: 150,
-            onTap: (ad) {
-              if (ad.deeplinkRoute != null) {
-                Get.toNamed(ad.deeplinkRoute!, arguments: ad.payload);
-              }
-            },
-          );
+    
+    return FutureBuilder<List<SponsoredContent>>(
+      future: adService.getSponsoredForSlotSync(AdSlot.homeHeaderBanner, limit: 5),
+      builder: (context, snapshot) {
+        final ads = snapshot.data ?? [];
+        if (ads.isEmpty) return const SliverToBoxAdapter(child: SizedBox.shrink());
+        
+        // If only one ad, show banner tile; else carousel
+        final widgetToShow = ads.length == 1
+            ? BannerAdTile(
+                ad: ads.first,
+                height: 200, // Increased height
+                onTap: () {
+                  final ad = ads.first;
+                  final externalUrl = ad.payload?['externalUrl'] as String?;
+                  if (externalUrl != null) {
+                    Get.find<UrlHandlerService>().handleCampaignUrl(externalUrl, payload: ad.payload);
+                  } else if (ad.deeplinkRoute != null) {
+                    Get.toNamed(ad.deeplinkRoute!, arguments: ad.payload);
+                  }
+                },
+              )
+            : RotatingBannerCarousel(
+                items: ads,
+                height: 200, // Increased height
+                onTap: (ad) {
+                  final externalUrl = ad.payload?['externalUrl'] as String?;
+                  if (externalUrl != null) {
+                    Get.find<UrlHandlerService>().handleCampaignUrl(externalUrl, payload: ad.payload);
+                  } else if (ad.deeplinkRoute != null) {
+                    Get.toNamed(ad.deeplinkRoute!, arguments: ad.payload);
+                  }
+                },
+              );
 
-    return SliverToBoxAdapter(child: widgetToShow);
+        return SliverToBoxAdapter(child: widgetToShow);
+      },
+    );
   }
 
   Widget _buildBelowSearchBannerCarousel() {
     final adService = Get.find<AdService>();
-    final ads = adService.getSponsoredForSlot(AdSlot.homeBelowSearchBanner, limit: 5);
-    if (ads.isEmpty) return const SliverToBoxAdapter(child: SizedBox.shrink());
-    final widgetToShow = ads.length == 1
-        ? BannerAdTile(
-            ad: ads.first,
-            onTap: () {
-              final ad = ads.first;
-              if (ad.deeplinkRoute != null) {
-                Get.toNamed(ad.deeplinkRoute!, arguments: ad.payload);
-              }
-            },
-          )
-        : RotatingBannerCarousel(
-            items: ads,
-            height: 150,
-            onTap: (ad) {
-              if (ad.deeplinkRoute != null) {
-                Get.toNamed(ad.deeplinkRoute!, arguments: ad.payload);
-              }
-            },
-          );
-    return SliverToBoxAdapter(child: widgetToShow);
+    
+    return FutureBuilder<List<SponsoredContent>>(
+      future: adService.getSponsoredForSlotSync(AdSlot.homeBelowSearchBanner, limit: 5),
+      builder: (context, snapshot) {
+        final ads = snapshot.data ?? [];
+        if (ads.isEmpty) return const SliverToBoxAdapter(child: SizedBox.shrink());
+        
+        final widgetToShow = ads.length == 1
+            ? BannerAdTile(
+                ad: ads.first,
+                height: 180, // Increased height
+                onTap: () {
+                  final ad = ads.first;
+                  final externalUrl = ad.payload?['externalUrl'] as String?;
+                  if (externalUrl != null) {
+                    Get.find<UrlHandlerService>().handleCampaignUrl(externalUrl, payload: ad.payload);
+                  } else if (ad.deeplinkRoute != null) {
+                    Get.toNamed(ad.deeplinkRoute!, arguments: ad.payload);
+                  }
+                },
+              )
+            : RotatingBannerCarousel(
+                items: ads,
+                height: 180, // Increased height
+                onTap: (ad) {
+                  if (ad.deeplinkRoute != null) {
+                    Get.toNamed(ad.deeplinkRoute!, arguments: ad.payload);
+                  }
+                },
+              );
+        
+        return SliverToBoxAdapter(child: widgetToShow);
+      },
+    );
   }
   Widget _buildAppBar() {
     return SliverAppBar(
@@ -235,24 +262,28 @@ class BuyerHomeView extends GetView<BuyerHomeController> {
               ),
               itemCount: controller.featuredSellers.isEmpty ? 0 : controller.featuredSellers.length + 1,
               itemBuilder: (context, index) {
-                final adService = Get.find<AdService>();
                 // Deterministic: insert a single ad after the 3rd card if possible
                 if (index == 3 && controller.featuredSellers.isNotEmpty) {
-                  final ads = adService.getSponsoredForSlot(AdSlot.homeFeatured);
-                  if (ads.isNotEmpty) {
-                    final ad = ads.first;
-                    return SizedBox(
-                      width: 160,
-                      child: NativeAdCard(
-                        ad: ad,
-                        onTap: () {
-                          if (ad.deeplinkRoute != null) {
-                            Get.toNamed(ad.deeplinkRoute!, arguments: ad.payload);
-                          }
-                        },
-                      ),
-                    );
-                  }
+                  return FutureBuilder<List<SponsoredContent>>(
+                    future: Get.find<AdService>().getSponsoredForSlotSync(AdSlot.homeFeatured),
+                    builder: (context, snapshot) {
+                      final ads = snapshot.data ?? [];
+                      if (ads.isEmpty) return const SizedBox.shrink();
+                      
+                      final ad = ads.first;
+                      return SizedBox(
+                        width: 160,
+                        child: NativeAdCard(
+                          ad: ad,
+                          onTap: () {
+                            if (ad.deeplinkRoute != null) {
+                              Get.toNamed(ad.deeplinkRoute!, arguments: ad.payload);
+                            }
+                          },
+                        ),
+                      );
+                    },
+                  );
                 }
                 if (controller.featuredSellers.isEmpty) {
                   return const SizedBox();
@@ -481,18 +512,25 @@ class BuyerHomeView extends GetView<BuyerHomeController> {
             padding: const EdgeInsets.symmetric(
               horizontal: AppConstants.defaultPadding,
             ),
-            itemCount: controller.newSellers.length + 1, // one subtle ad
+            itemCount: controller.newSellers.length + 1, // one ad slot
             itemBuilder: (context, index) {
-              final adService = Get.find<AdService>();
               // Deterministic: insert a single ad after the 4th tile if possible
               if (index == 4) {
-                final ad = adService.getSponsoredForSlot(AdSlot.homeNewSellers).first;
-                return NativeAdCard(
-                  ad: ad,
-                  onTap: () {
-                    if (ad.deeplinkRoute != null) {
-                      Get.toNamed(ad.deeplinkRoute!, arguments: ad.payload);
-                    }
+                return FutureBuilder<List<SponsoredContent>>(
+                  future: Get.find<AdService>().getSponsoredForSlotSync(AdSlot.homeNewSellers),
+                  builder: (context, snapshot) {
+                    final ads = snapshot.data ?? [];
+                    if (ads.isEmpty) return const SizedBox.shrink();
+                    
+                    final ad = ads.first;
+                    return NativeAdCard(
+                      ad: ad,
+                      onTap: () {
+                        if (ad.deeplinkRoute != null) {
+                          Get.toNamed(ad.deeplinkRoute!, arguments: ad.payload);
+                        }
+                      },
+                    );
                   },
                 );
               }

@@ -508,8 +508,6 @@ class SearchView extends GetView<BuyerSearchController> {
       // Deterministic placement: insert a single native ad after the 2nd seller if available
       final adIndex = sellers.length >= 2 ? 2 : (sellers.isNotEmpty ? 1 : null);
       final itemCount = sellers.length + (adIndex != null ? 1 : 0);
-      final adService = Get.find<AdService>();
-      final ad = adService.getSponsoredForSlot(AdSlot.searchSellers).first;
 
       return ListView.builder(
         shrinkWrap: true,
@@ -517,12 +515,21 @@ class SearchView extends GetView<BuyerSearchController> {
         itemCount: itemCount,
         itemBuilder: (context, index) {
           if (adIndex != null && index == adIndex) {
-            return NativeAdCard(
-              ad: ad,
-              onTap: () {
-                if (ad.deeplinkRoute != null) {
-                  Get.toNamed(ad.deeplinkRoute!, arguments: ad.payload);
-                }
+            return FutureBuilder<List<SponsoredContent>>(
+              future: Get.find<AdService>().getSponsoredForSlotSync(AdSlot.searchSellers),
+              builder: (context, snapshot) {
+                final ads = snapshot.data ?? [];
+                if (ads.isEmpty) return const SizedBox.shrink();
+                
+                final ad = ads.first;
+                return NativeAdCard(
+                  ad: ad,
+                  onTap: () {
+                    if (ad.deeplinkRoute != null) {
+                      Get.toNamed(ad.deeplinkRoute!, arguments: ad.payload);
+                    }
+                  },
+                );
               },
             );
           }
@@ -535,41 +542,46 @@ class SearchView extends GetView<BuyerSearchController> {
   }
 
   Widget _buildProductResults() {
-  final adService = Get.find<AdService>();
-  // Deterministic: show a single slim banner above grid if there are any products
-  final showBanner = controller.productResults.isNotEmpty;
-  final ad = showBanner ? adService.getSponsoredForSlot(AdSlot.searchProducts).first : null;
+    return FutureBuilder<List<SponsoredContent>>(
+      future: Get.find<AdService>().getSponsoredForSlotSync(AdSlot.searchProducts),
+      builder: (context, snapshot) {
+        final ads = snapshot.data ?? [];
+        // Deterministic: show a single slim banner above grid if there are any products
+        final showBanner = controller.productResults.isNotEmpty && ads.isNotEmpty;
+        final ad = showBanner ? ads.first : null;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (showBanner && ad != null) ...[
-          BannerAdTile(
-            ad: ad,
-            onTap: () {
-              if (ad.deeplinkRoute != null) {
-                Get.toNamed(ad.deeplinkRoute!, arguments: ad.payload);
-              }
-            },
-          ),
-          const SizedBox(height: 12),
-        ],
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            childAspectRatio: 0.8,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-          ),
-          itemCount: controller.productResults.length,
-          itemBuilder: (context, index) {
-            final product = controller.productResults[index];
-            return _buildProductCard(product);
-          },
-        ),
-      ],
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (showBanner && ad != null) ...[
+              BannerAdTile(
+                ad: ad,
+                onTap: () {
+                  if (ad.deeplinkRoute != null) {
+                    Get.toNamed(ad.deeplinkRoute!, arguments: ad.payload);
+                  }
+                },
+              ),
+              const SizedBox(height: 12),
+            ],
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                childAspectRatio: 0.8,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+              ),
+              itemCount: controller.productResults.length,
+              itemBuilder: (context, index) {
+                final product = controller.productResults[index];
+                return _buildProductCard(product);
+              },
+            ),
+          ],
+        );
+      },
     );
   }
   Widget _buildSellerCard(seller) {

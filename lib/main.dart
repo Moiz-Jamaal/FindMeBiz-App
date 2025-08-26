@@ -4,6 +4,9 @@ import 'package:get/get.dart';
 import 'package:flutter/foundation.dart';
 import 'package:souq/app/services/ad_service.dart';
 import 'package:souq/app/services/buyer_service.dart';
+import 'package:souq/app/services/campaign_service.dart';
+import 'package:souq/app/services/app_links_service.dart';
+import 'package:souq/app/services/url_handler_service.dart';
 import 'package:souq/app/services/favorites_service.dart';
 import 'package:souq/app/services/user_settings_service.dart';
 import 'package:souq/app/services/viewed_history_service.dart';
@@ -62,7 +65,9 @@ Future<void> main() async {
   Get.put<ViewedHistoryService>(ViewedHistoryService(), permanent: true);
   Get.put<UserSettingsService>(UserSettingsService(), permanent: true);
   Get.put<AdService>(AdService(), permanent: true);
-  
+  Get.put<CampaignService>(CampaignService(), permanent: true);
+  Get.put<AppLinksService>(AppLinksService(), permanent: true);
+  Get.put<UrlHandlerService>(UrlHandlerService(), permanent: true);
   await Get.putAsync<RoleService>(() async => RoleService().init());
   await Get.putAsync<PushNotificationService>(() async => PushNotificationService().init());
   

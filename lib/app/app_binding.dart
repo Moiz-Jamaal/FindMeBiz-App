@@ -11,6 +11,11 @@ import 'services/buyer_service.dart';
 import 'services/favorites_service.dart';
 import 'services/viewed_history_service.dart';
 import 'services/user_settings_service.dart';
+import 'services/ad_service.dart';
+import 'services/campaign_service.dart';
+import 'services/fallback_content_service.dart';
+import 'services/app_links_service.dart';
+import 'services/url_handler_service.dart';
 
 class AppBinding extends Bindings {
   @override
@@ -34,6 +39,13 @@ class AppBinding extends Bindings {
     Get.put<FavoritesService>(FavoritesService(), permanent: true);
     Get.put<ViewedHistoryService>(ViewedHistoryService(), permanent: true);
     Get.put<UserSettingsService>(UserSettingsService(), permanent: true);
+    
+    // Initialize Campaign & Ad Services (order matters)
+    Get.put<AppLinksService>(AppLinksService(), permanent: true);
+    Get.put<CampaignService>(CampaignService(), permanent: true);
+    Get.put<FallbackContentService>(FallbackContentService(), permanent: true);
+    Get.put<AdService>(AdService(), permanent: true);
+    Get.put<UrlHandlerService>(UrlHandlerService(), permanent: true);
   }
 }
 

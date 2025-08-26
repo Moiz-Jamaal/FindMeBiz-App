@@ -4,7 +4,7 @@
 class ApiConfig {
   // *** UPDATE THIS WITH YOUR ACTUAL API URL ***
   // Example: 'https://your-domain.com' or 'http://localhost:5000' for local development
-  static const String baseUrl = 'https://lv5tg4uo16.execute-api.us-east-1.amazonaws.com/Prod'; 
+  static const String baseUrl = 'https://gaqyd2vyo7.execute-api.us-east-1.amazonaws.com/Prod'; 
   
   // If you're running the API locally for development, use:
   // static const String baseUrl = 'http://localhost:5000'; 

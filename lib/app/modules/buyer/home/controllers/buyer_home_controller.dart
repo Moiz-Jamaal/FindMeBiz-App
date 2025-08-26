@@ -2,6 +2,7 @@ import 'package:get/get.dart';
 import '../../../../services/category_service.dart';
 import '../../../../services/viewed_history_service.dart';
 import '../../../../services/favorites_service.dart';
+import '../../../../services/ad_service.dart';
 import '../../../../data/models/api/index.dart';
 
 class BuyerHomeController extends GetxController {
@@ -10,6 +11,7 @@ class BuyerHomeController extends GetxController {
   final ViewedHistoryService _viewedHistoryService = Get.find<ViewedHistoryService>();
   // ignore: unused_field
   final FavoritesService _favoritesService = Get.find<FavoritesService>();
+  final AdService _adService = Get.find<AdService>();
   
   // Current navigation index
   final RxInt currentIndex = 0.obs;
@@ -46,6 +48,9 @@ class BuyerHomeController extends GetxController {
       
       // Load recently viewed items
       await _loadRecentlyViewed();
+      
+      // Preload campaigns for better UX
+      await _adService.preloadHomeCampaigns();
       
       // For now, we don't load featured sellers from database
       // as per user request, but we can load some sample published sellers
