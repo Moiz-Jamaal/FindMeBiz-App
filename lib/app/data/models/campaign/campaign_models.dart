@@ -2,28 +2,28 @@ class CampaignDetails {
   final int campId;
   final String campGroup;
   final int sellerId;
-  final String displayUrl;
-  final String navigateUrl;
+  final String? displayUrl;  // Made nullable
+  final String? navigateUrl; // Made nullable  
   final int credits;
-  final String startDt;
-  final String endDt;
-  final String registerDt;
+  final String? startDt;     // Made nullable
+  final String? endDt;       // Made nullable
+  final String? registerDt;  // Made nullable
   final int? catId;
-  final bool catRefOnly;
+  final bool? catRefOnly;    // Made nullable to match API
   final bool active;
 
   CampaignDetails({
     required this.campId,
     required this.campGroup,
     required this.sellerId,
-    required this.displayUrl,
-    required this.navigateUrl,
+    this.displayUrl,           // Removed required
+    this.navigateUrl,          // Removed required
     required this.credits,
-    required this.startDt,
-    required this.endDt,
-    required this.registerDt,
+    this.startDt,              // Removed required
+    this.endDt,                // Removed required
+    this.registerDt,           // Removed required
     this.catId,
-    required this.catRefOnly,
+    this.catRefOnly,           // Removed required
     required this.active,
   });
 
@@ -32,14 +32,14 @@ class CampaignDetails {
       campId: json['CampId'] as int,
       campGroup: json['CampGroup'] as String,
       sellerId: json['SellerId'] as int,
-      displayUrl: json['DisplayUrl'] as String,
-      navigateUrl: json['NavigateUrl'] as String,
+      displayUrl: json['DisplayUrl'] as String?,      // Made nullable
+      navigateUrl: json['NavigateUrl'] as String?,    // Made nullable
       credits: json['Credits'] as int,
-      startDt: json['StartDt'] as String,
-      endDt: json['EndDt'] as String,
-      registerDt: json['RegisterDt'] as String,
+      startDt: json['StartDt'] as String?,            // Made nullable
+      endDt: json['EndDt'] as String?,                // Made nullable
+      registerDt: json['RegisterDt'] as String?,      // Made nullable
       catId: json['CatId'] as int?,
-      catRefOnly: json['CatRefOnly'] as bool,
+      catRefOnly: json['CatRefOnly'] as bool?,        // Made nullable
       active: json['Active'] as bool,
     );
   }

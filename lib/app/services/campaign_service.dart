@@ -9,11 +9,14 @@ class CampaignService extends BaseApiService {
   static const Map<AdSlot, String> _slotToCampaignGroup = {
     AdSlot.homeHeaderBanner: 'home_header_banner',
     AdSlot.homeBelowSearchBanner: 'home_below_search',
-    AdSlot.homeFeatured: 'featured_section',
+    AdSlot.homeFeatured: 'featured_sellers',  // Updated to use featured sellers
     AdSlot.homeNewSellers: 'new_sellers_section',
     AdSlot.searchSellers: 'search_sellers',
     AdSlot.searchProducts: 'search_products',
   };
+
+  // New slot for featured products
+  static const String featuredProductsGroup = 'featured_products';
 
   // Get current user ID from auth service
   int? get _currentUserId {
@@ -26,34 +29,77 @@ class CampaignService extends BaseApiService {
     AdSlot slot, {
     int limit = 100,
   }) async {
-try {
-      final userId = _currentUserId; // Can be null - API accepts it
-final campGroup = _slotToCampaignGroup[slot];
-if (campGroup == null) {
-return [];
+    try {
+      final userId = _currentUserId;
+      final campGroup = _slotToCampaignGroup[slot];
+      print('getCampaignsForSlot: slot=$slot, campGroup=$campGroup, userId=$userId');
+      
+      if (campGroup == null) {
+        print('No campaign group found for slot $slot');
+        return [];
       }
 
       final request = TopCampaignsRequest(
-        userId: userId, // Pass null if user not authenticated
+        userId: userId,
         campGroup: campGroup,
         campaignCount: limit,
-        userInterestCategories: [], // Not implemented yet
+        userInterestCategories: [],
       );
-final response = await post<Map<String, dynamic>>(
+      
+      print('Making request: ${request.toJson()}');
+      
+      final response = await post<Map<String, dynamic>>(
         '/TopCampaigns',
         body: request.toJson(),
       );
-if (response.success && response.data != null) {
+      
+      print('Response success: ${response.success}, data: ${response.data != null}');
+      
+      if (response.success && response.data != null) {
         final campaignsResponse = TopCampaignsResponse.fromJson(response.data!);
-if (campaignsResponse.success) {
+        print('CampaignsResponse success: ${campaignsResponse.success}, campaigns: ${campaignsResponse.campaigns.length}');
+        
+        if (campaignsResponse.success) {
           final mappedContent = _mapCampaignsToSponsoredContent(campaignsResponse.campaigns);
-return mappedContent;
+          print('Mapped content: ${mappedContent.length}');
+          return mappedContent;
+        }
+      } else {
+        print('API response failed: ${response.message}');
+      }
+      return [];
+    } catch (e) {
+      print('getCampaignsForSlot error: $e');
+      return [];
+    }
+  }
+
+  /// Get featured products campaigns
+  Future<List<SponsoredContent>> getFeaturedProducts({int limit = 10}) async {
+    try {
+      final userId = _currentUserId;
+      
+      final request = TopCampaignsRequest(
+        userId: userId,
+        campGroup: featuredProductsGroup,
+        campaignCount: limit,
+        userInterestCategories: [],
+      );
+      
+      final response = await post<Map<String, dynamic>>(
+        '/TopCampaigns',
+        body: request.toJson(),
+      );
+      
+      if (response.success && response.data != null) {
+        final campaignsResponse = TopCampaignsResponse.fromJson(response.data!);
+        if (campaignsResponse.success) {
+          return _mapCampaignsToSponsoredContent(campaignsResponse.campaigns);
         }
       }
-return [];
+      return [];
     } catch (e) {
-      // Add logging for debugging
-return [];
+      return [];
     }
   }
 
@@ -62,16 +108,14 @@ return [];
     List<CampaignResponse> campaigns,
   ) {
     return campaigns.map((campaign) {
-      final navigateUrl = campaign.campaign.navigateUrl;
+      final navigateUrl = campaign.campaign.navigateUrl ?? '';
       
       return SponsoredContent(
         id: campaign.campaign.campId.toString(),
         type: _determineSponsoredType(navigateUrl),
-        title: campaign.sellerName ?? 'Featured Seller',
-        subtitle: campaign.categoryName != null 
-          ? 'Sponsored • ${campaign.categoryName}'
-          : 'Sponsored',
-        imageUrl: campaign.campaign.displayUrl,
+        title: campaign.sellerName ?? 'Featured Item',
+        subtitle: campaign.categoryName ?? 'Featured',
+        imageUrl: campaign.campaign.displayUrl, // Can be null for fallback
         ctaLabel: 'View Details',
         deeplinkRoute: _parseNavigateUrl(navigateUrl),
         payload: {
@@ -79,7 +123,7 @@ return [];
           'campaignId': campaign.campaign.campId,
           'categoryId': campaign.campaign.catId,
           'type': 'campaign',
-          'externalUrl': navigateUrl, // Store original URL for handling
+          'externalUrl': navigateUrl,
         },
       );
     }).toList();

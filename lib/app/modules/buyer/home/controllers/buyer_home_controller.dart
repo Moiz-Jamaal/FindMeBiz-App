@@ -3,7 +3,9 @@ import '../../../../services/category_service.dart';
 import '../../../../services/viewed_history_service.dart';
 import '../../../../services/favorites_service.dart';
 import '../../../../services/ad_service.dart';
+import '../../../../services/campaign_service.dart';
 import '../../../../data/models/api/index.dart';
+import '../../../../data/models/sponsored_content.dart';
 
 class BuyerHomeController extends GetxController {
   // Services
@@ -12,6 +14,7 @@ class BuyerHomeController extends GetxController {
   // ignore: unused_field
   final FavoritesService _favoritesService = Get.find<FavoritesService>();
   final AdService _adService = Get.find<AdService>();
+  final CampaignService _campaignService = Get.find<CampaignService>();
   
   // Current navigation index
   final RxInt currentIndex = 0.obs;
@@ -21,8 +24,8 @@ class BuyerHomeController extends GetxController {
   final RxBool isSearching = false.obs;
   
   // Data - using real API models now
-  final RxList<SellerDetails> featuredSellers = <SellerDetails>[].obs;
-  final RxList<SellerDetails> newSellers = <SellerDetails>[].obs;
+  final RxList<SponsoredContent> featuredSellers = <SponsoredContent>[].obs;
+  final RxList<SponsoredContent> featuredProducts = <SponsoredContent>[].obs;
   final RxList<CategoryMaster> categories = <CategoryMaster>[].obs;
   final RxList<ViewedSellerItem> recentlyViewedSellers = <ViewedSellerItem>[].obs;
   final RxList<ViewedProductItem> recentlyViewedProducts = <ViewedProductItem>[].obs;
@@ -49,17 +52,39 @@ class BuyerHomeController extends GetxController {
       // Load recently viewed items
       await _loadRecentlyViewed();
       
+      // Load featured content from campaigns
+      await _loadFeaturedContent();
+      
       // Preload campaigns for better UX
       await _adService.preloadHomeCampaigns();
-      
-      // For now, we don't load featured sellers from database
-      // as per user request, but we can load some sample published sellers
-      // await _loadFeaturedSellers();
       
     } catch (e) {
       errorMessage.value = 'Failed to load data: ${e.toString()}';
     } finally {
       isLoading.value = false;
+    }
+  }
+
+  Future<void> _loadFeaturedContent() async {
+    try {
+      // Load featured sellers from campaigns (fallback to highest-rated sellers)
+      print('Loading featured sellers...');
+      final sellers = await _campaignService.getCampaignsForSlot(
+        AdSlot.homeFeatured,
+        limit: 10,
+      );
+      print('Featured sellers loaded: ${sellers.length}');
+      featuredSellers.assignAll(sellers);
+      
+      // Load featured products from campaigns (fallback to highest-rated products)
+      print('Loading featured products...');
+      final products = await _campaignService.getFeaturedProducts(limit: 10);
+      print('Featured products loaded: ${products.length}');
+      featuredProducts.assignAll(products);
+      
+    } catch (e) {
+      print('Error loading featured content: $e');
+      // Silent fail - UI will show empty state
     }
   }
 

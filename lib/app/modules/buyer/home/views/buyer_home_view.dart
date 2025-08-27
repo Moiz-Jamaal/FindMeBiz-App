@@ -34,9 +34,9 @@ class BuyerHomeView extends GetView<BuyerHomeController> {
           _buildTopBannerCarousel(),
           _buildSearchSection(),
           _buildBelowSearchBannerCarousel(),
-          _buildFeaturedSection(),
+          _buildFeaturedSellersSection(),
+          _buildFeaturedProductsSection(),
           _buildCategoriesSection(),
-          _buildNewSellersSection(),
         ],
       ),
     );
@@ -226,7 +226,7 @@ class BuyerHomeView extends GetView<BuyerHomeController> {
     );
   }
 
-  Widget _buildFeaturedSection() {
+  Widget _buildFeaturedSellersSection() {
     return SliverToBoxAdapter(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -244,7 +244,10 @@ class BuyerHomeView extends GetView<BuyerHomeController> {
                   ),
                 ),
                 TextButton(
-                  onPressed: () {},
+                  onPressed: () => Get.toNamed('/buyer-search', arguments: {
+                    'type': 'featured_sellers',
+                    'title': 'Featured Sellers',
+                  }),
                   child: Text(
                     'See all',
                     style: TextStyle(color: AppTheme.buyerPrimary),
@@ -260,36 +263,9 @@ class BuyerHomeView extends GetView<BuyerHomeController> {
               padding: const EdgeInsets.symmetric(
                 horizontal: AppConstants.defaultPadding,
               ),
-              itemCount: controller.featuredSellers.isEmpty ? 0 : controller.featuredSellers.length + 1,
+              itemCount: controller.featuredSellers.length,
               itemBuilder: (context, index) {
-                // Deterministic: insert a single ad after the 3rd card if possible
-                if (index == 3 && controller.featuredSellers.isNotEmpty) {
-                  return FutureBuilder<List<SponsoredContent>>(
-                    future: Get.find<AdService>().getSponsoredForSlotSync(AdSlot.homeFeatured),
-                    builder: (context, snapshot) {
-                      final ads = snapshot.data ?? [];
-                      if (ads.isEmpty) return const SizedBox.shrink();
-                      
-                      final ad = ads.first;
-                      return SizedBox(
-                        width: 160,
-                        child: NativeAdCard(
-                          ad: ad,
-                          onTap: () {
-                            if (ad.deeplinkRoute != null) {
-                              Get.toNamed(ad.deeplinkRoute!, arguments: ad.payload);
-                            }
-                          },
-                        ),
-                      );
-                    },
-                  );
-                }
-                if (controller.featuredSellers.isEmpty) {
-                  return const SizedBox();
-                }
-                final dataIndex = index % controller.featuredSellers.length;
-                final seller = controller.featuredSellers[dataIndex];
+                final seller = controller.featuredSellers[index];
                 return _buildFeaturedSellerCard(seller);
               },
             )),
@@ -299,7 +275,7 @@ class BuyerHomeView extends GetView<BuyerHomeController> {
     );
   }
 
-  Widget _buildFeaturedSellerCard(SellerDetails seller) {
+  Widget _buildFeaturedSellerCard(SponsoredContent seller) {
     return Container(
       width: 160,
       margin: const EdgeInsets.only(right: 12),
@@ -309,7 +285,12 @@ class BuyerHomeView extends GetView<BuyerHomeController> {
           borderRadius: BorderRadius.circular(12),
         ),
         child: InkWell(
-          onTap: () => controller.viewSeller(seller.sellerid ?? 0),
+          onTap: () {
+            final sellerId = seller.payload?['sellerId'];
+            if (sellerId != null) {
+              controller.viewSeller(sellerId is int ? sellerId : int.tryParse(sellerId.toString()) ?? 0);
+            }
+          },
           borderRadius: BorderRadius.circular(12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -323,13 +304,20 @@ class BuyerHomeView extends GetView<BuyerHomeController> {
                   ),
                   color: Colors.grey.shade200,
                 ),
-                child: Center(
-                  child: Icon(
-                    Icons.store,
-                    size: 40,
-                    color: AppTheme.buyerPrimary,
-                  ),
-                ),
+                child: seller.imageUrl != null && seller.imageUrl!.isNotEmpty
+                    ? ClipRRect(
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(12),
+                        ),
+                        child: Image.network(
+                          seller.imageUrl!,
+                          width: double.infinity,
+                          height: 100,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) => _buildPlaceholderIcon(),
+                        ),
+                      )
+                    : _buildPlaceholderIcon(),
               ),
               
               Padding(
@@ -338,7 +326,7 @@ class BuyerHomeView extends GetView<BuyerHomeController> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      seller.businessname ?? 'Business',
+                      seller.title,
                       style: Get.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
@@ -347,45 +335,12 @@ class BuyerHomeView extends GetView<BuyerHomeController> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      seller.area ?? 'Location',
+                      seller.subtitle ?? 'Featured',
                       style: Get.textTheme.bodySmall?.copyWith(
                         color: AppTheme.textSecondary,
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.star,
-                          size: 14,
-                          color: Colors.orange,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          '4.5', // Default rating since not in SellerDetails
-                          style: Get.textTheme.bodySmall?.copyWith(
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        const Spacer(),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppTheme.buyerPrimary.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            seller.city ?? 'Location',
-                            style: Get.textTheme.labelSmall?.copyWith(
-                              color: AppTheme.buyerPrimary,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                      ],
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
@@ -393,6 +348,171 @@ class BuyerHomeView extends GetView<BuyerHomeController> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildFeaturedProductsSection() {
+    return SliverToBoxAdapter(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 16),
+          Padding(
+            padding: const EdgeInsets.all(AppConstants.defaultPadding),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Featured Products',
+                  style: Get.textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.textPrimary,
+                  ),
+                ),
+                TextButton(
+                  onPressed: () => Get.toNamed('/buyer-search', arguments: {
+                    'type': 'featured_products',
+                    'title': 'Featured Products',
+                  }),
+                  child: Text(
+                    'See all',
+                    style: TextStyle(color: AppTheme.buyerPrimary),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(
+            height: 240,
+            child: Obx(() => ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppConstants.defaultPadding,
+              ),
+              itemCount: controller.featuredProducts.length,
+              itemBuilder: (context, index) {
+                final product = controller.featuredProducts[index];
+                return _buildFeaturedProductCard(product);
+              },
+            )),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFeaturedProductCard(SponsoredContent product) {
+    return Container(
+      width: 160,
+      margin: const EdgeInsets.only(right: 12),
+      child: Card(
+        elevation: 2,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: InkWell(
+          onTap: () {
+            final productId = product.deeplinkRoute?.split('/').last;
+            if (productId != null) {
+              controller.viewProduct(int.tryParse(productId) ?? 0);
+            }
+          },
+          borderRadius: BorderRadius.circular(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Product Image
+              Container(
+                height: 120,
+                decoration: BoxDecoration(
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(12),
+                  ),
+                  color: Colors.grey.shade200,
+                ),
+                child: product.imageUrl != null && product.imageUrl!.isNotEmpty
+                    ? ClipRRect(
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(12),
+                        ),
+                        child: Image.network(
+                          product.imageUrl!,
+                          width: double.infinity,
+                          height: 120,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) => Icon(
+                            Icons.shopping_bag,
+                            size: 40,
+                            color: AppTheme.buyerPrimary,
+                          ),
+                        ),
+                      )
+                    : Center(
+                        child: Icon(
+                          Icons.shopping_bag,
+                          size: 40,
+                          color: AppTheme.buyerPrimary,
+                        ),
+                      ),
+              ),
+              
+              Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      product.title,
+                      style: Get.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      product.subtitle ?? 'Featured Product',
+                      style: Get.textTheme.bodySmall?.copyWith(
+                        color: AppTheme.textSecondary,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppTheme.buyerPrimary.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        product.ctaLabel ?? 'View',
+                        style: Get.textTheme.labelSmall?.copyWith(
+                          color: AppTheme.buyerPrimary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPlaceholderIcon() {
+    return Center(
+      child: Icon(
+        Icons.store,
+        size: 40,
+        color: AppTheme.buyerPrimary,
       ),
     );
   }
@@ -486,117 +606,6 @@ class BuyerHomeView extends GetView<BuyerHomeController> {
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildNewSellersSection() {
-    return SliverToBoxAdapter(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: 16),
-          Padding(
-            padding: const EdgeInsets.all(AppConstants.defaultPadding),
-            child: Text(
-              'New Sellers',
-              style: Get.textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: AppTheme.textPrimary,
-              ),
-            ),
-          ),
-          Obx(() => ListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppConstants.defaultPadding,
-            ),
-            itemCount: controller.newSellers.length + 1, // one ad slot
-            itemBuilder: (context, index) {
-              // Deterministic: insert a single ad after the 4th tile if possible
-              if (index == 4) {
-                return FutureBuilder<List<SponsoredContent>>(
-                  future: Get.find<AdService>().getSponsoredForSlotSync(AdSlot.homeNewSellers),
-                  builder: (context, snapshot) {
-                    final ads = snapshot.data ?? [];
-                    if (ads.isEmpty) return const SizedBox.shrink();
-                    
-                    final ad = ads.first;
-                    return NativeAdCard(
-                      ad: ad,
-                      onTap: () {
-                        if (ad.deeplinkRoute != null) {
-                          Get.toNamed(ad.deeplinkRoute!, arguments: ad.payload);
-                        }
-                      },
-                    );
-                  },
-                );
-              }
-              if (index < controller.newSellers.length) {
-                final seller = controller.newSellers[index];
-                return _buildNewSellerTile(seller);
-              }
-              return const SizedBox.shrink();
-            },
-          )),
-          const SizedBox(height: 20),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildNewSellerTile(SellerDetails seller) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        leading: Container(
-          width: 50,
-          height: 50,
-          decoration: BoxDecoration(
-            color: Colors.grey.shade200,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Icon(
-            Icons.store,
-            color: AppTheme.buyerPrimary,
-          ),
-        ),
-        title: Text(
-          seller.businessname ?? 'Business',
-          style: Get.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        subtitle: Text(seller.area ?? 'Location'),
-        trailing: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.green.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Text(
-                'NEW',
-                style: Get.textTheme.labelSmall?.copyWith(
-                  color: Colors.green,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              seller.city ?? 'Location',
-              style: Get.textTheme.bodySmall?.copyWith(
-                color: AppTheme.textSecondary,
-              ),
-            ),
-          ],
-        ),
-        onTap: () => controller.viewSeller(seller.sellerid ?? 0),
       ),
     );
   }
