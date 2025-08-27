@@ -24,6 +24,13 @@ class BuyerHomeView extends GetView<BuyerHomeController> {
       body: _buildHomeTab(),
     );
   }
+    
+  // Register the route for the settings/info page (if not already present)
+  // Add this to your GetMaterialApp routes/pages list, typically in your main.dart or route config:
+  // GetPage(
+  //   name: '/app-info-settings',
+  //   page: () => const AppInfoSettingsView(),
+  // ),
 
   Widget _buildHomeTab() {
     return RefreshIndicator(
@@ -137,6 +144,7 @@ class BuyerHomeView extends GetView<BuyerHomeController> {
           color: Colors.white,
           child: SafeArea(
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Expanded(
                   child: Column(
@@ -163,14 +171,25 @@ class BuyerHomeView extends GetView<BuyerHomeController> {
                 const ModuleSwitchButton(),
                 IconButton(
                   icon: const Icon(
-                    Icons.person_outline,
+                    Icons.settings,
                     color: AppTheme.textPrimary,
                     size: 28,
                   ),
                   onPressed: () {
-                    Get.toNamed('/buyer-profile');
+                    Get.toNamed('/app-info-settings');
                   },
+                  tooltip: 'Settings',
                 ),
+                // IconButton(
+                //   icon: const Icon(
+                //     Icons.person_outline,
+                //     color: AppTheme.textPrimary,
+                //     size: 28,
+                //   ),
+                //   onPressed: () {
+                //     Get.toNamed('/buyer-profile');
+                //   },
+                // ),
               ],
             ),
           ),

@@ -149,6 +149,17 @@ class SellerDashboardView extends GetView<SellerDashboardController> {
                   ),
                 ),
                 const ModuleSwitchButton(),
+                 IconButton(
+                  icon: const Icon(
+                    Icons.settings,
+                    color: AppTheme.textPrimary,
+                    size: 28,
+                  ),
+                  onPressed: () {
+                    Get.toNamed('/app-info-settings');
+                  },
+                  tooltip: 'Settings',
+                ),
               ],
             ),
           ),
