@@ -54,22 +54,23 @@ class SellerDashboardController extends GetxController {
 
       // Load seller profile data
       final response = await _sellerService.getSellerByUserId(currentUser!.userid!);
-      
+
       if (response.success && response.data != null) {
         sellerProfile.value = response.data;
         businessName.value = response.data!.businessname ?? 'My Business';
         isProfilePublished.value = response.data!.ispublished ?? false;
-        
+
         // Calculate profile completion based on filled fields
         profileCompletion.value = _calculateProfileCompletion(response.data!);
-        
-        // Load subscription details if published
-        if (isProfilePublished.value) {
-          await _loadSubscriptionDetails(response.data!.sellerid!);
-        }
 
-        // Load real statistics
-        await _loadSellerStatistics(response.data!.sellerid!);
+        // Load subscription details and statistics asynchronously if published
+        if (isProfilePublished.value) {
+          final futures = <Future>[
+            _loadSubscriptionDetails(response.data!.sellerid!),
+            _loadSellerStatistics(response.data!.sellerid!),
+          ];
+          await Future.wait(futures);
+        }
       } else {
         // If no seller profile exists yet, user needs to complete onboarding
         businessName.value = currentUser.fullname ?? 'My Business';
@@ -93,26 +94,34 @@ class SellerDashboardController extends GetxController {
 
   Future<void> _loadSellerStatistics(int sellerId) async {
     try {
-      // Load real product count
-      final productsResponse = await _productService.getProductsBySeller(sellerId, pageSize: 1);
+      // Load products and reviews data asynchronously in parallel
+      final futures = <Future>[
+        _productService.getProductsBySeller(sellerId, pageSize: 1),
+        _sellerService.getSellerReviews(sellerId),
+      ];
+
+      final results = await Future.wait(futures);
+
+      // Process products response
+      final productsResponse = results[0] as dynamic; // Adjust type based on actual response type
       if (productsResponse.isSuccess && productsResponse.data != null) {
         totalProducts.value = productsResponse.data!.totalCount;
       }
 
-      // Load seller reviews from seller service
+      // Process reviews response
       try {
-        final reviewsResponse = await _sellerService.getSellerReviews(sellerId);
+        final reviewsResponse = results[1] as dynamic; // Adjust type based on actual response type
         if (reviewsResponse.isSuccess && reviewsResponse.data != null) {
           final reviewData = reviewsResponse.data!;
-          
+
           // Always calculate from actual review data when available
           _calculateReviewStatistics(reviewData);
-          
+
           // Fallback to API statistics if no individual reviews found
           if (totalReviews.value == 0) {
-            totalReviews.value = (reviewData['totalReviews'] as int?) ?? 
+            totalReviews.value = (reviewData['totalReviews'] as int?) ??
                                (reviewData['totalSellerReviews'] as int?) ?? 0;
-            averageRating.value = (reviewData['averageRating'] as num?)?.toDouble() ?? 
+            averageRating.value = (reviewData['averageRating'] as num?)?.toDouble() ??
                                  (reviewData['avgSellerRating'] as num?)?.toDouble() ?? 0.0;
           }
         }
@@ -128,9 +137,7 @@ class SellerDashboardController extends GetxController {
       averageRating.value = 0.0;
       totalReviews.value = 0;
     }
-  }
-
-  void _calculateReviewStatistics(Map<String, dynamic> reviewData) {
+  }  void _calculateReviewStatistics(Map<String, dynamic> reviewData) {
     try {
       final sellerReviews = reviewData['sellerReviews'] as List?;
       final productReviews = reviewData['productReviews'] as List?;

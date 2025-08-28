@@ -44,20 +44,18 @@ class BuyerHomeController extends GetxController {
   Future<void> _loadInitialData() async {
     isLoading.value = true;
     errorMessage.value = '';
-    
+
     try {
-      // Load categories
-      await _loadCategories();
-      
-      // Load recently viewed items
-      await _loadRecentlyViewed();
-      
-      // Load featured content from campaigns
-      await _loadFeaturedContent();
-      
-      // Preload campaigns for better UX
-      await _adService.preloadHomeCampaigns();
-      
+      // Load all data asynchronously in parallel
+      final futures = <Future>[
+        _loadCategories(),
+        _loadRecentlyViewed(),
+        _loadFeaturedContent(),
+        _adService.preloadHomeCampaigns(),
+      ];
+
+      await Future.wait(futures);
+
     } catch (e) {
       errorMessage.value = 'Failed to load data: ${e.toString()}';
     } finally {
@@ -67,21 +65,27 @@ class BuyerHomeController extends GetxController {
 
   Future<void> _loadFeaturedContent() async {
     try {
-      // Load featured sellers from campaigns (fallback to highest-rated sellers)
+      // Load featured sellers and products asynchronously in parallel
+      final futures = <Future<List<SponsoredContent>>>[
+        _campaignService.getCampaignsForSlot(
+          AdSlot.homeFeatured,
+          limit: 10,
+        ),
+        _campaignService.getFeaturedProducts(limit: 10),
+      ];
+
+      final results = await Future.wait(futures);
+
       print('Loading featured sellers...');
-      final sellers = await _campaignService.getCampaignsForSlot(
-        AdSlot.homeFeatured,
-        limit: 10,
-      );
+      final sellers = results[0];
       print('Featured sellers loaded: ${sellers.length}');
       featuredSellers.assignAll(sellers);
-      
-      // Load featured products from campaigns (fallback to highest-rated products)
+
       print('Loading featured products...');
-      final products = await _campaignService.getFeaturedProducts(limit: 10);
+      final products = results[1];
       print('Featured products loaded: ${products.length}');
       featuredProducts.assignAll(products);
-      
+
     } catch (e) {
       print('Error loading featured content: $e');
       // Silent fail - UI will show empty state
