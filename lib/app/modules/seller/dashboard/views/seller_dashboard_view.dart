@@ -6,7 +6,6 @@ import '../../../../core/constants/app_constants.dart';
 import '../controllers/seller_dashboard_controller.dart';
 import '../../products/widgets/products_sliver_widget.dart';
 import '../../../shared/widgets/module_switcher.dart';
-import '../../../../core/widgets/app_logo.dart';
 import '../../products/views/products_view.dart';
 
 class SellerDashboardView extends GetView<SellerDashboardController> {
@@ -14,62 +13,6 @@ class SellerDashboardView extends GetView<SellerDashboardController> {
 
   @override
   Widget build(BuildContext context) {
-    final width = MediaQuery.of(context).size.width;
-    final bool isWideWeb = kIsWeb && width >= 900;
-
-    if (isWideWeb) {
-      return Scaffold(
-        backgroundColor: AppTheme.backgroundColor,
-        body: SafeArea(
-          child: Row(
-            children: [
-              Container(
-                width: 80,
-                color: Colors.grey[800],
-                child: Column(
-                  children: [
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 20),
-                      child: AppLogo(size: 36),
-                    ),
-                    const Divider(),
-                    ListTile(
-                      leading: Icon(
-                        Icons.inventory_2,
-                        color: AppTheme.buyerLight,
-                      ),
-                      title: Text(
-                        'Products',
-                        style: TextStyle(
-                          color: AppTheme.buyerLight,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      dense: true,
-                    ),
-                  ],
-                ),
-              ),
-              const VerticalDivider(width: 1),
-              Expanded(
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 560),
-                    child: _buildDashboardContent(),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        floatingActionButton: FloatingActionButton(
-          onPressed: controller.addProduct,
-          backgroundColor: AppTheme.primaryDark,
-          child:  Icon(Icons.add, color: Colors.grey[800]),
-        ),
-      );
-    }
-
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       body: _buildDashboardContent(),
