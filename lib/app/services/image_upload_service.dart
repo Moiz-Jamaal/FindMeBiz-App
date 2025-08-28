@@ -413,7 +413,23 @@ class ImageUploadService extends GetxService {
 
   /// Validate image file before upload
   bool validateImageFile(XFile file) {
-    // Check file extension
+    // First try to use the mimeType from XFile (more reliable on web)
+    if (file.mimeType != null && file.mimeType!.isNotEmpty) {
+      final mimeType = file.mimeType!.toLowerCase();
+      if (mimeType == 'image/jpeg' || mimeType == 'image/jpg' ||
+          mimeType == 'image/png' || mimeType == 'image/webp') {
+        return true;
+      }
+    }
+
+    // Fallback to extension-based detection using filename (works better on web)
+    final fileName = file.name.toLowerCase();
+    if (fileName.endsWith('.jpg') || fileName.endsWith('.jpeg') ||
+        fileName.endsWith('.png') || fileName.endsWith('.webp')) {
+      return true;
+    }
+
+    // Final fallback to path-based detection for edge cases
     final extension = file.path.split('.').last.toLowerCase();
     if (!['jpg', 'jpeg', 'png', 'webp'].contains(extension)) {
       Get.snackbar('Error', 'Invalid file type. Please select a JPG, PNG, or WebP image.');

@@ -1,7 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:async';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -206,17 +208,27 @@ class AddProductController extends GetxController {
 
   Future<void> _processImage(XFile image) async {
     try {
-      final File imageFile = File(image.path);
-      final List<int> imageBytes = await imageFile.readAsBytes();
+      // Web-compatible image processing
+      Uint8List imageBytes;
+      
+      if (kIsWeb) {
+        // Web: Read as bytes directly
+        imageBytes = await image.readAsBytes();
+      } else {
+        // Mobile: Use File approach
+        final File imageFile = File(image.path);
+        imageBytes = await imageFile.readAsBytes();
+      }
+      
       final String base64String = base64Encode(imageBytes);
       
       final imageData = ProductImageData(
         fileName: image.name,
         base64Content: base64String,
-        contentType: _getContentType(image.path),
+        contentType: _getContentType(image),
         order: productImages.length,
         isPrimary: productImages.isEmpty,
-        localPath: image.path,
+        localPath: kIsWeb ? null : image.path,
       );
       
       productImages.add(imageData);
@@ -225,18 +237,24 @@ class AddProductController extends GetxController {
     }
   }
 
-  String _getContentType(String path) {
-    final extension = path.split('.').last.toLowerCase();
-    switch (extension) {
-      case 'jpg':
-      case 'jpeg':
-        return 'image/jpeg';
-      case 'png':
-        return 'image/png';
-      case 'webp':
-        return 'image/webp';
-      default:
-        return 'image/jpeg';
+  String _getContentType(XFile image) {
+    // First try to use the mimeType from XFile (more reliable on web)
+    if (image.mimeType != null && image.mimeType!.isNotEmpty) {
+      return image.mimeType!;
+    }
+
+    // Fallback to extension-based detection
+    final fileName = image.name.toLowerCase();
+    if (fileName.endsWith('.jpg') || fileName.endsWith('.jpeg')) {
+      return 'image/jpeg';
+    } else if (fileName.endsWith('.png')) {
+      return 'image/png';
+    } else if (fileName.endsWith('.webp')) {
+      return 'image/webp';
+    } else if (fileName.endsWith('.gif')) {
+      return 'image/gif';
+    } else {
+      return 'image/jpeg'; // Safe default
     }
   }
 
