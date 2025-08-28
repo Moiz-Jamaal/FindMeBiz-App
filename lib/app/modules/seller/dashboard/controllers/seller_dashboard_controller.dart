@@ -18,11 +18,11 @@ class SellerDashboardController extends GetxController {
   final RxInt totalProducts = 0.obs;
   final RxDouble averageRating = 0.0.obs;
   final RxInt totalReviews = 0.obs;
-  final RxDouble profileCompletion = 0.75.obs;
+  final RxDouble profileCompletion = 0.0.obs; // Start with 0% to avoid misleading display
   
   // Profile data
   final Rx<SellerDetailsExtended?> sellerProfile = Rx<SellerDetailsExtended?>(null);
-  final RxString businessName = 'My Business'.obs;
+  final RxString businessName = 'Loading...'.obs; // Better loading indicator
   final RxBool isProfilePublished = false.obs;
   
   // Subscription data
@@ -77,8 +77,6 @@ class SellerDashboardController extends GetxController {
         profileCompletion.value = 0.0;
         _loadDummyStatistics(); // Keep as fallback
       }
-      // Load real statistics
-      await _loadSellerStatistics(response.data!.sellerid!);
       
     } catch (e) {
       Get.snackbar(

@@ -87,11 +87,26 @@ class SellerDashboardView extends GetView<SellerDashboardController> {
       child: CustomScrollView(
         slivers: [
           _buildDashboardAppBar(),
-          Obx(() => controller.isProfilePublished.value
-              ? _buildPlanDetailsCard()
-              : _buildProfileStatusCard()),
-          _buildStatsCards(),
-          _buildQuickActions(),
+          Obx(() {
+            if (controller.isLoading.value) {
+              return _buildLoadingCard();
+            }
+            return controller.isProfilePublished.value
+                ? _buildPlanDetailsCard()
+                : _buildProfileStatusCard();
+          }),
+          Obx(() {
+            if (controller.isLoading.value) {
+              return _buildLoadingStatsCards();
+            }
+            return _buildStatsCards();
+          }),
+          Obx(() {
+            if (controller.isLoading.value) {
+              return _buildLoadingQuickActions();
+            }
+            return _buildQuickActions();
+          }),
           _buildProductsSectionHeader(),
           const ProductsCategoryFilterSliver(),
           SliverPadding(
@@ -561,9 +576,215 @@ class SellerDashboardView extends GetView<SellerDashboardController> {
     );
   }
 
-  Widget _buildBottomSpacing() {
-    return const SliverToBoxAdapter(
-      child: SizedBox(height: 80), // Space for floating action button
+  Widget _buildLoadingCard() {
+    return SliverToBoxAdapter(
+      child: Container(
+        margin: const EdgeInsets.all(AppConstants.defaultPadding),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.grey[100],
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        height: 20,
+                        width: 150,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[300],
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        height: 28,
+                        width: 80,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[300],
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Container(
+              height: 8,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: Container(
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Container(
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLoadingStatsCards() {
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: AppConstants.defaultPadding),
+        child: Row(
+          children: [
+            Expanded(child: _buildLoadingStatCard()),
+            const SizedBox(width: 12),
+            Expanded(child: _buildLoadingStatCard()),
+            const SizedBox(width: 12),
+            Expanded(child: _buildLoadingStatCard()),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLoadingStatCard() {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              height: 24,
+              width: 40,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Container(
+              height: 16,
+              width: 60,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLoadingQuickActions() {
+    return SliverToBoxAdapter(
+      child: Container(
+        margin: const EdgeInsets.all(AppConstants.defaultPadding),
+        child: Card(
+          elevation: 2,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  height: 20,
+                  width: 120,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(child: _buildLoadingQuickActionButton()),
+                    const SizedBox(width: 12),
+                    Expanded(child: _buildLoadingQuickActionButton()),
+                    const SizedBox(width: 12),
+                    Expanded(child: _buildLoadingQuickActionButton()),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLoadingQuickActionButton() {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+      decoration: BoxDecoration(
+        color: Colors.grey[100],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[300]!),
+      ),
+      child: Column(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: Colors.grey[300],
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            height: 12,
+            width: 60,
+            decoration: BoxDecoration(
+              color: Colors.grey[300],
+              borderRadius: BorderRadius.circular(4),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -698,6 +919,12 @@ class SellerDashboardView extends GetView<SellerDashboardController> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildBottomSpacing() {
+    return const SliverToBoxAdapter(
+      child: SizedBox(height: 80), // Space for floating action button
     );
   }
 }
