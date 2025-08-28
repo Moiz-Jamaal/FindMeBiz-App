@@ -65,7 +65,7 @@ class WelcomeView extends GetView<WelcomeController> {
     return Obx(() => Column(
       children: [
         // App Icon
-        const AppLogo(size: 100, radius: 20, padding: EdgeInsets.all(6)),
+        const AppLogo(size: 100, radius: 50, padding: EdgeInsets.all(6)),
         
         const SizedBox(height: 24),
         

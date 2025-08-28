@@ -9,18 +9,20 @@ class AppLogo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    // Use a circular avatar and contain the image to avoid cropping.
+    return SizedBox(
       width: size,
       height: size,
-      padding: padding,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(radius),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Image.asset(
-        'assets/appicon.png',
-        fit: BoxFit.cover,
+      child: CircleAvatar(
+        radius: size / 2,
+        backgroundColor: Colors.white,
+        child: Padding(
+          padding: padding,
+          child: Image.asset(
+            'assets/appicon.png',
+            fit: BoxFit.contain,
+          ),
+        ),
       ),
     );
   }
