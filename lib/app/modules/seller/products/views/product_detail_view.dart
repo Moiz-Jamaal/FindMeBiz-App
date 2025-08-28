@@ -18,16 +18,10 @@ class ProductDetailView extends GetView<ProductDetailController> {
         actions: [
           PopupMenuButton<String>(
             onSelected: (value) {
-              switch (value) {
-                case 'edit':
-                  controller.editProduct();
-                  break;
-                case 'share':
-                  controller.shareProduct();
-                  break;
-                case 'delete':
-                  controller.deleteProduct();
-                  break;
+              if (value == 'edit') {
+                controller.editProduct();
+              } else if (value == 'delete') {
+                controller.deleteProduct();
               }
             },
             itemBuilder: (context) => [
@@ -36,14 +30,6 @@ class ProductDetailView extends GetView<ProductDetailController> {
                 child: ListTile(
                   leading: Icon(Icons.edit),
                   title: Text('Edit Product'),
-                  contentPadding: EdgeInsets.zero,
-                ),
-              ),
-              const PopupMenuItem(
-                value: 'share',
-                child: ListTile(
-                  leading: Icon(Icons.share),
-                  title: Text('Share Product'),
                   contentPadding: EdgeInsets.zero,
                 ),
               ),
@@ -77,7 +63,6 @@ class ProductDetailView extends GetView<ProductDetailController> {
             children: [
               _buildImageGallery(),
               _buildProductInfo(),
-              _buildProductStats(),
               _buildActionButtons(),
             ],
           ),
@@ -221,7 +206,7 @@ class ProductDetailView extends GetView<ProductDetailController> {
                         ),
                       ),
                       Text(
-                        _formatDate(product.createdAt),
+                        controller.formatDate(product.createdAt),
                         style: Get.textTheme.bodyMedium,
                       ),
                     ],
@@ -238,7 +223,7 @@ class ProductDetailView extends GetView<ProductDetailController> {
                         ),
                       ),
                       Text(
-                        _formatDate(product.updatedAt),
+                        controller.formatDate(product.updatedAt),
                         style: Get.textTheme.bodyMedium,
                       ),
                     ],
@@ -252,84 +237,6 @@ class ProductDetailView extends GetView<ProductDetailController> {
     });
   }
 
-  Widget _buildProductStats() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: AppConstants.defaultPadding),
-      child: Card(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Product Analytics',
-                style: Get.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildStatItem(
-                      'Views',
-                      '${controller.mockStats['views']}',
-                      Icons.visibility,
-                      Colors.blue,
-                    ),
-                  ),
-                  Expanded(
-                    child: _buildStatItem(
-                      'Inquiries',
-                      '${controller.mockStats['inquiries']}',
-                      Icons.message,
-                      Colors.green,
-                    ),
-                  ),
-                  Expanded(
-                    child: _buildStatItem(
-                      'Favorites',
-                      '${controller.mockStats['favorites']}',
-                      Icons.favorite,
-                      Colors.red,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatItem(String label, String value, IconData icon, Color color) {
-    return Column(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.1),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(icon, color: color, size: 20),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          value,
-          style: Get.textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        Text(
-          label,
-          style: Get.textTheme.bodySmall?.copyWith(
-            color: AppTheme.textSecondary,
-          ),
-        ),
-      ],
-    );
-  }
 
   Widget _buildActionButtons() {
     return Container(
@@ -351,42 +258,8 @@ class ProductDetailView extends GetView<ProductDetailController> {
             ),
           ),
           const SizedBox(height: 12),
-          
-          // Secondary Actions Row
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: controller.shareProduct,
-                  icon: const Icon(Icons.share),
-                  label: const Text('Share'),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: controller.duplicateProduct,
-                  icon: const Icon(Icons.copy),
-                  label: const Text('Duplicate'),
-                ),
-              ),
-            ],
-          ),
         ],
       ),
     );
-  }
-
-  String _formatDate(DateTime date) {
-    final now = DateTime.now();
-    final diff = now.difference(date);
-    
-    if (diff.inDays > 0) {
-      return '${diff.inDays} days ago';
-    } else if (diff.inHours > 0) {
-      return '${diff.inHours} hours ago';
-    } else {
-      return 'Just now';
-    }
   }
 }

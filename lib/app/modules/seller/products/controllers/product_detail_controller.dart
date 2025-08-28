@@ -4,6 +4,17 @@ import '../../../../core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 
 class ProductDetailController extends GetxController {
+  String formatDate(DateTime date) {
+    final now = DateTime.now();
+    final diff = now.difference(date);
+    if (diff.inDays > 0) {
+      return '${diff.inDays} days ago';
+    } else if (diff.inHours > 0) {
+      return '${diff.inHours} hours ago';
+    } else {
+      return 'Just now';
+    }
+  }
   final Rx<Product?> product = Rx<Product?>(null);
   final RxBool isLoading = false.obs;
   
