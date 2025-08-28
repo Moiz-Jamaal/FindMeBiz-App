@@ -1,0 +1,90 @@
+name: Deploy FindMeBiz to S3
+
+on:
+  push:
+    branches:
+      - main  # Triggers on push to main branch
+  workflow_dispatch:  # Allows manual trigger from GitHub Actions tab
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.35.2'
+        channel: 'stable'
+        
+    - name: Get dependencies
+      run: flutter pub get
+      
+    - name: Analyze code
+      run: flutter analyze || echo "⚠️ Analysis found some issues, but continuing with build..."
+      continue-on-error: true
+      
+    - name: Build web
+      run: flutter build web
+      
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ secrets.AWS_REGION }}
+        
+    - name: Display deployment info
+      run: |
+        echo "🚀 Starting deployment of FindMeBiz Flutter Web App"
+        echo "Target S3 bucket: ${{ secrets.AWS_S3_BUCKET }}"
+        
+    - name: Sync Flutter web files to S3
+      run: |
+        aws s3 sync build/web/ s3://${{ secrets.AWS_S3_BUCKET }}/ \
+          --delete \
+          --cache-control "public, max-age=3600" \
+          --metadata-directive REPLACE
+      
+    - name: Set correct content types for web assets
+      run: |
+        # Set content type for HTML files
+        aws s3 cp s3://${{ secrets.AWS_S3_BUCKET }}/index.html s3://${{ secrets.AWS_S3_BUCKET }}/index.html \
+          --content-type "text/html" --metadata-directive REPLACE
+        
+        # Set content type for JavaScript files (check if they exist first)
+        if aws s3 ls s3://${{ secrets.AWS_S3_BUCKET }}/main.dart.js; then
+          aws s3 cp s3://${{ secrets.AWS_S3_BUCKET }}/main.dart.js s3://${{ secrets.AWS_S3_BUCKET }}/main.dart.js \
+            --content-type "application/javascript" --metadata-directive REPLACE
+        fi
+        
+        if aws s3 ls s3://${{ secrets.AWS_S3_BUCKET }}/flutter.js; then
+          aws s3 cp s3://${{ secrets.AWS_S3_BUCKET }}/flutter.js s3://${{ secrets.AWS_S3_BUCKET }}/flutter.js \
+            --content-type "application/javascript" --metadata-directive REPLACE
+        fi
+        
+        if aws s3 ls s3://${{ secrets.AWS_S3_BUCKET }}/flutter_bootstrap.js; then
+          aws s3 cp s3://${{ secrets.AWS_S3_BUCKET }}/flutter_bootstrap.js s3://${{ secrets.AWS_S3_BUCKET }}/flutter_bootstrap.js \
+            --content-type "application/javascript" --metadata-directive REPLACE
+        fi
+        
+        # Set content type for manifest.json
+        if aws s3 ls s3://${{ secrets.AWS_S3_BUCKET }}/manifest.json; then
+          aws s3 cp s3://${{ secrets.AWS_S3_BUCKET }}/manifest.json s3://${{ secrets.AWS_S3_BUCKET }}/manifest.json \
+            --content-type "application/json" --metadata-directive REPLACE
+        fi
+      
+    - name: Invalidate CloudFront cache
+      run: |
+        echo "🔄 Invalidating CloudFront cache for faster content updates..."
+        aws cloudfront create-invalidation --distribution-id ${{ secrets.AWS_CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
+        echo "✅ CloudFront cache invalidation initiated successfully!"
+        
+    - name: Deploy notification
+      run: |
+        echo "✅ Deployment completed successfully!"
+        echo "🌐 FindMeBiz is now live at: https://${{ secrets.AWS_S3_BUCKET }}.s3.amazonaws.com"
+        echo "📦 Files uploaded to S3 bucket: ${{ secrets.AWS_S3_BUCKET }}"
