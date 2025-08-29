@@ -189,21 +189,25 @@ class SellerDashboardController extends GetxController {
 
   Future<void> _loadSubscriptionDetails(int sellerId) async {
     try {
-      final settings = sellerProfile.value?.settings?.firstOrNull;
-      if (settings?.subscriptionDetails != null) {
-        try {
-          final details = jsonDecode(settings!.subscriptionDetails!);
-          currentSubscription.value = details;
-        } catch (e) {
-          // If JSON parsing fails, create a basic subscription object
-          currentSubscription.value = {
-            'planId': null,
-            'name': settings!.subscriptionPlan ?? 'Basic',
-            'amount': 250,
-            'currency': 'INR',
-            'startDate': null,
-            'endDate': null,
-          };
+      final settingsList = sellerProfile.value?.settings;
+      if (settingsList != null && settingsList.isNotEmpty) {
+        final settings = settingsList.first;
+        final subscriptionDetails = settings['SubscriptionDetails'];
+        if (subscriptionDetails != null) {
+          try {
+            final details = jsonDecode(subscriptionDetails);
+            currentSubscription.value = details;
+          } catch (e) {
+            // If JSON parsing fails, create a basic subscription object
+            currentSubscription.value = {
+              'planId': null,
+              'name': settings['SubscriptionPlan'] ?? 'Basic',
+              'amount': 250,
+              'currency': 'INR',
+              'startDate': null,
+              'endDate': null,
+            };
+          }
         }
       }
     } catch (e) {
