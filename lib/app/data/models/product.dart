@@ -44,6 +44,21 @@ class Product {
 
   // Get primary image URL
   String get primaryImageUrl {
+    print('=== PRIMARY IMAGE URL DEBUG ===');
+    print('Product ID: $id, Name: $name');
+    print('Media null check: ${media == null}');
+    print('Media isEmpty: ${media?.isEmpty ?? "null"}');
+    print('Media length: ${media?.length ?? "null"}');
+    if (media?.isNotEmpty == true) {
+      print('Media items:');
+      for (int i = 0; i < media!.length; i++) {
+        final m = media![i];
+        print('  Media $i: ${m.mediaType}, Primary: ${m.isPrimary}, URL: ${m.mediaUrl}');
+      }
+    }
+    print('Images length: ${images.length}');
+    print('Images: $images');
+    
     if (media?.isNotEmpty == true) {
       final primaryMedia = media!.firstWhere(
         (m) => m.isPrimary && m.mediaType == 'image',
@@ -52,11 +67,17 @@ class Product {
           orElse: () => media!.first,
         ),
       );
+      print('Selected primary media URL: ${primaryMedia.mediaUrl}');
+      print('=== END PRIMARY IMAGE DEBUG ===');
       return primaryMedia.mediaUrl;
     }
     if (images.isNotEmpty) {
+      print('Using images[0]: ${images.first}');
+      print('=== END PRIMARY IMAGE DEBUG ===');
       return images.first;
     }
+    print('Using placeholder image');
+    print('=== END PRIMARY IMAGE DEBUG ===');
     return 'https://via.placeholder.com/300x300/E0E0E0/FFFFFF?text=No+Image';
   }
 
@@ -107,13 +128,27 @@ class Product {
     List<ProductMedia>? media;
     List<String> images = [];
     
+    print('=== PRODUCT MEDIA PARSING ===');
+    print('Product ID in JSON: ${json['productId'] ?? json['ProductId'] ?? json['id']}');
+    print('Media raw data: $mediaData');
+    print('Media data type: ${mediaData?.runtimeType}');
+    print('Media is List: ${mediaData is List}');
+    print('Media length: ${mediaData?.length ?? "null"}');
+    
     if (mediaData is List) {
-      media = mediaData.map((item) => ProductMedia.fromJson(item)).toList();
+      print('Parsing ${mediaData.length} media items...');
+      media = mediaData.map((item) {
+        print('Media item: $item');
+        return ProductMedia.fromJson(item);
+      }).toList();
+      print('Parsed media count: ${media.length}');
       images = media
-          .where((m) => m.mediaType == 'image')
-          .map((m) => m.mediaUrl)
+          .where((m) => m.mediaType == 'image' && (m.mediaUrl).toString().isNotEmpty)
+          .map((m) => m.mediaUrl.trim())
           .toList();
+      print('Image URLs: $images');
     }
+    print('=== END MEDIA PARSING ===');
 
     // Parse category names with better handling of different formats
     if (json['categoryNames'] != null && json['categoryNames'] is List && (json['categoryNames'] as List).isNotEmpty) {
@@ -340,6 +375,30 @@ class ProductMedia {
   });
 
   factory ProductMedia.fromJson(Map<String, dynamic> json) {
+    // Robust createdAt parsing: handle nulls and invalid formats gracefully
+    DateTime parsedCreatedAt;
+    final createdAtRaw = json['createdAt'] ?? json['CreatedAt'];
+    if (createdAtRaw == null || (createdAtRaw is String && createdAtRaw.isEmpty)) {
+      parsedCreatedAt = DateTime.now();
+    } else if (createdAtRaw is String) {
+      try {
+        parsedCreatedAt = DateTime.parse(createdAtRaw);
+      } catch (_) {
+        parsedCreatedAt = DateTime.now();
+      }
+    } else if (createdAtRaw is int) {
+      // Support unix epoch seconds/millis heuristically
+      try {
+        parsedCreatedAt = createdAtRaw > 2000000000
+            ? DateTime.fromMillisecondsSinceEpoch(createdAtRaw)
+            : DateTime.fromMillisecondsSinceEpoch(createdAtRaw * 1000);
+      } catch (_) {
+        parsedCreatedAt = DateTime.now();
+      }
+    } else {
+      parsedCreatedAt = DateTime.now();
+    }
+
     return ProductMedia(
       mediaId: json['mediaId'] ?? json['MediaId'],
       productId: json['productId'] ?? json['ProductId'],
@@ -353,7 +412,7 @@ class ProductMedia {
       mimeType: json['mimeType'] ?? json['MimeType'],
       durationSeconds: json['durationSeconds'] ?? json['DurationSeconds'],
       thumbnailUrl: json['thumbnailUrl'] ?? json['ThumbnailUrl'],
-      createdAt: DateTime.parse(json['createdAt'] ?? json['CreatedAt'] ?? DateTime.now().toIso8601String()),
+      createdAt: parsedCreatedAt,
     );
   }
 

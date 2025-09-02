@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/constants/app_constants.dart';
@@ -9,10 +8,8 @@ import '../../../shared/widgets/module_switcher.dart';
 import '../../../../services/ad_service.dart';
 import '../../../../services/url_handler_service.dart';
 import '../../../shared/widgets/ads/banner_ad_tile.dart';
-import '../../../shared/widgets/ads/native_ad_card.dart';
 import '../../../shared/widgets/ads/rotating_banner_carousel.dart';
 import '../../../../data/models/sponsored_content.dart';
-import '../../../../core/widgets/app_logo.dart';
 
 class BuyerHomeView extends GetView<BuyerHomeController> {
   const BuyerHomeView({super.key});

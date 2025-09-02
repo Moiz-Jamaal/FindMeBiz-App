@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../../../../services/buyer_service.dart';
+import '../../../../services/product_service.dart';
 import '../../../../services/auth_service.dart';
 
 
@@ -77,8 +77,8 @@ class FavoritesController extends GetxController {
     hasError.value = false;
     
     try {
-      final buyerService = Get.find<BuyerService>();
-      final response = await buyerService.getUserFavorites(currentUser!.userid!);
+      final productService = ProductService.instance;
+      final response = await productService.getUserFavorites(currentUser!.userid!);
       
       if (response.isSuccess && response.data != null) {
         products.clear();
@@ -168,22 +168,25 @@ class FavoritesController extends GetxController {
     }
 
     try {
-      final buyerService = Get.find<BuyerService>();
-      final response = await buyerService.removeFromFavorites(
-        userId: currentUser!.userid!,
-        refId: item.refId,
-        type: item.type,
-      );
+      final productService = ProductService.instance;
       
-      if (response.isSuccess) {
-        if (item.type == 'P') {
+      if (item.type == 'P') {
+        // Remove product from favorites
+        final response = await productService.removeProductFromFavorites(
+          userId: currentUser!.userid!,
+          productId: item.refId,
+        );
+        
+        if (response.isSuccess) {
           products.removeWhere((p) => p.refId == item.refId);
+          _showSnackbar('Removed', 'Removed from favorites', Colors.grey);
         } else {
-          sellers.removeWhere((s) => s.refId == item.refId);
+          _showSnackbar('Error', 'Failed to remove from favorites', Colors.red);
         }
-        _showSnackbar('Removed', 'Removed from favorites', Colors.grey);
       } else {
-        _showSnackbar('Error', 'Failed to remove from favorites', Colors.red);
+        // For sellers, we still need to use BuyerService or create seller favorites in ProductService
+        // For now, show error message as seller favorites might need separate implementation
+        _showSnackbar('Error', 'Seller favorites removal not yet implemented', Colors.orange);
       }
     } catch (e) {
       _showSnackbar('Error', 'Network error. Please try again.', Colors.red);

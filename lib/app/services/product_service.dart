@@ -1,4 +1,5 @@
 import '../data/models/product.dart';
+import '../data/models/api/seller_details.dart';
 import 'api/base_api_service.dart';
 import 'api/api_exception.dart';
 
@@ -13,7 +14,9 @@ class ProductService extends BaseApiService {
   }
   ProductService._internal();
 
-  // Get all products with filtering and pagination
+  // UNIFIED PRODUCT FETCHING METHODS
+
+  /// Get all products with filtering and pagination - MAIN SEARCH ENDPOINT
   Future<ApiResponse<ProductSearchResponse>> getProducts({
     int? sellerId,
     String? productName,
@@ -51,19 +54,95 @@ class ProductService extends BaseApiService {
     return await get<ProductSearchResponse>(
       '/Products',
       queryParams: queryParams,
-      fromJson: (json) => ProductSearchResponse.fromJson(json),
+      fromJson: (json) {
+        print('=== RAW API RESPONSE ===');
+        print('Response keys: ${json.keys.toList()}');
+        if (json['Products'] != null) {
+          final productsList = json['Products'] as List;
+          print('Products count: ${productsList.length}');
+          for (int i = 0; i < productsList.length; i++) {
+            final product = productsList[i];
+            print('Product $i ID: ${product['ProductId'] ?? product['Id']} Name: ${product['ProductName'] ?? product['Name']}');
+            print('  - Media in JSON: ${product['Media']}');
+            print('  - Media type: ${product['Media']?.runtimeType}');
+            print('  - Media length: ${product['Media']?.length ?? 'null'}');
+          }
+        }
+        print('=== END RAW RESPONSE ===');
+        
+        return ProductSearchResponse.fromJson(json);
+      },
     );
   }
 
-  // Get single product by ID
-  Future<ApiResponse<Product>> getProduct(int productId) async {
+  /// Get single product with full details - UNIFIED METHOD
+  Future<ApiResponse<Product>> getProductDetails(int productId) async {
     return await get<Product>(
       '/Product/$productId',
       fromJson: (json) => Product.fromJson(json),
     );
   }
 
-  // Create new product
+  /// Search products with advanced filtering - UNIFIED METHOD
+  Future<ApiResponse<ProductSearchResponse>> searchProducts({
+    int? sellerId,
+    String? productName,
+    List<int>? categoryIds,
+    double? minPrice,
+    double? maxPrice,
+    bool? isAvailable,
+    String? city,
+    String? area,
+    int page = 1,
+    int pageSize = 20,
+    String sortBy = 'createdat',
+    String sortOrder = 'desc',
+  }) async {
+    // This is the same as getProducts - unified interface
+    return await getProducts(
+      sellerId: sellerId,
+      productName: productName,
+      categoryIds: categoryIds,
+      minPrice: minPrice,
+      maxPrice: maxPrice,
+      isAvailable: isAvailable,
+      city: city,
+      area: area,
+      page: page,
+      pageSize: pageSize,
+      sortBy: sortBy,
+      sortOrder: sortOrder,
+    );
+  }
+
+  /// Get products by seller ID - OPTIMIZED METHOD
+  Future<ApiResponse<ProductSearchResponse>> getProductsBySeller(
+    int sellerId, {
+    int page = 1,
+    int pageSize = 20,
+    String sortBy = 'createdat',
+    String sortOrder = 'desc',
+  }) async {
+    return await getProducts(
+      sellerId: sellerId,
+      page: page,
+      pageSize: pageSize,
+      sortBy: sortBy,
+      sortOrder: sortOrder,
+    );
+  }
+
+  /// Get seller details by seller ID - UNIFIED WITH PRODUCT FETCHING
+  Future<ApiResponse<SellerDetailsExtended>> getSellerDetailsBySellerId(int sellerId) async {
+    return await get<SellerDetailsExtended>(
+      '/SellerBySellerId/$sellerId',
+      fromJson: (json) => SellerDetailsExtended.fromJson(json),
+    );
+  }
+
+  // PRODUCT MANAGEMENT METHODS
+
+  /// Create new product
   Future<ApiResponse<Product>> createProduct(CreateProductRequest request) async {
     return await post<Product>(
       '/Product',
@@ -72,7 +151,7 @@ class ProductService extends BaseApiService {
     );
   }
 
-  // Update existing product
+  /// Update existing product
   Future<ApiResponse<Product>> updateProduct(int productId, UpdateProductRequest request) async {
     return await put<Product>(
       '/Product/$productId',
@@ -81,34 +160,44 @@ class ProductService extends BaseApiService {
     );
   }
 
-  // Delete product (soft delete)
+  /// Delete product (soft delete)
   Future<ApiResponse<void>> deleteProduct(int productId) async {
     return await delete('/Product/$productId');
   }
 
-  // Get products by seller
-  Future<ApiResponse<ProductSearchResponse>> getProductsBySeller(
-    int sellerId, {
-    int page = 1,
-    int pageSize = 20,
-    String sortBy = 'createdat',
-    String sortOrder = 'desc',
-  }) async {
-    final queryParams = <String, String>{
-      'page': page.toString(),
-      'pageSize': pageSize.toString(),
-      'sortBy': sortBy,
-      'sortOrder': sortOrder,
-    };
+  // MEDIA UPLOAD METHODS
 
-    return await get<ProductSearchResponse>(
-      '/Seller/$sellerId/Products',
-      queryParams: queryParams,
-      fromJson: (json) => ProductSearchResponse.fromJson(json),
-    );
+  /// Upload multiple images for a product - UNIFIED METHOD
+  Future<ApiResponse<BulkMediaUploadResponse>> uploadMultipleImages(
+    int productId,
+    List<ImageUploadData> images,
+  ) async {
+    final mediaRequests = images.map((img) => ProductMediaRequest(
+      mediaType: 'image',
+      base64Content: img.base64Content,
+      fileName: img.fileName,
+      mediaOrder: img.mediaOrder,
+      isPrimary: img.isPrimary,
+      altText: img.altText,
+      contentType: img.contentType,
+    )).toList();
+
+    final response = await bulkUploadMedia(productId, mediaRequests);
+    
+    if (response.isSuccess) {
+      return ApiResponse.success(
+        response.data!,
+        statusCode: response.statusCode,
+      );
+    } else {
+      return ApiResponse.error(
+        response.errorMessage ?? 'Failed to upload images',
+        statusCode: response.statusCode,
+      );
+    }
   }
 
-  // Bulk upload media for product
+  /// Bulk upload media for product
   Future<ApiResponse<BulkMediaUploadResponse>> bulkUploadMedia(
     int productId,
     List<ProductMediaRequest> mediaFiles,
@@ -125,12 +214,7 @@ class ProductService extends BaseApiService {
     );
   }
 
-  // Delete single media
-  Future<ApiResponse<void>> deleteProductMedia(int productId, int mediaId) async {
-    return await delete('/Product/$productId/Media/$mediaId');
-  }
-
-  // Upload single image (convenience method)
+  /// Upload single image (convenience method)
   Future<ApiResponse<ProductMedia>> uploadSingleImage(
     int productId,
     String base64Content,
@@ -167,34 +251,165 @@ class ProductService extends BaseApiService {
     }
   }
 
-  // Upload multiple images (convenience method)
-  Future<ApiResponse<List<ProductMedia>>> uploadMultipleImages(
-    int productId,
-    List<ImageUploadData> images,
-  ) async {
-    final mediaRequests = images.map((img) => ProductMediaRequest(
-      mediaType: 'image',
-      base64Content: img.base64Content,
-      fileName: img.fileName,
-      mediaOrder: img.mediaOrder,
-      isPrimary: img.isPrimary,
-      altText: img.altText,
-      contentType: img.contentType,
-    )).toList();
+  /// Delete single media
+  Future<ApiResponse<void>> deleteProductMedia(int productId, int mediaId) async {
+    return await delete('/Product/$productId/Media/$mediaId');
+  }
 
-    final response = await bulkUploadMedia(productId, mediaRequests);
-    
-    if (response.isSuccess) {
-      return ApiResponse.success(
-        response.data!.uploadedMedia,
-        statusCode: response.statusCode,
-      );
-    } else {
-      return ApiResponse.error(
-        response.errorMessage ?? 'Failed to upload images',
-        statusCode: response.statusCode,
-      );
-    }
+  // FAVORITES AND VIEWS METHODS (moved from BuyerService)
+
+  /// Check if product is favorited by user
+  Future<ApiResponse<Map<String, dynamic>>> checkIfProductFavorite({
+    required int userId,
+    required int productId,
+  }) async {
+    return await get<Map<String, dynamic>>(
+      '/UserFavorite/Check',
+      queryParams: {
+        'userId': userId.toString(),
+        'refId': productId.toString(),
+        'type': 'P',
+      },
+      fromJson: (json) => json,
+    );
+  }
+
+  /// Add product to favorites
+  Future<ApiResponse<Map<String, dynamic>>> addProductToFavorites({
+    required int userId,
+    required int productId,
+  }) async {
+    return await post<Map<String, dynamic>>(
+      '/UserFavorite',
+      body: {
+        'userId': userId,
+        'refId': productId,
+        'type': 'P',
+      },
+      fromJson: (json) => json,
+    );
+  }
+
+  /// Remove product from favorites
+  Future<ApiResponse<Map<String, dynamic>>> removeProductFromFavorites({
+    required int userId,
+    required int productId,
+  }) async {
+    final response = await delete('/UserFavorite');
+    return ApiResponse.success(
+      {'message': 'Removed from favorites', 'userId': userId, 'productId': productId},
+      statusCode: response.statusCode,
+    );
+  }
+
+  /// Track product view
+  Future<ApiResponse<Map<String, dynamic>>> trackProductView({
+    required int userId,
+    required int productId,
+  }) async {
+    return await post<Map<String, dynamic>>(
+      '/UserView',
+      body: {
+        'userId': userId,
+        'refId': productId,
+        'type': 'P',
+        'viewedAt': DateTime.now().toIso8601String(),
+      },
+      fromJson: (json) => json,
+    );
+  }
+
+  /// Get user's all favorites (products and sellers)
+  Future<ApiResponse<Map<String, dynamic>>> getUserFavorites(int userId) async {
+    return await get<Map<String, dynamic>>(
+      '/UserFavorites/$userId',
+      fromJson: (json) => json,
+    );
+  }
+
+  /// Get user's favorite products
+  Future<ApiResponse<List<Product>>> getUserFavoriteProducts(int userId, {
+    int page = 1,
+    int pageSize = 20,
+  }) async {
+    return await get<List<Product>>(
+      '/UserFavorite/Products/$userId',
+      queryParams: {
+        'page': page.toString(),
+        'pageSize': pageSize.toString(),
+      },
+      fromJson: (json) => (json as List).map((item) => Product.fromJson(item)).toList(),
+    );
+  }
+
+  /// Add seller to favorites
+  Future<ApiResponse<Map<String, dynamic>>> addSellerToFavorites({
+    required int userId,
+    required int sellerId,
+  }) async {
+    return await post<Map<String, dynamic>>(
+      '/AddToFavorites',
+      body: {'refId': sellerId, 'type': 'S'},
+      customHeaders: {'X-User-Id': userId.toString()},
+      fromJson: (json) => json,
+    );
+  }
+
+  /// Remove seller from favorites
+  Future<ApiResponse<Map<String, dynamic>>> removeSellerFromFavorites({
+    required int userId,
+    required int sellerId,
+  }) async {
+    return await post<Map<String, dynamic>>(
+      '/RemoveFromFavorites',
+      body: {'refId': sellerId, 'type': 'S'},
+      customHeaders: {'X-User-Id': userId.toString()},
+      fromJson: (json) => json,
+    );
+  }
+
+  /// Check if seller is in favorites
+  Future<ApiResponse<Map<String, dynamic>>> checkIfSellerFavorite({
+    required int userId,
+    required int sellerId,
+  }) async {
+    return await get<Map<String, dynamic>>(
+      '/CheckFavorite',
+      queryParams: {
+        'userId': userId.toString(),
+        'refId': sellerId.toString(),
+        'type': 'S',
+      },
+      fromJson: (json) => json,
+    );
+  }
+
+  /// Track seller view
+  Future<ApiResponse<Map<String, dynamic>>> trackSellerView({
+    required int userId,
+    required int sellerId,
+  }) async {
+    return await post<Map<String, dynamic>>(
+      '/TrackView',
+      body: {'refId': sellerId, 'type': 'S'},
+      customHeaders: {'X-User-Id': userId.toString()},
+      fromJson: (json) => json,
+    );
+  }
+
+  /// Get user's recently viewed products
+  Future<ApiResponse<List<Product>>> getUserViewedProducts(int userId, {
+    int page = 1,
+    int pageSize = 20,
+  }) async {
+    return await get<List<Product>>(
+      '/UserView/Products/$userId',
+      queryParams: {
+        'page': page.toString(),
+        'pageSize': pageSize.toString(),
+      },
+      fromJson: (json) => (json as List).map((item) => Product.fromJson(item)).toList(),
+    );
   }
 }
 

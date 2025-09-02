@@ -83,6 +83,18 @@ class ProductsController extends GetxController {
       );
 
       if (response.isSuccess && response.data != null) {
+        print('=== SELLER PRODUCTS CONTROLLER DEBUG ===');
+        print('Seller products count: ${response.data!.products.length}');
+        if (response.data!.products.isNotEmpty) {
+          final firstProduct = response.data!.products.first;
+          print('First seller product: ${firstProduct.name}');
+          print('Price: ${firstProduct.price}');
+          print('Formatted price: ${firstProduct.formattedPrice}');
+          print('Images count: ${firstProduct.images.length}');
+          print('Primary image URL: ${firstProduct.primaryImageUrl}');
+        }
+        print('=== END SELLER PRODUCTS DEBUG ===');
+        
         final searchResponse = response.data!;
         
         if (refresh) {
@@ -313,21 +325,23 @@ class ProductsController extends GetxController {
 
   // Utility methods for UI
   String getProductImageUrl(Product product) {
+    // Use the product's primaryImageUrl getter first
+    final primaryUrl = product.primaryImageUrl;
+    if (primaryUrl.isNotEmpty && !primaryUrl.contains('placeholder') && !primaryUrl.contains('No+Image')) {
+      return primaryUrl;
+    }
+    
+    // Fallback to images array
     if (product.images.isNotEmpty) {
       return product.images.first;
     }
+    
     return 'https://via.placeholder.com/300x300/E0E0E0/FFFFFF?text=No+Image';
   }
 
   String formatPrice(Product product) {
-    if (product.customAttributes.containsKey('priceOnInquiry') && 
-        product.customAttributes['priceOnInquiry'] == true) {
-      return 'Price on Inquiry';
-    }
-    if (product.price != null) {
-      return '₹${product.price!.toStringAsFixed(0)}';
-    }
-    return 'Price not set';
+    // Use the product's formattedPrice getter
+    return product.formattedPrice;
   }
 
   Color getAvailabilityColor(Product product) {

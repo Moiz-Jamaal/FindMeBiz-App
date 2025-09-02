@@ -12,6 +12,7 @@ class BuyerSearchController extends GetxController {
   final BuyerService _buyerService = Get.find<BuyerService>();
   final CategoryService _categoryService = Get.find<CategoryService>();
   final ViewedHistoryService _viewedHistoryService = Get.find<ViewedHistoryService>();
+  final ProductService _productService = ProductService.instance;
   
   // Search controllers
   final searchTextController = TextEditingController();
@@ -218,7 +219,7 @@ class BuyerSearchController extends GetxController {
 
   Future<void> _searchProducts(String query) async {
  
-      final response = await _buyerService.searchProducts(
+      final response = await _productService.searchProducts(
         productName: query.isNotEmpty ? query : null,
         categoryIds: selectedCategoryIds.isNotEmpty ? selectedCategoryIds : null,
         minPrice: minPrice.value,
