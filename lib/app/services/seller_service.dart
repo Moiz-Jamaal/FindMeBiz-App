@@ -17,6 +17,16 @@ class SellerService extends BaseApiService {
     return response;
   }
 
+  // Get seller details by seller ID
+  Future<ApiResponse<SellerDetailsExtended>> getSellerBySellerId(int sellerId) async {
+    final response = await get<SellerDetailsExtended>(
+      '/SellerBySellerId/$sellerId',
+      fromJson: (json) => SellerDetailsExtended.fromJson(json),
+    );
+    
+    return response;
+  }
+
   // Create new seller profile
   Future<ApiResponse<SellerDetails>> createSeller(SellerDetails seller) async {
     final response = await post<SellerDetails>(
@@ -183,6 +193,21 @@ class SellerService extends BaseApiService {
       '/SearchSellers',
       queryParams: queryParams,
       fromJson: (json) => SellerDetails.fromJson(json),
+    );
+    
+    return response;
+  }
+
+  // Publish seller profile without subscription requirement
+  Future<ApiResponse<void>> publishSellerProfile({required int sellerId}) async {
+    final body = {
+      'ispublished': true,
+      'publishedat': DateTime.now().toIso8601String(),
+    };
+    
+    final response = await put<void>(
+      '/Seller/$sellerId',
+      body: body,
     );
     
     return response;

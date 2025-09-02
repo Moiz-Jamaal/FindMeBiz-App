@@ -50,7 +50,7 @@ class ProfilePublishController extends GetxController {
   
   // UI state
   final RxBool isLoading = false.obs;
-  final RxInt currentStep = 0.obs; // 0: Preview, 1: Payment, 2: Success
+  final RxInt currentStep = 0.obs; // 0: Preview, 1: Success
 
   @override
   void onInit() {
@@ -89,7 +89,7 @@ class ProfilePublishController extends GetxController {
         isPublished.value = response.data!.ispublished ?? false;
         
         if (isPublished.value) {
-          currentStep.value = 2; // Already published, show success
+          currentStep.value = 1; // Already published, show success
         }
       } else {
         Get.snackbar('Error', 'No seller profile found. Please complete onboarding first.');
@@ -147,7 +147,7 @@ class ProfilePublishController extends GetxController {
   }
 
   void nextStep() {
-    if (currentStep.value < 2) {
+    if (currentStep.value < 1) {
       currentStep.value++;
     }
   }
@@ -194,36 +194,22 @@ class ProfilePublishController extends GetxController {
   }
 
   Future<void> publishProfile() async {
-    if (sellerProfile.value?.sellerid == null || selectedSubscription.value == null) {
-      Get.snackbar('Error', 'Profile or subscription data missing');
+    if (sellerProfile.value?.sellerid == null) {
+      Get.snackbar('Error', 'Profile data missing');
       return;
     }
 
     try {
       isPublishing.value = true;
       
-      // Parse subscription config to get amount details
-      Map<String, dynamic> subscriptionConfig = {};
-      try {
-        subscriptionConfig = jsonDecode(selectedSubscription.value!.subconfig );
-      } catch (e) {
-        subscriptionConfig = {'amount': 250, 'currency': 'INR'};
-      }
-      
-      // Set seller subscription
-      final response = await _sellerService.setSellerSubscription(
+      // Publish profile directly without subscription requirement
+      final response = await _sellerService.publishSellerProfile(
         sellerId: sellerProfile.value!.sellerid!,
-        planName: selectedSubscription.value!.subname,
-        amount: (subscriptionConfig['amount'] as num?)?.toDouble(),
-        currency: subscriptionConfig['currency'] as String?,
-        razorpayPaymentId: paymentId.value.isNotEmpty ? paymentId.value : null,
-        startDate: DateTime.now(),
-        endDate: DateTime.now().add(const Duration(days: 365)), // 1 year
       );
       
       if (response.success) {
         isPublished.value = true;
-        currentStep.value = 2; // Success step
+        currentStep.value = 1; // Success step
         
         Get.snackbar(
           'Profile Published!',
@@ -384,8 +370,6 @@ class ProfilePublishController extends GetxController {
       case 0:
         return 'Preview Your Profile';
       case 1:
-        return 'Complete Payment';
-      case 2:
         return 'Profile Published!';
       default:
         return 'Publish Profile';
@@ -397,8 +381,6 @@ class ProfilePublishController extends GetxController {
       case 0:
         return 'Review your profile before publishing';
       case 1:
-        return 'Pay $subscriptionCurrency ${subscriptionAmount.toStringAsFixed(0)} to make your profile visible';
-      case 2:
         return 'Your profile is now live and visible to buyers';
       default:
         return '';
@@ -410,8 +392,6 @@ class ProfilePublishController extends GetxController {
       case 0:
         return sellerProfile.value != null && isProfileValid;
       case 1:
-        return selectedPaymentMethod.value.isNotEmpty && !isProcessingPayment.value;
-      case 2:
         return true;
       default:
         return false;

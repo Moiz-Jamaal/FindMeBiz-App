@@ -219,17 +219,12 @@ class ProductSearchResponse {
   });
 
   factory ProductSearchResponse.fromJson(Map<String, dynamic> json) {
-     // Debug log
-    
     final productsJson = (json['products'] ?? json['Products']) as List?;
-     // Debug log
     
     final products = productsJson?.map((item) {
-       // Debug log
       try {
         return Product.fromJson(item);
       } catch (e) {
-         // Debug log
         rethrow;
       }
     }).toList() ?? [];

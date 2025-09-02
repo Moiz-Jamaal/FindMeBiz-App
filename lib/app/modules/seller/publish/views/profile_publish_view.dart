@@ -48,8 +48,6 @@ class ProfilePublishView extends GetView<ProfilePublishController> {
       case 0:
         return _buildPreviewStep();
       case 1:
-        return _buildPaymentStep();
-      case 2:
         return _buildSuccessStep();
       default:
         return const SizedBox();
@@ -81,15 +79,6 @@ class ProfilePublishView extends GetView<ProfilePublishController> {
           
           // Profile Preview Card
           _buildProfilePreviewCard(),
-          
-          const SizedBox(height: 20),
-          
-          // Products Preview
-          
-          const SizedBox(height: 20),
-          
-          // Subscription Selection
-          _buildSubscriptionCard(),
           
           const SizedBox(height: 20),
           
@@ -1082,10 +1071,6 @@ class ProfilePublishView extends GetView<ProfilePublishController> {
   }
 
   Widget _buildBottomNavigation() {
-    if (controller.currentStep.value == 2) {
-      return const SizedBox(); // No bottom nav on success page
-    }
-
     return Container(
       padding: const EdgeInsets.all(AppConstants.defaultPadding),
       decoration: const BoxDecoration(
@@ -1095,42 +1080,69 @@ class ProfilePublishView extends GetView<ProfilePublishController> {
         ),
       ),
       child: SafeArea(
-        child: SizedBox(
-          width: double.infinity,
-          height: 50,
-          child: ElevatedButton(
-            onPressed: controller.canProceed
-                ? (controller.currentStep.value == 0
-                    ? controller.proceedToPayment
-                    : controller.processPayment)
-                : null,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.sellerPrimary,
-              foregroundColor: Colors.white,
-              disabledBackgroundColor: AppTheme.textHint,
-            ),
-            child: controller.isProcessingPayment.value || controller.isPublishing.value
-                ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                    ),
-                  )
-                : Text(
-                    controller.currentStep.value == 0
-                        ? 'Proceed to Payment'
-                        : controller.paymentCompleted.value
-                            ? 'Publishing...'
-                            : 'Pay ${controller.subscriptionCurrency} ${controller.subscriptionAmount.toStringAsFixed(0)}',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
+        child: Obx(() {
+          if (controller.currentStep.value == 0) {
+            // Preview step - show publish button
+            return SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton(
+                onPressed: controller.canProceed && !controller.isPublishing.value
+                    ? controller.publishProfile
+                    : null,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.sellerPrimary,
+                  foregroundColor: Colors.white,
+                  disabledBackgroundColor: AppTheme.textHint,
+                ),
+                child: controller.isPublishing.value
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      )
+                    : const Text(
+                        'Publish Profile',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+              ),
+            );
+          } else {
+            // Success step - show navigation buttons
+            return Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: controller.previewAsbuyer,
+                    icon: const Icon(Icons.visibility),
+                    label: const Text('View as Buyer'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppTheme.sellerPrimary,
                     ),
                   ),
-          ),
-        ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: controller.goToDashboard,
+                    icon: const Icon(Icons.dashboard),
+                    label: const Text('Dashboard'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.sellerPrimary,
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                ),
+              ],
+            );
+          }
+        }),
       ),
     );
   }

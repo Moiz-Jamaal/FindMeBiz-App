@@ -59,9 +59,10 @@ class ProductCard extends StatelessWidget {
                     // Product Name
                     Flexible(
                       child: Text(
-                        product.name,
+                        product.name.isNotEmpty ? product.name : 'Unnamed Product',
                         style: Get.textTheme.titleSmall?.copyWith(
                           fontWeight: FontWeight.w600,
+                          color: product.name.isEmpty ? AppTheme.textHint : null,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -73,7 +74,7 @@ class ProductCard extends StatelessWidget {
                     // Category
                     Flexible(
                       child: Text(
-                        product.categories.isNotEmpty ? product.categories.first : 'No Category',
+                        product.categories.isNotEmpty ? product.categories.first : 'Uncategorized',
                         style: Get.textTheme.bodySmall?.copyWith(
                           color: AppTheme.textSecondary,
                           fontSize: 11,
@@ -89,17 +90,17 @@ class ProductCard extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        if (product.price != null)
-                          Flexible(
-                            child: Text(
-                              '${AppConstants.currency}${product.price!.toStringAsFixed(0)}',
-                              style: Get.textTheme.titleSmall?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: AppTheme.sellerPrimary,
-                              ),
-                              overflow: TextOverflow.ellipsis,
+                        // Always show price (will show "Price not set" if null)
+                        Flexible(
+                          child: Text(
+                            product.formattedPrice,
+                            style: Get.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.sellerPrimary,
                             ),
+                            overflow: TextOverflow.ellipsis,
                           ),
+                        ),
                         
                         PopupMenuButton<String>(
                           padding: EdgeInsets.zero,
@@ -182,9 +183,10 @@ class ProductCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      product.name,
+                      product.name.isNotEmpty ? product.name : 'Unnamed Product',
                       style: Get.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w600,
+                        color: product.name.isEmpty ? AppTheme.textHint : null,
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
@@ -193,7 +195,7 @@ class ProductCard extends StatelessWidget {
                     const SizedBox(height: 4),
                     
                     Text(
-                      product.categories.isNotEmpty ? product.categories.first : 'No Category',
+                      product.categories.isNotEmpty ? product.categories.first : 'Uncategorized',
                       style: Get.textTheme.bodySmall?.copyWith(
                         color: AppTheme.textSecondary,
                       ),
@@ -201,14 +203,14 @@ class ProductCard extends StatelessWidget {
                     
                     const SizedBox(height: 8),
                     
-                    if (product.price != null)
-                      Text(
-                        '${AppConstants.currency}${product.price!.toStringAsFixed(0)}',
-                        style: Get.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.sellerPrimary,
-                        ),
+                    // Always show price (will show "Price not set" if null)
+                    Text(
+                      product.formattedPrice,
+                      style: Get.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.sellerPrimary,
                       ),
+                    ),
                   ],
                 ),
               ),
@@ -262,7 +264,7 @@ class ProductCard extends StatelessWidget {
       borderRadius: BorderRadius.circular(
         isGridView ? AppConstants.defaultRadius : 8,
       ),
-      child: imageUrl.isNotEmpty && !imageUrl.contains('placeholder')
+      child: imageUrl.isNotEmpty && !imageUrl.contains('placeholder') && !imageUrl.contains('No+Image')
           ? Image.network(
               imageUrl,
               width: double.infinity,
@@ -275,7 +277,7 @@ class ProductCard extends StatelessWidget {
                   height: double.infinity,
                   color: Colors.grey.shade200,
                   child: const Center(
-                    child: CircularProgressIndicator(),
+                    child: CircularProgressIndicator(strokeWidth: 2),
                   ),
                 );
               },

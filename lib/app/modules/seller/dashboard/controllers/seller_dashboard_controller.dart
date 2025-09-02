@@ -241,7 +241,63 @@ class SellerDashboardController extends GetxController {
   }
 
   void addProduct() {
+    _checkSubscriptionBeforeAddProduct();
+  }
+
+  Future<void> _checkSubscriptionBeforeAddProduct() async {
+    final hasSubscription = await _checkSellerSubscription();
+    if (!hasSubscription) {
+      _showSubscriptionRequiredDialog();
+      return;
+    }
+
     Get.toNamed('/seller-add-product');
+  }
+
+  Future<bool> _checkSellerSubscription() async {
+    try {
+      final sellerId = _authService.currentSeller?.sellerid;
+      if (sellerId == null) return false;
+
+      final response = await _sellerService.getSellerBySellerId(sellerId);
+      if (response.success && response.data != null) {
+        final seller = response.data!;
+        
+        // Check if seller is published and has active subscription
+        if (seller.ispublished == true && seller.settings?.isNotEmpty == true) {
+          final settings = seller.settings!.first;
+          final subscriptionPlan = settings.subscriptionPlan;
+          return subscriptionPlan != null && subscriptionPlan.isNotEmpty;
+        }
+      }
+      return false;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  void _showSubscriptionRequiredDialog() {
+    Get.dialog(
+      AlertDialog(
+        title: const Text('Subscription Required'),
+        content: const Text(
+          'You need an active subscription to add products. Please subscribe to continue.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Get.back();
+              Get.toNamed('/seller-publish');
+            },
+            child: const Text('Subscribe Now'),
+          ),
+        ],
+      ),
+    );
   }
 
   void editProfile() {

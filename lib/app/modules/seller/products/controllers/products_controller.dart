@@ -4,11 +4,13 @@ import '../../../../data/models/product.dart';
 import '../../../../services/product_service.dart';
 import '../../../../services/auth_service.dart';
 import '../../../../services/category_service.dart';
+import '../../../../services/seller_service.dart';
 
 class ProductsController extends GetxController {
   final ProductService _productService = ProductService.instance;
   final AuthService _authService = Get.find<AuthService>();
   final CategoryService _categoryService = Get.find<CategoryService>();
+  final SellerService _sellerService = Get.find<SellerService>();
   
   // Products list
   final RxList<Product> products = <Product>[].obs;
@@ -32,8 +34,12 @@ class ProductsController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    _loadCategories();
-    loadProducts();
+    _initializeData();
+  }
+
+  Future<void> _initializeData() async {
+    await _loadCategories();
+    await loadProducts();
   }
 
   Future<void> _loadCategories() async {
@@ -61,40 +67,29 @@ class ProductsController extends GetxController {
     
     try {
       // Get current seller ID from auth service
-      final sellerId = _authService.currentSeller?.sellerId;
-       // Debug log
+      final sellerId = _authService.currentSeller?.sellerid;
       
       if (sellerId == null) {
         Get.snackbar('Error', 'Seller not found. Please login again.');
-         // Debug log
         return;
       }
 
-      final response = await _productService.getProductsBySeller(
-        sellerId,
+      final response = await _productService.getProducts(
+        sellerId: sellerId,
         page: currentPage.value,
         pageSize: pageSize,
         sortBy: 'createdat',
         sortOrder: 'desc',
       );
 
-       // Debug log
-       // Debug log
-
       if (response.isSuccess && response.data != null) {
         final searchResponse = response.data!;
-        
-         // Debug log
-         // Debug log
         
         if (refresh) {
           products.assignAll(searchResponse.products);
         } else {
           products.addAll(searchResponse.products);
         }
-        
-        // Fetch category names for products
-        await _loadCategoryNamesForProducts();
         
         totalPages.value = searchResponse.totalPages;
         hasMorePages.value = searchResponse.hasNextPage;
@@ -103,11 +98,9 @@ class ProductsController extends GetxController {
         
         _showSuccessMessage('${searchResponse.products.length} products loaded', showSnackbar: false);
       } else {
-         // Debug log
         _showErrorMessage(response.errorMessage ?? 'Failed to load products');
       }
     } catch (e) {
-       // Debug log
       _showErrorMessage('Error loading products: $e');
     } finally {
       isLoading.value = false;
@@ -128,14 +121,68 @@ class ProductsController extends GetxController {
   }
 
   void addProduct() {
+    _checkSubscriptionBeforeAddProduct();
+  }
+
+  Future<void> _checkSubscriptionBeforeAddProduct() async {
+    final hasSubscription = await _checkSellerSubscription();
+    if (!hasSubscription) {
+      _showSubscriptionRequiredDialog();
+      return;
+    }
+
+    // Proceed to add product if subscription is valid
     Get.toNamed('/seller-add-product')?.then((result) async {
-       // Debug log
       if (result != null) {
-        // If a product was created, refresh the list from page 1
-         // Debug log
         await refreshProducts();
       }
     });
+  }
+
+  Future<bool> _checkSellerSubscription() async {
+    try {
+      final sellerId = _authService.currentSeller?.sellerId;
+      if (sellerId == null) return false;
+
+      final response = await _sellerService.getSellerBySellerId(sellerId);
+      if (response.success && response.data != null) {
+        final seller = response.data!;
+        
+        // Check if seller is published and has active subscription
+        if (seller.ispublished == true && seller.settings?.isNotEmpty == true) {
+          final settings = seller.settings!.first;
+          final subscriptionPlan = settings.subscriptionPlan;
+          return subscriptionPlan != null && subscriptionPlan.isNotEmpty;
+        }
+      }
+      return false;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  void _showSubscriptionRequiredDialog() {
+    Get.dialog(
+      AlertDialog(
+        title: const Text('Subscription Required'),
+        content: const Text(
+          'You need an active subscription to add products. Please subscribe to continue.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Get.back();
+              Get.toNamed('/seller-publish');
+            },
+            child: const Text('Subscribe Now'),
+          ),
+        ],
+      ),
+    );
   }
 
   void editProduct(Product product) {
@@ -218,47 +265,6 @@ class ProductsController extends GetxController {
   void searchProducts(String query) {
     searchQuery.value = query;
     _updateFilteredProducts();
-  }
-
-  Future<void> _loadCategoryNamesForProducts() async {
-    try {
-      // Get all unique category IDs from products
-      final categoryIds = <int>{};
-      for (final product in products) {
-        if (product.productCategories != null) {
-          categoryIds.addAll(product.productCategories!.map((pc) => pc.catId));
-        }
-      }
-      
-      if (categoryIds.isEmpty) return;
-      
-      // Fetch all categories to get names
-      final response = await _categoryService.getCategories();
-      if (response.isSuccess && response.data != null) {
-        final categoryMap = <int, String>{};
-        for (final category in response.data!) {
-          categoryMap[category.catid!] = category.catname;
-        }
-        
-        // Update products with category names
-        for (int i = 0; i < products.length; i++) {
-          if (products[i].productCategories != null) {
-            final categoryNames = products[i].productCategories!
-                .map((pc) => categoryMap[pc.catId] ?? 'Category ${pc.catId}')
-                .toList();
-            
-            products[i] = products[i].copyWith(
-              categories: categoryNames,
-              categoryNames: categoryNames,
-            );
-          }
-        }
-        
-         // Debug log
-      }
-    } catch (e) {
-       // Debug log
-    }
   }
 
   void _updateFilteredProducts() {
