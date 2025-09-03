@@ -27,6 +27,7 @@ class EditProductController extends GetxController {
   // UI state
   final RxBool isLoading = false.obs;
   final RxBool hasChanges = false.obs;
+  final RxBool isFormValid = false.obs;
 
   @override
   void onInit() {
@@ -86,6 +87,7 @@ class EditProductController extends GetxController {
     selectedCategory.value = product.categories.isNotEmpty ? product.categories.first : '';
     productImages.addAll(product.images);
     isAvailable.value = product.isAvailable;
+    _updateFormValidation(); // Initialize form validation state
   }
 
   void _setupListeners() {
@@ -96,6 +98,12 @@ class EditProductController extends GetxController {
 
   void onFieldChanged() {
     hasChanges.value = _detectChanges();
+    _updateFormValidation();
+  }
+
+  void _updateFormValidation() {
+    isFormValid.value = nameController.text.trim().isNotEmpty &&
+                        selectedCategory.value.isNotEmpty;
   }
 
   bool _detectChanges() {
@@ -129,12 +137,14 @@ class EditProductController extends GetxController {
   void addImage(String imagePath) {
     productImages.add(imagePath);
     onFieldChanged();
+    update(); // Trigger GetBuilder rebuild
   }
 
   void removeImage(int index) {
     if (index >= 0 && index < productImages.length) {
       productImages.removeAt(index);
       onFieldChanged();
+      update(); // Trigger GetBuilder rebuild
     }
   }
 
@@ -144,9 +154,7 @@ class EditProductController extends GetxController {
   }
 
   bool get canSave {
-    return hasChanges.value && 
-           nameController.text.trim().isNotEmpty &&
-           selectedCategory.value.isNotEmpty;
+    return hasChanges.value && isFormValid.value;
   }
 
   void updateProduct() {

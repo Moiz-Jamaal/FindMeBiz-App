@@ -101,12 +101,14 @@ class EditProductView extends GetView<EditProductController> {
               ),
             ),
             const SizedBox(height: 16),
-            Obx(() => ImagePickerWidget(
-              images: controller.productImages,
-              onImageAdded: controller.addImage,
-              onImageRemoved: controller.removeImage,
-              maxImages: 5,
-            )),
+            GetBuilder<EditProductController>(
+              builder: (_) => ImagePickerWidget(
+                images: controller.productImages,
+                onImageAdded: controller.addImage,
+                onImageRemoved: controller.removeImage,
+                maxImages: 5,
+              ),
+            ),
           ],
         ),
       ),

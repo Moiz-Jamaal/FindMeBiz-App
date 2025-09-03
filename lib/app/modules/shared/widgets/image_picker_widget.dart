@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
 import '../../../core/theme/app_theme.dart';
 
 class ImagePickerWidget extends StatelessWidget {
@@ -126,26 +128,24 @@ class ImagePickerWidget extends StatelessWidget {
   }
 
   Widget _buildImageItem(int index) {
+    final imagePath = images[index];
+    
     return Container(
       width: 100,
       margin: const EdgeInsets.only(right: 8),
       child: Stack(
         children: [
-          // Image container (placeholder for now)
+          // Image container
           Container(
             width: double.infinity,
             height: double.infinity,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(8),
-              color: Colors.grey.shade200,
               border: Border.all(color: Colors.grey.shade300),
             ),
-            child: const Center(
-              child: Icon(
-                Icons.image,
-                size: 32,
-                color: AppTheme.textHint,
-              ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: _buildImageContent(imagePath),
             ),
           ),
           
@@ -178,6 +178,46 @@ class ImagePickerWidget extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildImageContent(String imagePath) {
+    // Check if it's a file path
+    if (imagePath.startsWith('/') || imagePath.contains('\\') || File(imagePath).existsSync()) {
+      return Image.file(
+        File(imagePath),
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => _buildPlaceholder(),
+      );
+    }
+    // Check if it's a URL
+    else if (imagePath.startsWith('http')) {
+      return Image.network(
+        imagePath,
+        fit: BoxFit.cover,
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return _buildPlaceholder();
+        },
+        errorBuilder: (context, error, stackTrace) => _buildPlaceholder(),
+      );
+    }
+    // Fallback to placeholder
+    else {
+      return _buildPlaceholder();
+    }
+  }
+
+  Widget _buildPlaceholder() {
+    return Container(
+      color: Colors.grey.shade200,
+      child: const Center(
+        child: Icon(
+          Icons.image,
+          size: 32,
+          color: AppTheme.textHint,
+        ),
       ),
     );
   }
@@ -264,18 +304,35 @@ class ImagePickerWidget extends StatelessWidget {
     );
   }
 
-  void _pickImage(String source) {
+  void _pickImage(String source) async {
     Get.back(); // Close bottom sheet
     
-    // Placeholder for actual image picking
-    // In a real app, this would use image_picker package
-    String mockImagePath = 'mock_image_${DateTime.now().millisecondsSinceEpoch}';
-    onImageAdded(mockImagePath);
+    final picker = ImagePicker();
+    XFile? pickedFile;
     
-    Get.snackbar(
-      'Image Added',
-      'Image from $source added successfully',
-      snackPosition: SnackPosition.BOTTOM,
-    );
+    try {
+      if (source == 'camera') {
+        pickedFile = await picker.pickImage(source: ImageSource.camera);
+      } else {
+        pickedFile = await picker.pickImage(source: ImageSource.gallery);
+      }
+      
+      if (pickedFile != null) {
+        onImageAdded(pickedFile.path);
+        Get.snackbar(
+          'Image Added',
+          'Image from $source added successfully',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      }
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        'Failed to pick image: $e',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    }
   }
 }
