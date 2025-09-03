@@ -249,27 +249,12 @@ class BuyerHomeView extends GetView<BuyerHomeController> {
         children: [
           Padding(
             padding: const EdgeInsets.all(AppConstants.defaultPadding),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Featured Sellers',
-                  style: Get.textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.textPrimary,
-                  ),
-                ),
-                TextButton(
-                  onPressed: () => Get.toNamed('/buyer-search', arguments: {
-                    'type': 'featured_sellers',
-                    'title': 'Featured Sellers',
-                  }),
-                  child: Text(
-                    'See all',
-                    style: TextStyle(color: AppTheme.buyerPrimary),
-                  ),
-                ),
-              ],
+            child: Text(
+              'Featured Sellers',
+              style: Get.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: AppTheme.textPrimary,
+              ),
             ),
           ),
           SizedBox(
@@ -376,27 +361,12 @@ class BuyerHomeView extends GetView<BuyerHomeController> {
           const SizedBox(height: 16),
           Padding(
             padding: const EdgeInsets.all(AppConstants.defaultPadding),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Featured Products',
-                  style: Get.textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.textPrimary,
-                  ),
-                ),
-                TextButton(
-                  onPressed: () => Get.toNamed('/buyer-search', arguments: {
-                    'type': 'featured_products',
-                    'title': 'Featured Products',
-                  }),
-                  child: Text(
-                    'See all',
-                    style: TextStyle(color: AppTheme.buyerPrimary),
-                  ),
-                ),
-              ],
+            child: Text(
+              'Featured Products',
+              style: Get.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: AppTheme.textPrimary,
+              ),
             ),
           ),
           SizedBox(
