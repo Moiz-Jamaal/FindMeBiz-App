@@ -200,29 +200,28 @@ class SellerDashboardController extends GetxController {
 
   Future<void> _loadSubscriptionDetails(int sellerId) async {
     try {
-      final settingsList = sellerProfile.value?.settings;
-      if (settingsList != null && settingsList.isNotEmpty) {
-        final settings = settingsList.first;
-        final subscriptionDetails = settings['SubscriptionDetails'];
-        if (subscriptionDetails != null) {
-          try {
-            final details = jsonDecode(subscriptionDetails);
-            currentSubscription.value = details;
-          } catch (e) {
-            // If JSON parsing fails, create a basic subscription object
-            currentSubscription.value = {
-              'planId': null,
-              'name': settings['SubscriptionPlan'] ?? 'Basic',
-              'amount': 250,
-              'currency': 'INR',
-              'startDate': null,
-              'endDate': null,
-            };
-          }
+      // Use the new subscription check endpoint
+      final response = await _sellerService.checkSubscription(sellerId);
+      if (response.success && response.data != null) {
+        final data = response.data!;
+        if (data['hasActiveSubscription'] == true) {
+          // User has a real paid subscription
+          currentSubscription.value = {
+            'planId': data['subscriptionPlan'],
+            'name': data['subscriptionPlan'] ?? 'Basic',
+            'hasActiveSubscription': true,
+            'endDate': data['endDate'],
+            'isExpired': data['isExpired'] ?? false,
+          };
+          return;
         }
       }
+      
+      // No active subscription - user only published (free)
+      currentSubscription.value = null;
     } catch (e) {
-      // Handle error gracefully
+      // No subscription data available
+      currentSubscription.value = null;
     }
   }
 
@@ -348,6 +347,10 @@ class SellerDashboardController extends GetxController {
   }
 
   // Subscription helper methods
+  bool get hasActiveSubscription {
+    return currentSubscription.value?['hasActiveSubscription'] == true;
+  }
+
   String get subscriptionPlanName {
     return currentSubscription.value?['name'] ?? 'Basic';
   }

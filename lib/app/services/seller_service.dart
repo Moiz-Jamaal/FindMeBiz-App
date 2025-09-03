@@ -198,21 +198,6 @@ class SellerService extends BaseApiService {
     return response;
   }
 
-  // Publish seller profile without subscription requirement
-  Future<ApiResponse<void>> publishSellerProfile({required int sellerId}) async {
-    final body = {
-      'ispublished': true,
-      'publishedat': DateTime.now().toIso8601String(),
-    };
-    
-    final response = await put<void>(
-      '/Seller/$sellerId',
-      body: body,
-    );
-    
-    return response;
-  }
-
   // Set seller subscription
   Future<ApiResponse<void>> setSellerSubscription({
     required int sellerId,
@@ -242,6 +227,58 @@ class SellerService extends BaseApiService {
     );
     
     return response;
+  }
+
+  // Publish seller profile
+  Future<ApiResponse<void>> publishSellerProfile({required int sellerId}) async {
+    final response = await put<void>(
+      '/PublishSeller/$sellerId',
+    );
+    return response;
+  }
+
+  // Razorpay payment methods
+  Future<ApiResponse<Map<String, dynamic>>> createRazorpayOrder({
+    required int sellerId,
+    required int subscriptionId,
+  }) async {
+    final response = await post<Map<String, dynamic>>(
+      '/CreateRazorpayOrder',
+      body: {
+        'sellerId': sellerId,
+        'subscriptionId': subscriptionId,
+      },
+      fromJson: (json) => json,
+    );
+    return response;
+  }
+
+  Future<ApiResponse<Map<String, dynamic>>> verifyRazorpayPayment({
+    required int sellerId,
+    required int subscriptionId,
+    required String paymentId,
+    required String orderId,
+    required String signature,
+  }) async {
+    final response = await post<Map<String, dynamic>>(
+      '/VerifyRazorpayPayment',
+      body: {
+        'sellerId': sellerId,
+        'subscriptionId': subscriptionId,
+        'paymentId': paymentId,
+        'orderId': orderId,
+        'signature': signature,
+      },
+      fromJson: (json) => json,
+    );
+    return response;
+  }
+
+  Future<ApiResponse<Map<String, dynamic>>> checkSubscription(int sellerId) async {
+    return await get<Map<String, dynamic>>(
+      '/CheckSubscription/$sellerId',
+      fromJson: (json) => json,
+    );
   }
 
   // Review Management

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'dart:convert';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/constants/app_constants.dart';
+import '../../../../data/models/api/index.dart';
 import '../controllers/profile_publish_controller.dart';
 
 class ProfilePublishView extends GetView<ProfilePublishController> {
@@ -380,10 +382,9 @@ class ProfilePublishView extends GetView<ProfilePublishController> {
     );
   }
   Widget _buildSuccessStep() {
-    return Padding(
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(AppConstants.defaultPadding),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           // Success Animation/Icon
           Container(
@@ -414,7 +415,7 @@ class ProfilePublishView extends GetView<ProfilePublishController> {
           const SizedBox(height: 16),
           
           Text(
-            'Your profile is now live and visible to all buyers at the Istefada event. They can find you, view your products, and contact you directly.',
+            'Your profile is now live and visible to buyers. To add products, subscribe to a plan below.',
             style: Get.textTheme.bodyLarge?.copyWith(
               color: AppTheme.textSecondary,
             ),
@@ -423,79 +424,287 @@ class ProfilePublishView extends GetView<ProfilePublishController> {
           
           const SizedBox(height: 32),
           
-          // Success Stats
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                children: [
-                  Text(
-                    'What happens next?',
-                    style: Get.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  
-                  _buildSuccessItem(
-                    Icons.visibility,
-                    'Visible to Buyers',
-                    'Your profile appears in search results and category listings',
-                  ),
-                  _buildSuccessItem(
-                    Icons.location_on,
-                    'On the Map',
-                    'Your stall location is marked on the event map',
-                  ),
-                  _buildSuccessItem(
-                    Icons.chat,
-                    'Direct Contact',
-                    'Buyers can contact you via WhatsApp and phone',
-                  ),
-                  _buildSuccessItem(
-                    Icons.analytics,
-                    'Track Performance',
-                    'Monitor views, contacts, and engagement in your dashboard',
-                  ),
-                ],
-              ),
-            ),
-          ),
-          
-          const SizedBox(height: 32),
-          
-          // Action Buttons
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: controller.previewAsbuyer,
-                  icon: const Icon(Icons.visibility, size: 18),
-                  label: const Text('View as Buyer'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppTheme.sellerPrimary,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
+          // Subscription Plans
+          Obx(() {
+            if (controller.availableSubscriptions.isEmpty) {
+              return Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      const CircularProgressIndicator(),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Loading subscription plans...',
+                        style: Get.textTheme.bodyMedium?.copyWith(
+                          color: AppTheme.textSecondary,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: controller.goToDashboard,
-                  icon: const Icon(Icons.dashboard, size: 18),
-                  label: const Text('Go to Dashboard'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.sellerPrimary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
+              );
+            }
+            
+            // Check if any subscription has invalid data
+            final hasValidSubscription = controller.availableSubscriptions.any((sub) => 
+              _getPlanPrice(sub) != 'Price unavailable'
+            );
+            
+            if (!hasValidSubscription) {
+              return Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      Icon(
+                        Icons.error_outline,
+                        color: Colors.red,
+                        size: 48,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Unable to load subscription plans',
+                        style: Get.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: Colors.red,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Please check your internet connection and try again later.',
+                        style: Get.textTheme.bodyMedium?.copyWith(
+                          color: AppTheme.textSecondary,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 16),
+                      OutlinedButton.icon(
+                        onPressed: () => controller.loadSubscriptions(),
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('Try Again'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppTheme.sellerPrimary,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ),
-            ],
-          ),
+              );
+            }
+            
+            return _buildSubscriptionPlans();
+          }),
+          
+          const SizedBox(height: 24),
+          
+          // Payment Methods
+          _buildPaymentMethods(),
+          
+          const SizedBox(height: 80), // Space for bottom navigation
         ],
       ),
     );
+  }
+
+  Widget _buildSubscriptionPlans() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Choose Your Plan',
+              style: Get.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 16),
+            
+            ...controller.availableSubscriptions.map((subscription) {
+              final isSelected = controller.selectedSubscription.value?.subid == subscription.subid;
+              final config = controller.subscriptionConfig;
+              final amount = (config!['amount'] as num?)?.toDouble() ?? 250.0;
+              final currency = config['currency'] as String? ?? 'INR';
+              
+              return Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                child: InkWell(
+                  onTap: () => controller.selectSubscription(subscription),
+                  borderRadius: BorderRadius.circular(8),
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: isSelected ? AppTheme.sellerPrimary : Colors.grey.shade300,
+                        width: isSelected ? 2 : 1,
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                      color: isSelected ? AppTheme.sellerPrimary.withValues(alpha: 0.1) : null,
+                    ),
+                    child: Row(
+                      children: [
+                        Radio<bool>(
+                          value: true,
+                          groupValue: isSelected,
+                          onChanged: (_) => controller.selectSubscription(subscription),
+                          activeColor: AppTheme.sellerPrimary,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                subscription.subname?.toUpperCase() ?? 'PLAN',
+                                style: Get.textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Add unlimited products',
+                                style: Get.textTheme.bodyMedium?.copyWith(
+                                  color: AppTheme.textSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Text(
+                          _getPlanPrice(subscription),
+                          style: Get.textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.sellerPrimary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPaymentMethods() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Payment Method',
+              style: Get.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 16),
+            
+            ...controller.paymentMethods.map((method) {
+              final isSelected = controller.selectedPaymentMethod.value == method['id'];
+              return Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                child: InkWell(
+                  onTap: () => controller.selectPaymentMethod(method['id']),
+                  borderRadius: BorderRadius.circular(8),
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: isSelected ? AppTheme.sellerPrimary : Colors.grey.shade300,
+                        width: isSelected ? 2 : 1,
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                      color: isSelected ? AppTheme.sellerPrimary.withValues(alpha: 0.1) : null,
+                    ),
+                    child: Row(
+                      children: [
+                        Radio<bool>(
+                          value: true,
+                          groupValue: isSelected,
+                          onChanged: (_) => controller.selectPaymentMethod(method['id']),
+                          activeColor: AppTheme.sellerPrimary,
+                        ),
+                        const SizedBox(width: 12),
+                        Icon(
+                          method['icon'],
+                          color: AppTheme.sellerPrimary,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Text(
+                                    method['name'],
+                                    style: Get.textTheme.titleSmall?.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  if (method['recommended'] == true) ...[
+                                    const SizedBox(width: 8),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: AppTheme.sellerPrimary.withValues(alpha: 0.2),
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      child: Text(
+                                        'Recommended',
+                                        style: Get.textTheme.bodySmall?.copyWith(
+                                          color: AppTheme.sellerPrimary,
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 10,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                              Text(
+                                method['description'],
+                                style: Get.textTheme.bodySmall?.copyWith(
+                                  color: AppTheme.textSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _getPlanPrice(SubscriptionMaster subscription) {
+    try {
+      if (subscription.subconfig != null) {
+        final config = jsonDecode(subscription.subconfig!);
+        final amount = config['amount'];
+        final currency = config['currency'];
+        
+        if (amount != null && currency != null) {
+          return '$currency $amount';
+        }
+      }
+    } catch (e) {
+      // JSON parsing error - don't show fallback
+    }
+    return 'Price unavailable'; // Show error instead of fallback
   }
 
   Widget _buildValidationErrorsCard() {
@@ -641,29 +850,62 @@ class ProfilePublishView extends GetView<ProfilePublishController> {
               ),
             );
           } else {
-            // Success step - show navigation buttons
+            // Success step - show payment and dashboard buttons
             return Row(
               children: [
                 Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: controller.previewAsbuyer,
-                    icon: const Icon(Icons.visibility),
-                    label: const Text('View as Buyer'),
+                  child: OutlinedButton(
+                    onPressed: controller.goToDashboard,
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppTheme.sellerPrimary,
+                      side: BorderSide(color: AppTheme.sellerPrimary),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
+                    child: const Text('Skip for Now'),
                   ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: controller.goToDashboard,
-                    icon: const Icon(Icons.dashboard),
-                    label: const Text('Dashboard'),
+                  flex: 2,
+                  child: ElevatedButton(
+                    onPressed: controller.selectedSubscription.value != null && 
+                               controller.subscriptionAmount != null &&
+                               !controller.isProcessingPayment.value
+                        ? controller.processPayment
+                        : controller.selectedSubscription.value != null && 
+                          controller.subscriptionAmount == null
+                            ? () => Get.snackbar(
+                                'Payment Error', 
+                                'Unable to load subscription details. Please check your internet connection and try again.',
+                                backgroundColor: Colors.red.withValues(alpha: 0.1),
+                                colorText: Colors.red,
+                              )
+                            : null,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppTheme.sellerPrimary,
                       foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
+                    child: controller.isProcessingPayment.value
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          )
+                        : Text(
+                            controller.selectedSubscription.value != null
+                                ? (controller.subscriptionAmount != null && controller.subscriptionCurrency != null
+                                    ? 'Subscribe ${controller.subscriptionCurrency} ${controller.subscriptionAmount!.toStringAsFixed(0)}'
+                                    : 'Payment Error - Try Again')
+                                : 'Select a Plan',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                   ),
                 ),
               ],
