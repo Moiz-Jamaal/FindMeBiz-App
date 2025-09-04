@@ -250,7 +250,7 @@ class SellerDashboardController extends GetxController {
   }
 
   void addProduct() {
-    _checkSubscriptionBeforeAddProduct();
+  _checkSubscriptionBeforeAddProduct();
   }
 
   Future<void> _checkSubscriptionBeforeAddProduct() async {
@@ -260,7 +260,11 @@ class SellerDashboardController extends GetxController {
       return;
     }
 
-    Get.toNamed('/seller-add-product');
+    // Navigate and refresh when a product was actually created
+    final result = await Get.toNamed('/seller-add-product');
+    if (result != null) {
+      refreshData();
+    }
   }
 
   Future<bool> _checkSellerSubscription() async {
