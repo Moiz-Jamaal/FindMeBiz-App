@@ -25,7 +25,7 @@ class BuyerHomeView extends GetView<BuyerHomeController> {
   // Register the route for the settings/info page (if not already present)
   // Add this to your GetMaterialApp routes/pages list, typically in your main.dart or route config:
   // GetPage(
-  //   name: '/app-info-settings',
+  //   name: '/app-info-seings',
   //   page: () => const AppInfoSettingsView(),
   // ),
 

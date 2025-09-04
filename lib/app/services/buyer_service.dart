@@ -13,6 +13,10 @@ class BuyerService extends BaseApiService {
     String? city,
     String? area,
     int? categoryId,
+    String? address,
+    double? userLat,
+    double? userLng,
+    double? radiusKm,
   }) async {
     final queryParams = <String, String>{};
     
@@ -27,6 +31,18 @@ class BuyerService extends BaseApiService {
     }
     if (categoryId != null) {
       queryParams['categoryId'] = categoryId.toString();
+    }
+    if (address != null && address.isNotEmpty) {
+      queryParams['address'] = address;
+    }
+    if (userLat != null) {
+      queryParams['userLat'] = userLat.toString();
+    }
+    if (userLng != null) {
+      queryParams['userLng'] = userLng.toString();
+    }
+    if (radiusKm != null) {
+      queryParams['radiusKm'] = radiusKm.toString();
     }
     
     final response = await getList<SellerDetails>(

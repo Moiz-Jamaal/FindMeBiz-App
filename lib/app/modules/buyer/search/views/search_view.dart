@@ -20,7 +20,7 @@ class SearchView extends GetView<BuyerSearchController> {
       appBar: _buildSearchAppBar(),
       body: Column(
         children: [
-          _buildSearchFilters(),
+          _buildLocationToggle(),
           Expanded(child: _buildSearchContent()),
         ],
       ),
@@ -59,113 +59,66 @@ class SearchView extends GetView<BuyerSearchController> {
       actions: [
         Obx(() => IconButton(
           icon: Icon(
-            controller.showFilters.value ? Icons.filter_list : Icons.tune,
-            color: controller.showFilters.value 
+            controller.useLocation.value ? Icons.location_on : Icons.location_off,
+            color: controller.useLocation.value 
                 ? AppTheme.buyerPrimary 
                 : AppTheme.textSecondary,
           ),
-          onPressed: controller.toggleFilters,
+          onPressed: controller.toggleLocationSearch,
+          tooltip: controller.useLocation.value ? 'Disable location' : 'Enable nearby search',
         )),
       ],
     );
   }
 
-  Widget _buildSearchFilters() {
-    return Obx(() => AnimatedContainer(
-      duration: AppConstants.shortAnimation,
-      height: controller.showFilters.value ? 120 : 0,
-      child: controller.showFilters.value ? _buildFiltersContent() : null,
-    ));
-  }
-
-  Widget _buildFiltersContent() {
-    return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.all(AppConstants.defaultPadding),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Search Type Filter
-          Row(
-            children: [
-              Text(
-                'Search Type:',
-                style: Get.textTheme.labelMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
+  Widget _buildLocationToggle() {
+    return Obx(() {
+      if (!controller.useLocation.value) return const SizedBox.shrink();
+      
+      return Container(
+        margin: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: AppTheme.buyerPrimary.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: AppTheme.buyerPrimary.withValues(alpha: 0.3)),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.location_on, color: AppTheme.buyerPrimary, size: 20),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                controller.hasValidLocation 
+                    ? 'Showing nearby results within ${controller.radiusKm.value.toInt()} km'
+                    : 'Getting your location...',
+                style: Get.textTheme.bodyMedium?.copyWith(
+                  color: AppTheme.buyerPrimary,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Obx(() => Wrap(
-                  spacing: 8,
-                  children: controller.searchTypes.map((type) {
-                    final isSelected = controller.searchType.value == type;
-                    return FilterChip(
-                      label: Text(type),
-                      selected: isSelected,
-                      onSelected: (_) => controller.updateSearchType(type),
-                      selectedColor: AppTheme.buyerPrimary.withValues(alpha: 0.2),
-                      checkmarkColor: AppTheme.buyerPrimary,
-                    );
-                  }).toList(),
-                )),
+            ),
+            if (!controller.hasValidLocation)
+              SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(AppTheme.buyerPrimary),
+                ),
               ),
-            ],
-          ),
-          
-          const SizedBox(height: 12),
-          
-          // Sort and Location Row
-          Row(
-            children: [
-              // Sort By
-              Expanded(
-                child: Obx(() => DropdownButtonFormField<String>(
-                  value: controller.sortBy.value,
-                  decoration: const InputDecoration(
-                    labelText: 'Sort By',
-                    isDense: true,
-                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  ),
-                  items: controller.sortOptions.map((sort) {
-                    return DropdownMenuItem(value: sort, child: Text(sort));
-                  }).toList(),
-                  onChanged: (value) {
-                    if (value != null) controller.updateSortBy(value);
-                  },
-                )),
-              ),
-              
-              const SizedBox(width: 16),
-              
-              // Location Filter
-              Expanded(
-                child: Obx(() => DropdownButtonFormField<String>(
-                  value: controller.selectedCity.value.isEmpty ? null : controller.selectedCity.value,
-                  decoration: const InputDecoration(
-                    labelText: 'City',
-                    isDense: true,
-                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  ),
-                  items: controller.availableCities.map((city) {
-                    return DropdownMenuItem(value: city, child: Text(city));
-                  }).toList(),
-                  onChanged: (value) {
-                    if (value != null) controller.updateCity(value);
-                  },
-                )),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
+          ],
+        ),
+      );
+    });
   }
+
+
   Widget _buildSearchContent() {
     return Obx(() {
       if (controller.isSearching.value) {
         return _buildLoadingState();
-      } else if (!controller.hasSearched.value) {
+      } else if (!controller.hasSearched.value && !controller.useLocation.value) {
         return _buildInitialState();
       } else if (controller.totalResultsCount.value == 0) {
         return _buildEmptyState();
