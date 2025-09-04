@@ -26,8 +26,7 @@ class UrlHandlerService extends GetxService {
         await _openInBrowser(url);
       }
     } catch (e) {
-      print('Failed to handle campaign URL: $e');
-    }
+}
   }
 
   /// Open URL in external browser (Chrome)

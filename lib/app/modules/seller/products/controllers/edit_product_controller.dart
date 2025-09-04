@@ -3,9 +3,12 @@ import 'package:get/get.dart';
 import '../../../../data/models/product.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../services/category_service.dart';
+import '../../../../../services/product_service.dart';
+import '../../dashboard/controllers/seller_dashboard_controller.dart';
 
 class EditProductController extends GetxController {
   final CategoryService _categoryService = Get.find<CategoryService>();
+  final ProductService _productService = Get.find<ProductService>();
   
   // Form controllers
   final nameController = TextEditingController();
@@ -56,6 +59,20 @@ class EditProductController extends GetxController {
             name: cat.catname,
           )).toList()
         );
+        
+        // Set selected category after categories are loaded
+        if (availableCategories.isNotEmpty && originalProduct != null) {
+          final matchingCategory = availableCategories.firstWhereOrNull(
+            (cat) => originalProduct.categories.contains(cat.name),
+          );
+          if (matchingCategory != null) {
+            selectedCategory.value = matchingCategory.name;
+          } else {
+            // Select first available category as fallback
+            selectedCategory.value = availableCategories.first.name;
+          }
+          _updateFormValidation();
+        }
       }
     } catch (e) {
       Get.snackbar(
@@ -84,10 +101,20 @@ class EditProductController extends GetxController {
     nameController.text = product.name;
     descriptionController.text = product.description ?? '';
     priceController.text = product.price?.toString() ?? '';
-    selectedCategory.value = product.categories.isNotEmpty ? product.categories.first : '';
+    
+    // Wait for categories to load before setting selection
+    if (availableCategories.isNotEmpty && product.categories.isNotEmpty) {
+      final matchingCategory = availableCategories.firstWhereOrNull(
+        (cat) => cat.name == product.categories.first,
+      );
+      selectedCategory.value = matchingCategory?.name ?? '';
+    } else {
+      selectedCategory.value = '';
+    }
+    
     productImages.addAll(product.images);
     isAvailable.value = product.isAvailable;
-    _updateFormValidation(); // Initialize form validation state
+    _updateFormValidation();
   }
 
   void _setupListeners() {
@@ -157,45 +184,99 @@ class EditProductController extends GetxController {
     return hasChanges.value && isFormValid.value;
   }
 
-  void updateProduct() {
+  Future<void> updateProduct() async {
     if (!formKey.currentState!.validate()) {
       return;
     }
 
     isLoading.value = true;
 
-    // Create updated product
-    final updatedProduct = Product(
-      id: originalProduct.id,
-      sellerId: originalProduct.sellerId,
-      name: nameController.text.trim(),
-      description: descriptionController.text.trim(),
-      price: priceController.text.trim().isNotEmpty 
-          ? double.tryParse(priceController.text.trim())
-          : null,
-      categories: [selectedCategory.value],
-      images: List.from(productImages),
-      isAvailable: isAvailable.value,
-      createdAt: originalProduct.createdAt,
-      updatedAt: DateTime.now(),
-    );
-
-    // Simulate API call
-    Future.delayed(const Duration(seconds: 2), () {
-      isLoading.value = false;
-      hasChanges.value = false;
-
-      Get.snackbar(
-        'Success',
-        'Product updated successfully!',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: AppTheme.successColor,
-        colorText: Colors.white,
+    try {
+      // Get selected category ID
+      final selectedCategoryOption = availableCategories.firstWhereOrNull(
+        (cat) => cat.name == selectedCategory.value,
       );
 
-      // Return updated product to previous screen
-      Get.back(result: updatedProduct);
-    });
+      if (selectedCategoryOption == null) {
+        Get.snackbar(
+          'Error',
+          'Invalid category selected',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+        isLoading.value = false;
+        return;
+      }
+
+      // Create update request
+      final request = UpdateProductRequest(
+        productId: int.parse(originalProduct.id),
+        productName: nameController.text.trim(),
+        description: descriptionController.text.trim().isEmpty ? null : descriptionController.text.trim(),
+        price: priceController.text.trim().isNotEmpty 
+            ? double.tryParse(priceController.text.trim())
+            : null,
+        priceOnInquiry: priceController.text.trim().isEmpty,
+        isAvailable: isAvailable.value,
+        categoryIds: [int.parse(selectedCategoryOption.id)],
+        primaryCategoryId: int.parse(selectedCategoryOption.id),
+        customAttributes: null,
+      );
+
+      // Call actual API
+      final response = await _productService.updateProduct(request);
+
+      if (response.isSuccess && response.data != null) {
+        hasChanges.value = false;
+        
+        Get.snackbar(
+          'Success',
+          'Product updated successfully!',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: AppTheme.successColor,
+          colorText: Colors.white,
+        );
+
+        // Close edit view and refresh seller dashboard
+        Get.back(); // Close edit view
+        Get.back(); // Go back to seller dashboard
+        
+        // Refresh seller dashboard
+        try {
+          Get.find<SellerDashboardController>().refreshData();
+        } catch (e) {
+          // Dashboard controller not found, that's okay
+        }
+      } else {
+        // Handle API errors
+        String errorMessage = response.message ?? 'Update failed';
+        
+        // Check for specific constraint violations
+        if (errorMessage.toLowerCase().contains('duplicate') || 
+            errorMessage.toLowerCase().contains('unique')) {
+          errorMessage = 'Product with this name already exists or category conflict occurred';
+        }
+
+        Get.snackbar(
+          'Error',
+          errorMessage,
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+      }
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        'Failed to update product: $e',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    } finally {
+      isLoading.value = false;
+    }
   }
 
   void showDeleteDialog() {
@@ -223,24 +304,43 @@ class EditProductController extends GetxController {
     );
   }
 
-  void _deleteProduct() {
+  Future<void> _deleteProduct() async {
     isLoading.value = true;
 
-    // Simulate API call
-    Future.delayed(const Duration(seconds: 1), () {
-      isLoading.value = false;
+    try {
+      final response = await _productService.deleteProduct(int.parse(originalProduct.id));
 
+      if (response.isSuccess) {
+        Get.snackbar(
+          'Success',
+          'Product deleted successfully',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: AppTheme.successColor,
+          colorText: Colors.white,
+        );
+
+        // Return delete result to previous screen
+        Get.back(result: {'deleted': true, 'product': originalProduct});
+      } else {
+        Get.snackbar(
+          'Error',
+          response.message ?? 'Failed to delete product',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+      }
+    } catch (e) {
       Get.snackbar(
-        'Success',
-        'Product deleted successfully',
+        'Error',
+        'Failed to delete product: $e',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: AppTheme.successColor,
+        backgroundColor: Colors.red,
         colorText: Colors.white,
       );
-
-      // Return delete result to previous screen
-      Get.back(result: {'deleted': true, 'product': originalProduct});
-    });
+    } finally {
+      isLoading.value = false;
+    }
   }
 
   void showDiscardDialog() {

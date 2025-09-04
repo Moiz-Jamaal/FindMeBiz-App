@@ -75,20 +75,13 @@ class BuyerHomeController extends GetxController {
       ];
 
       final results = await Future.wait(futures);
-
-      print('Loading featured sellers...');
-      final sellers = results[0];
-      print('Featured sellers loaded: ${sellers.length}');
-      featuredSellers.assignAll(sellers);
-
-      print('Loading featured products...');
-      final products = results[1];
-      print('Featured products loaded: ${products.length}');
-      featuredProducts.assignAll(products);
+final sellers = results[0];
+featuredSellers.assignAll(sellers);
+final products = results[1];
+featuredProducts.assignAll(products);
 
     } catch (e) {
-      print('Error loading featured content: $e');
-      // Silent fail - UI will show empty state
+// Silent fail - UI will show empty state
     }
   }
 

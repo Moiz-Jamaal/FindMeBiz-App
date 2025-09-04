@@ -291,31 +291,22 @@ class BuyerProductViewController extends GetxController {
         pageSize: 10,
       ).then((response) {
         if (response.isSuccess && response.data != null) {
-          print('=== RELATED PRODUCTS DEBUG ===');
-          print('Related products count: ${response.data!.products.length}');
+print('Related products count: ${response.data!.products.length}');
           if (response.data!.products.isNotEmpty) {
             final firstProduct = response.data!.products.first;
-            print('First related product: ${firstProduct.name}');
-            print('Price: ${firstProduct.price}');
-            print('Images count: ${firstProduct.images.length}');
-            print('Primary image URL: ${firstProduct.primaryImageUrl}');
+print('Price: ${firstProduct.price}');
+print('Primary image URL: ${firstProduct.primaryImageUrl}');
           }
-          print('=== END RELATED DEBUG ===');
-          
-          relatedProducts.clear();
+relatedProducts.clear();
           final filtered = response.data!.products.where((p) => p.id != product.value!.id).toList();
           relatedProducts.addAll(filtered);
         } else {
-          print('=== RELATED PRODUCTS ERROR ===');
-          print('Error: ${response.errorMessage}');
-          print('=== END RELATED ERROR ===');
-          relatedProducts.clear();
+print('Error: ${response.errorMessage}');
+relatedProducts.clear();
         }
       }).catchError((e) {
-        print('=== RELATED PRODUCTS EXCEPTION ===');
-        print('Exception: $e');
-        print('=== END RELATED EXCEPTION ===');
-        relatedProducts.clear();
+print('Exception: $e');
+relatedProducts.clear();
       });
     } else {
       relatedProducts.clear();

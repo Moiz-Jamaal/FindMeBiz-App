@@ -215,44 +215,30 @@ class SellerProfileViewController extends GetxController {
       pageSize: 50, // Get more products for seller profile
     ).then((response) {
       if (response.isSuccess && response.data != null) {
-        print('=== PRODUCTS & MEDIA DEBUG ===');
-        print('Total products received: ${response.data!.products.length}');
+print('Total products received: ${response.data!.products.length}');
         
         for (int i = 0; i < response.data!.products.length; i++) {
           final product = response.data!.products[i];
-          print('Product $i: ${product.name} (ID: ${product.id})');
-          print('  - Media count: ${product.media?.length ?? 0}');
-          print('  - Images count: ${product.images.length}');
-          if (product.media?.isNotEmpty == true) {
-            print('  - First media URL: ${product.media!.first.mediaUrl}');
-          }
-          print('  - Primary image URL: ${product.primaryImageUrl}');
-          print('  - Categories: ${product.categories}');
+print('  - Media count: ${product.media?.length ?? 0}');
+if (product.media?.isNotEmpty == true) {
+}
+print('  - Categories: ${product.categories}');
         }
         
         products.clear();
         products.addAll(response.data!.products);
         _extractProductCategories();
-        
-        print('=== AFTER ADDING TO PRODUCTS LIST ===');
-        print('Total products in controller: ${products.length}');
+print('Total products in controller: ${products.length}');
         for (int i = 0; i < products.length; i++) {
           final product = products[i];
-          print('Controller Product $i: ${product.name} (ID: ${product.id})');
-          print('  - Media count: ${product.media?.length ?? 0}');
-          print('  - Primary image URL: ${product.primaryImageUrl}');
-        }
-        
-        print('=== FILTERED PRODUCTS ===');
-        print('Filtered products count: ${filteredProducts.length}');
+print('  - Media count: ${product.media?.length ?? 0}');
+}
+print('Filtered products count: ${filteredProducts.length}');
         for (int i = 0; i < filteredProducts.length; i++) {
           final product = filteredProducts[i];
-          print('Filtered Product $i: ${product.name} (ID: ${product.id})');
-          print('  - Media count: ${product.media?.length ?? 0}');
-          print('  - Primary image URL: ${product.primaryImageUrl}');
-        }
-        print('=== END DEBUG ===');
-      } else {
+print('  - Media count: ${product.media?.length ?? 0}');
+}
+} else {
         // Clear products if API call fails - no fallback to mock data
         products.clear();
         _extractProductCategories();

@@ -44,20 +44,14 @@ class Product {
 
   // Get primary image URL
   String get primaryImageUrl {
-    print('=== PRIMARY IMAGE URL DEBUG ===');
-    print('Product ID: $id, Name: $name');
-    print('Media null check: ${media == null}');
-    print('Media isEmpty: ${media?.isEmpty ?? "null"}');
-    print('Media length: ${media?.length ?? "null"}');
-    if (media?.isNotEmpty == true) {
-      print('Media items:');
-      for (int i = 0; i < media!.length; i++) {
+print('Product ID: $id, Name: $name');
+print('Media isEmpty: ${media?.isEmpty ?? "null"}');
+if (media?.isNotEmpty == true) {
+for (int i = 0; i < media!.length; i++) {
         final m = media![i];
-        print('  Media $i: ${m.mediaType}, Primary: ${m.isPrimary}, URL: ${m.mediaUrl}');
-      }
+}
     }
-    print('Images length: ${images.length}');
-    print('Images: $images');
+print('Images: $images');
     
     if (media?.isNotEmpty == true) {
       final primaryMedia = media!.firstWhere(
@@ -67,17 +61,14 @@ class Product {
           orElse: () => media!.first,
         ),
       );
-      print('Selected primary media URL: ${primaryMedia.mediaUrl}');
-      print('=== END PRIMARY IMAGE DEBUG ===');
+print('=== END PRIMARY IMAGE DEBUG ===');
       return primaryMedia.mediaUrl;
     }
     if (images.isNotEmpty) {
-      print('Using images[0]: ${images.first}');
-      print('=== END PRIMARY IMAGE DEBUG ===');
+print('=== END PRIMARY IMAGE DEBUG ===');
       return images.first;
     }
-    print('Using placeholder image');
-    print('=== END PRIMARY IMAGE DEBUG ===');
+print('=== END PRIMARY IMAGE DEBUG ===');
     return 'https://via.placeholder.com/300x300/E0E0E0/FFFFFF?text=No+Image';
   }
 
@@ -127,30 +118,20 @@ class Product {
     final mediaData = json['media'] ?? json['Media'];
     List<ProductMedia>? media;
     List<String> images = [];
-    
-    print('=== PRODUCT MEDIA PARSING ===');
-    print('Product ID in JSON: ${json['productId'] ?? json['ProductId'] ?? json['id']}');
-    print('Media raw data: $mediaData');
-    print('Media data type: ${mediaData?.runtimeType}');
-    print('Media is List: ${mediaData is List}');
-    print('Media length: ${mediaData?.length ?? "null"}');
+print('Product ID in JSON: ${json['productId'] ?? json['ProductId'] ?? json['id']}');
+print('Media data type: ${mediaData?.runtimeType}');
+print('Media length: ${mediaData?.length ?? "null"}');
     
     if (mediaData is List) {
-      print('Parsing ${mediaData.length} media items...');
-      media = mediaData.map((item) {
-        print('Media item: $item');
-        return ProductMedia.fromJson(item);
+media = mediaData.map((item) {
+return ProductMedia.fromJson(item);
       }).toList();
-      print('Parsed media count: ${media.length}');
-      images = media
+images = media
           .where((m) => m.mediaType == 'image' && (m.mediaUrl).toString().isNotEmpty)
           .map((m) => m.mediaUrl.trim())
           .toList();
-      print('Image URLs: $images');
-    }
-    print('=== END MEDIA PARSING ===');
-
-    // Parse category names with better handling of different formats
+}
+// Parse category names with better handling of different formats
     if (json['categoryNames'] != null && json['categoryNames'] is List && (json['categoryNames'] as List).isNotEmpty) {
       categories = List<String>.from(json['categoryNames']);
     }

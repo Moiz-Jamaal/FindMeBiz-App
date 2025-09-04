@@ -55,22 +55,16 @@ class ProductService extends BaseApiService {
       '/Products',
       queryParams: queryParams,
       fromJson: (json) {
-        print('=== RAW API RESPONSE ===');
-        print('Response keys: ${json.keys.toList()}');
+print('Response keys: ${json.keys.toList()}');
         if (json['Products'] != null) {
           final productsList = json['Products'] as List;
-          print('Products count: ${productsList.length}');
-          for (int i = 0; i < productsList.length; i++) {
+for (int i = 0; i < productsList.length; i++) {
             final product = productsList[i];
-            print('Product $i ID: ${product['ProductId'] ?? product['Id']} Name: ${product['ProductName'] ?? product['Name']}');
-            print('  - Media in JSON: ${product['Media']}');
-            print('  - Media type: ${product['Media']?.runtimeType}');
-            print('  - Media length: ${product['Media']?.length ?? 'null'}');
+print('  - Media in JSON: ${product['Media']}');
+print('  - Media length: ${product['Media']?.length ?? 'null'}');
           }
         }
-        print('=== END RAW RESPONSE ===');
-        
-        return ProductSearchResponse.fromJson(json);
+return ProductSearchResponse.fromJson(json);
       },
     );
   }

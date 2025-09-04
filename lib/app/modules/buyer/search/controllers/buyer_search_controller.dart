@@ -175,8 +175,7 @@ class BuyerSearchController extends GetxController {
         colorText: Colors.white,
       );
     } catch (e) {
-      print('Location error: $e');
-      Get.snackbar(
+Get.snackbar(
         'Location Error',
         'Could not get location: ${e.toString()}',
         snackPosition: SnackPosition.BOTTOM,
@@ -413,8 +412,7 @@ class BuyerSearchController extends GetxController {
         }
       }
     } catch (e) {
-      print('Error searching sellers: $e');
-    }
+}
   }
 
   Future<void> _searchProducts(String query) async {

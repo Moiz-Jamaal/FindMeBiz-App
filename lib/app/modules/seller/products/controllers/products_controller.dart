@@ -83,19 +83,13 @@ class ProductsController extends GetxController {
       );
 
       if (response.isSuccess && response.data != null) {
-        print('=== SELLER PRODUCTS CONTROLLER DEBUG ===');
-        print('Seller products count: ${response.data!.products.length}');
+print('Seller products count: ${response.data!.products.length}');
         if (response.data!.products.isNotEmpty) {
           final firstProduct = response.data!.products.first;
-          print('First seller product: ${firstProduct.name}');
-          print('Price: ${firstProduct.price}');
-          print('Formatted price: ${firstProduct.formattedPrice}');
-          print('Images count: ${firstProduct.images.length}');
-          print('Primary image URL: ${firstProduct.primaryImageUrl}');
-        }
-        print('=== END SELLER PRODUCTS DEBUG ===');
-        
-        final searchResponse = response.data!;
+print('Price: ${firstProduct.price}');
+print('Images count: ${firstProduct.images.length}');
+}
+final searchResponse = response.data!;
         
         if (refresh) {
           products.assignAll(searchResponse.products);

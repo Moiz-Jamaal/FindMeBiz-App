@@ -263,11 +263,8 @@ class ProductCard extends StatelessWidget {
   // This helps diagnose why images may not be rendering
   // (e.g., empty URL, placeholder logic, or network load errors)
   // ignore: avoid_print
-  print('[ProductCard] Building image for "${product.name}" (ID: ${product.id})');
-  // ignore: avoid_print
-  print('[ProductCard] imageUrl: ' + imageUrl);
-    
-    return ClipRRect(
+// ignore: avoid_print
+return ClipRRect(
       borderRadius: BorderRadius.circular(
         isGridView ? AppConstants.defaultRadius : 8,
       ),
@@ -290,12 +287,9 @@ class ProductCard extends StatelessWidget {
               },
               errorBuilder: (context, error, stackTrace) {
         // ignore: avoid_print
-        print('[ProductCard] Image load error for "${product.name}"');
-        // ignore: avoid_print
-        print('[ProductCard] URL: ' + imageUrl);
-        // ignore: avoid_print
-        print('[ProductCard] Error: ' + error.toString());
-                return Container(
+// ignore: avoid_print
+// ignore: avoid_print
+return Container(
                   width: double.infinity,
                   height: double.infinity,
                   color: Colors.grey.shade200,

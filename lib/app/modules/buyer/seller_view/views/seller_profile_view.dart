@@ -629,11 +629,8 @@ class SellerProfileView extends GetView<SellerProfileViewController> {
     final imageUrl = product.primaryImageUrl;
     
   // ignore: avoid_print
-  print('[Buyer SellerView] Build image for "${product.name}" (ID: ${product.id})');
-  // ignore: avoid_print
-  print('[Buyer SellerView] imageUrl: ' + imageUrl);
-    
-    if (imageUrl.isNotEmpty) {
+// ignore: avoid_print
+if (imageUrl.isNotEmpty) {
       return Image.network(
         imageUrl,
         fit: BoxFit.cover,
@@ -641,10 +638,8 @@ class SellerProfileView extends GetView<SellerProfileViewController> {
         height: double.infinity,
         errorBuilder: (context, error, stackTrace) {
       // ignore: avoid_print
-      print('[Buyer SellerView] Image load error: ' + error.toString());
-      // ignore: avoid_print
-      print('[Buyer SellerView] URL: ' + imageUrl);
-          return Container(
+// ignore: avoid_print
+return Container(
             color: Colors.grey.shade200,
             child: const Center(
               child: Icon(

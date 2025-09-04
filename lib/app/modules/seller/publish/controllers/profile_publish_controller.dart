@@ -326,8 +326,7 @@ class ProfilePublishController extends GetxController {
         final dashboardController = Get.find<SellerDashboardController>();
         dashboardController.refreshData();
       } catch (e) {
-        print('Dashboard controller not found during refresh');
-      }
+}
     });
   }
 

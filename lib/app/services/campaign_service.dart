@@ -32,11 +32,8 @@ class CampaignService extends BaseApiService {
     try {
       final userId = _currentUserId;
       final campGroup = _slotToCampaignGroup[slot];
-      print('getCampaignsForSlot: slot=$slot, campGroup=$campGroup, userId=$userId');
-      
-      if (campGroup == null) {
-        print('No campaign group found for slot $slot');
-        return [];
+if (campGroup == null) {
+return [];
       }
 
       final request = TopCampaignsRequest(
@@ -45,32 +42,21 @@ class CampaignService extends BaseApiService {
         campaignCount: limit,
         userInterestCategories: [],
       );
-      
-      print('Making request: ${request.toJson()}');
-      
-      final response = await post<Map<String, dynamic>>(
+final response = await post<Map<String, dynamic>>(
         '/TopCampaigns',
         body: request.toJson(),
       );
-      
-      print('Response success: ${response.success}, data: ${response.data != null}');
-      
-      if (response.success && response.data != null) {
+if (response.success && response.data != null) {
         final campaignsResponse = TopCampaignsResponse.fromJson(response.data!);
-        print('CampaignsResponse success: ${campaignsResponse.success}, campaigns: ${campaignsResponse.campaigns.length}');
-        
-        if (campaignsResponse.success) {
+if (campaignsResponse.success) {
           final mappedContent = _mapCampaignsToSponsoredContent(campaignsResponse.campaigns);
-          print('Mapped content: ${mappedContent.length}');
-          return mappedContent;
+return mappedContent;
         }
       } else {
-        print('API response failed: ${response.message}');
-      }
+}
       return [];
     } catch (e) {
-      print('getCampaignsForSlot error: $e');
-      return [];
+return [];
     }
   }
 
