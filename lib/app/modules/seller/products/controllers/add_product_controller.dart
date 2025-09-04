@@ -66,19 +66,27 @@ class AddProductController extends GetxController {
 
   Future<bool> _checkSellerSubscription() async {
     try {
-      final sellerId = _authService.currentSeller?.sellerId;
+      // Some parts of the app cache subscription state on the dashboard controller.
+      // Honor that if available to avoid redundant calls and mismatches.
+      try {
+        final dashboard = Get.find<dynamic>(tag: null);
+        if (dashboard is GetxController && dashboard.runtimeType.toString().contains('SellerDashboardController')) {
+          final hasActive = (dashboard as dynamic).hasActiveSubscription as bool?;
+          if (hasActive == true) return true;
+        }
+      } catch (_) {
+        // ignore if dashboard is not in memory
+      }
+
+      final sellerId = _authService.currentSeller?.sellerid ?? _authService.currentSeller?.sellerId;
       if (sellerId == null) return false;
 
-      final response = await _sellerService.getSellerBySellerId(sellerId);
+      // Use the unified subscription endpoint
+      final response = await _sellerService.checkSubscription(sellerId);
       if (response.success && response.data != null) {
-        final seller = response.data!;
-        
-        // Check if seller is published and has active subscription
-        if (seller.ispublished == true && seller.settings?.isNotEmpty == true) {
-          final settings = seller.settings!.first;
-          final subscriptionPlan = settings.subscriptionPlan;
-          return subscriptionPlan != null && subscriptionPlan.isNotEmpty;
-        }
+        final data = response.data!;
+        final active = (data['hasActiveSubscription'] == true) && (data['isExpired'] != true);
+        return active;
       }
       return false;
     } catch (e) {

@@ -1,6 +1,5 @@
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
-import 'dart:convert';
 import '../../../../services/auth_service.dart';
 import '../../../../services/seller_service.dart';
 import '../../../../services/product_service.dart';
@@ -265,19 +264,31 @@ class SellerDashboardController extends GetxController {
   }
 
   Future<bool> _checkSellerSubscription() async {
+    // Prefer the cached value first
+    if (hasActiveSubscription) return true;
+
     try {
-      final sellerId = _authService.currentSeller?.sellerid;
+      final sellerId = _authService.currentSeller?.sellerid ?? sellerProfile.value?.sellerid;
       if (sellerId == null) return false;
 
-      final response = await _sellerService.getSellerBySellerId(sellerId);
+      // Call the same endpoint used for the header card to avoid mismatch
+      final response = await _sellerService.checkSubscription(sellerId);
       if (response.success && response.data != null) {
-        final seller = response.data!;
-        
-        // Check if seller is published and has active subscription
-        if (seller.ispublished == true && seller.settings?.isNotEmpty == true) {
-          final settings = seller.settings!.first;
-          final subscriptionPlan = settings.subscriptionPlan;
-          return subscriptionPlan != null && subscriptionPlan.isNotEmpty;
+        final data = response.data!;
+        final active = (data['hasActiveSubscription'] == true) && (data['isExpired'] != true);
+        if (active) {
+          // Update cache so UI stays consistent
+          currentSubscription.value = {
+            'planId': data['subscriptionPlan'],
+            'name': data['subscriptionPlan'] ?? 'Basic',
+            'hasActiveSubscription': true,
+            'startDate': data['startDate'],
+            'endDate': data['endDate'],
+            'isExpired': data['isExpired'] ?? false,
+            'amount': data['amount'],
+            'currency': data['currency'],
+          };
+          return true;
         }
       }
       return false;
