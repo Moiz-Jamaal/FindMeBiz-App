@@ -625,46 +625,48 @@ class SellerProfileView extends GetView<SellerProfileViewController> {
 
   // ignore: strict_top_level_inference
   Widget _buildProductImage(product) {
-    // Check if product has images
-    if (product.images != null && product.images.isNotEmpty) {
-      final imageUrl = product.images.first;
-      if (imageUrl != null && imageUrl.isNotEmpty) {
-        return Image.network(
-          imageUrl,
-          fit: BoxFit.cover,
-          width: double.infinity,
-          height: double.infinity,
-          errorBuilder: (context, error, stackTrace) {
-            
-            return Container(
-              color: Colors.grey.shade200,
-              child: const Center(
-                child: Icon(
-                  Icons.broken_image,
-                  size: 32,
-                  color: AppTheme.textHint,
+    // Get image URL using the product's primaryImageUrl getter which handles media/images properly
+    final imageUrl = product.primaryImageUrl;
+    
+  // ignore: avoid_print
+// ignore: avoid_print
+if (imageUrl.isNotEmpty) {
+      return Image.network(
+        imageUrl,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+        errorBuilder: (context, error, stackTrace) {
+      // ignore: avoid_print
+// ignore: avoid_print
+return Container(
+            color: Colors.grey.shade200,
+            child: const Center(
+              child: Icon(
+                Icons.broken_image,
+                size: 32,
+                color: AppTheme.textHint,
+              ),
+            ),
+          );
+        },
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return Container(
+            color: Colors.grey.shade200,
+            child: Center(
+              child: SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(AppTheme.buyerPrimary),
                 ),
               ),
-            );
-          },
-          loadingBuilder: (context, child, loadingProgress) {
-            if (loadingProgress == null) return child;
-            return Container(
-              color: Colors.grey.shade200,
-              child: Center(
-                child: SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(AppTheme.buyerPrimary),
-                  ),
-                ),
-              ),
-            );
-          },
-        );
-      }
+            ),
+          );
+        },
+      );
     }
     
     // Fallback placeholder
@@ -759,14 +761,13 @@ class SellerProfileView extends GetView<SellerProfileViewController> {
                     
                     const Spacer(),
                     
-                      if (product.price != null)
-                        Text(
-                          '₹${product.price!.toStringAsFixed(0)}',
-                          style: Get.textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: AppTheme.buyerPrimary,
-                          ),
-                        ),
+                    Text(
+                      product.formattedPrice,
+                      style: Get.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.buyerPrimary,
+                      ),
+                    ),
                     ],
                   ),
                 ),

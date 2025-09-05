@@ -3,12 +3,16 @@ import 'package:get/get.dart';
 import 'package:souq/app/data/models/product.dart';
 import 'package:souq/app/data/models/seller.dart';
 import 'package:souq/app/services/api/api_exception.dart';
-import 'package:souq/app/services/buyer_service.dart';
+import 'package:souq/app/services/product_service.dart';
 import 'package:souq/app/services/auth_service.dart';
 
 import '../../../../core/theme/app_theme.dart';
 
 class BuyerProductViewController extends GetxController {
+  // Unified service
+  final ProductService _productService = ProductService.instance;
+  final AuthService _authService = Get.find<AuthService>();
+
   // Product data
   final Rx<Product?> product = Rx<Product?>(null);
   final Rx<Seller?> seller = Rx<Seller?>(null);
@@ -32,7 +36,6 @@ class BuyerProductViewController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    // Use post-frame callback to avoid build context issues
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadProductData();
     });
@@ -41,29 +44,19 @@ class BuyerProductViewController extends GetxController {
   void _loadProductData() {
     final productArg = Get.arguments;
     
-    
     if (productArg is Product) {
-      // Full product object passed
-      
       product.value = productArg;
       _loadProductDetails();
     } else if (productArg is int && productArg > 0) {
-      // Product ID as int
-      
       _loadProductById(productArg.toString());
     } else if (productArg is String && productArg.isNotEmpty) {
-      // Product ID as string
       final productId = int.tryParse(productArg);
       if (productId != null && productId > 0) {
-        
         _loadProductById(productArg);
       } else {
-        
         _setError('Invalid product ID format. Please try again.');
       }
     } else {
-      // Invalid data provided
-      
       _setError('Product information is missing or invalid. Please try selecting the product again.');
     }
   }
@@ -88,33 +81,25 @@ class BuyerProductViewController extends GetxController {
     isLoading.value = true;
     _clearError();
     
-    
-    
-    // Use the buyer service to load product details
-    final buyerService = Get.find<BuyerService>();
     final productIdInt = int.tryParse(productId);
     
     if (productIdInt == null) {
-      
       _setError('Invalid product ID format. Please try again.');
       return;
     }
     
-    buyerService.getProductDetails(productIdInt).then((response) {
+    // Use unified ProductService
+    _productService.getProductDetails(productIdInt).then((response) {
       if (response.isSuccess && response.data != null) {
-        
         product.value = response.data;
         _loadProductDetails();
       } else {
-        
         _setError(response.errorMessage ?? 'Product not found. It may have been removed or is no longer available.');
       }
     }).catchError((e) {
-      
       _setError('Network error. Please check your connection and try again.');
     });
   }
-  
 
   void _loadProductDetails() {
     if (product.value == null) return;
@@ -124,24 +109,14 @@ class BuyerProductViewController extends GetxController {
     try {
       // Check if seller info is already included in product response
       if (product.value?.seller != null) {
-        
         seller.value = _convertSellerInfoToSeller(product.value!.seller!);
       } else {
-        // Fallback: try to load seller info via separate API call
-        
         _loadSellerInfo();
       }
       
-      // Load product images
       _loadProductImages();
-      
-      // Load related products via API
       _loadRelatedProducts();
-      
-      // Check if favorited by current user
       _checkIfFavorited();
-      
-      // Track this view
       _trackProductView();
       
       isLoading.value = false;
@@ -151,8 +126,7 @@ class BuyerProductViewController extends GetxController {
   }
 
   void _checkIfFavorited() {
-    final authService = Get.find<AuthService>();
-    final currentUser = authService.currentUser;
+    final currentUser = _authService.currentUser;
     
     if (currentUser?.userid == null || product.value?.id == null) {
       isFavorite.value = false;
@@ -165,49 +139,37 @@ class BuyerProductViewController extends GetxController {
       return;
     }
     
-    final buyerService = Get.find<BuyerService>();
-    buyerService.checkIfFavorite(
+    _productService.checkIfProductFavorite(
       userId: currentUser!.userid!,
-      refId: productId,
-      type: 'P',
+      productId: productId,
     ).then((response) {
       if (response.isSuccess && response.data != null) {
         isFavorite.value = response.data!['isFavorite'] == true;
-        
       } else {
         isFavorite.value = false;
-        
       }
     }).catchError((e) {
       isFavorite.value = false;
-      
     });
   }
 
   void _trackProductView() {
-    final authService = Get.find<AuthService>();
-    final currentUser = authService.currentUser;
+    final currentUser = _authService.currentUser;
     
     if (currentUser?.userid == null || product.value?.id == null) {
-      return; // Don't track if user not logged in or no product
+      return;
     }
     
     final productId = int.tryParse(product.value!.id);
     if (productId == null) return;
     
-    final buyerService = Get.find<BuyerService>();
-    buyerService.trackView(
+    _productService.trackProductView(
       userId: currentUser!.userid!,
-      refId: productId,
-      type: 'P',
+      productId: productId,
     ).then((response) {
-      if (response.isSuccess) {
-        
-      } else {
-        
-      }
+      // Track view succeeded
     }).catchError((e) {
-      
+      // Track view failed - not critical
     });
   }
 
@@ -215,70 +177,54 @@ class BuyerProductViewController extends GetxController {
   Seller _convertSellerInfoToSeller(dynamic sellerInfo) {
     return Seller(
       id: (sellerInfo.sellerId ?? sellerInfo.id)?.toString() ?? '0',
-      email: '', // Not available in SellerInfo
+      email: '',
       fullName: sellerInfo.profileName ?? 'Business Owner',
-      createdAt: DateTime.now().subtract(const Duration(days: 30)), // Not available in SellerInfo
+      createdAt: DateTime.now().subtract(const Duration(days: 30)),
       updatedAt: DateTime.now(),
       businessName: sellerInfo.businessName ?? 'Local Business',
-      bio: 'Welcome to our business!', // Not available in SellerInfo
-      whatsappNumber: null, // Not available in SellerInfo
+      bio: 'Welcome to our business!',
+      whatsappNumber: null,
       stallLocation: StallLocation(
-        latitude: 0.0, // Not available in SellerInfo
-        longitude: 0.0, // Not available in SellerInfo
+        latitude: 0.0,
+        longitude: 0.0,
         stallNumber: _generateStallNumber(sellerInfo.sellerId ?? sellerInfo.id),
         area: sellerInfo.area ?? 'Business Area',
-        address: null, // Not available in SellerInfo
+        address: null,
       ),
       businessLogo: sellerInfo.logo,
-      isProfilePublished: true, // Assume true if included in product response
+      isProfilePublished: true,
     );
   }
 
   void _loadProductImages() {
     try {
       productImages.clear();
-      // Use the product's media URLs if available
       if (product.value?.images != null && product.value!.images.isNotEmpty) {
         productImages.addAll(product.value!.images);
       }
-      // No fallback placeholder images - if no images, show empty state
     } catch (e) {
-      // Handle image loading errors gracefully
-      
       productImages.clear();
     }
   }
 
   void _loadSellerInfo() {
     if (product.value?.sellerId == null) {
-      
       return;
     }
     
-    
-    
-    // Use the new API endpoint that searches by sellerId
-    final buyerService = Get.find<BuyerService>();
     final sellerIdInt = int.tryParse(product.value!.sellerId);
     
     if (sellerIdInt == null) {
-      
       return;
     }
     
-    buyerService.getSellerDetailsBySellerId(sellerIdInt).then((response) {
+    // Use unified ProductService for seller details
+    _productService.getSellerDetailsBySellerId(sellerIdInt).then((response) {
       if (response.isSuccess && response.data != null) {
-        
-        
-        // Convert SellerDetailsExtended to Seller model
         final sellerData = _convertSellerDetailsToSeller(response.data!);
         seller.value = sellerData;
-      } else {
-        
-        // No fallback - let UI handle gracefully
       }
     }).catchError((e) {
-      
       // No fallback - let UI handle gracefully
     });
   }
@@ -287,9 +233,9 @@ class BuyerProductViewController extends GetxController {
   Seller _convertSellerDetailsToSeller(dynamic sellerDetailsExtended) {
     return Seller(
       id: sellerDetailsExtended.sellerid?.toString() ?? '0',
-      email: '', // Email is not available in SellerDetails API model
+      email: '',
       fullName: sellerDetailsExtended.profilename ?? 'Business Owner',
-      createdAt: DateTime.now().subtract(const Duration(days: 30)), // TODO: Use actual created date from API
+      createdAt: DateTime.now().subtract(const Duration(days: 30)),
       updatedAt: DateTime.now(),
       businessName: sellerDetailsExtended.businessname ?? 'Local Business',
       bio: sellerDetailsExtended.bio ?? 'Welcome to our business!',
@@ -306,33 +252,24 @@ class BuyerProductViewController extends GetxController {
     );
   }
 
-  // Helper method to parse latitude from geolocation string
   double _parseLatitude(String? geoLocation) {
     if (geoLocation == null || geoLocation.isEmpty) return 0.0;
-   
-      // Assuming geolocation format is "lat,lng" or similar
-      final parts = geoLocation.split(',');
-      if (parts.length >= 2) {
-        return double.tryParse(parts[0].trim()) ?? 0.0;
-      }
-   
+    final parts = geoLocation.split(',');
+    if (parts.length >= 2) {
+      return double.tryParse(parts[0].trim()) ?? 0.0;
+    }
     return 0.0;
   }
 
-  // Helper method to parse longitude from geolocation string
   double _parseLongitude(String? geoLocation) {
     if (geoLocation == null || geoLocation.isEmpty) return 0.0;
-   
-      // Assuming geolocation format is "lat,lng" or similar
-      final parts = geoLocation.split(',');
-      if (parts.length >= 2) {
-        return double.tryParse(parts[1].trim()) ?? 0.0;
-      }
- 
+    final parts = geoLocation.split(',');
+    if (parts.length >= 2) {
+      return double.tryParse(parts[1].trim()) ?? 0.0;
+    }
     return 0.0;
   }
 
-  // Helper method to generate stall number from seller ID
   String _generateStallNumber(dynamic sellerId) {
     if (sellerId == null) return 'A-00';
     final idStr = sellerId.toString();
@@ -345,40 +282,32 @@ class BuyerProductViewController extends GetxController {
   void _loadRelatedProducts() {
     if (product.value == null) return;
     
+    final sellerIdInt = int.tryParse(product.value!.sellerId);
     
-    
-    // Use actual API service to fetch related products
-    final buyerService = Get.find<BuyerService>();
-    
-    // Search for products in the same categories
-    final categories = product.value!.categories;
-    if (categories.isNotEmpty) {
-      // TODO: Convert category names to category IDs for API call
-      // For now, search by seller ID to get other products from same seller
-      final sellerIdInt = int.tryParse(product.value!.sellerId);
-      
-      if (sellerIdInt != null) {
-        buyerService.searchProducts(
-          sellerId: sellerIdInt,
-          pageSize: 10, // Get up to 10 related products
-        ).then((response) {
-          if (response.isSuccess && response.data != null) {
-            
-            relatedProducts.clear();
-            // Exclude current product from related products
-            final filtered = response.data!.products.where((p) => p.id != product.value!.id).toList();
-            relatedProducts.addAll(filtered);
-          } else {
-            
-            relatedProducts.clear();
+    if (sellerIdInt != null) {
+      // Use unified ProductService
+      _productService.searchProducts(
+        sellerId: sellerIdInt,
+        pageSize: 10,
+      ).then((response) {
+        if (response.isSuccess && response.data != null) {
+print('Related products count: ${response.data!.products.length}');
+          if (response.data!.products.isNotEmpty) {
+            final firstProduct = response.data!.products.first;
+print('Price: ${firstProduct.price}');
+print('Primary image URL: ${firstProduct.primaryImageUrl}');
           }
-        }).catchError((e) {
-          
-          relatedProducts.clear();
-        });
-      } else {
-        relatedProducts.clear();
-      }
+relatedProducts.clear();
+          final filtered = response.data!.products.where((p) => p.id != product.value!.id).toList();
+          relatedProducts.addAll(filtered);
+        } else {
+print('Error: ${response.errorMessage}');
+relatedProducts.clear();
+        }
+      }).catchError((e) {
+print('Exception: $e');
+relatedProducts.clear();
+      });
     } else {
       relatedProducts.clear();
     }
@@ -391,8 +320,7 @@ class BuyerProductViewController extends GetxController {
   }
 
   void toggleFavorite() {
-    final authService = Get.find<AuthService>();
-    final currentUser = authService.currentUser;
+    final currentUser = _authService.currentUser;
     
     if (currentUser?.userid == null) {
       _showSnackbar(
@@ -418,22 +346,16 @@ class BuyerProductViewController extends GetxController {
     final wasAlreadyFavorite = isFavorite.value;
     isFavorite.value = !isFavorite.value;
     
-    final buyerService = Get.find<BuyerService>();
-    
     Future<ApiResponse<Map<String, dynamic>>> apiCall;
     if (wasAlreadyFavorite) {
-      // Remove from favorites
-      apiCall = buyerService.removeFromFavorites(
+      apiCall = _productService.removeProductFromFavorites(
         userId: currentUser!.userid!,
-        refId: productId,
-        type: 'P',
+        productId: productId,
       );
     } else {
-      // Add to favorites
-      apiCall = buyerService.addToFavorites(
+      apiCall = _productService.addProductToFavorites(
         userId: currentUser!.userid!,
-        refId: productId,
-        type: 'P',
+        productId: productId,
       );
     }
     
@@ -450,8 +372,6 @@ class BuyerProductViewController extends GetxController {
               ? AppTheme.buyerPrimary.withValues(alpha: 0.9)
               : Colors.grey.withValues(alpha: 0.9),
         );
-        
-        
       } else {
         // Revert optimistic update on failure
         isFavorite.value = wasAlreadyFavorite;
@@ -460,7 +380,6 @@ class BuyerProductViewController extends GetxController {
           'Failed to update favorites. Please try again.',
           Colors.red,
         );
-        
       }
     }).catchError((e) {
       // Revert optimistic update on error
@@ -470,7 +389,6 @@ class BuyerProductViewController extends GetxController {
         'Network error. Please try again.',
         Colors.red,
       );
-      
     });
   }
 
@@ -493,7 +411,6 @@ class BuyerProductViewController extends GetxController {
         'Opening WhatsApp to contact ${seller.value?.businessName}',
         Colors.green.withValues(alpha: 0.9),
       );
-      // In real app: launch WhatsApp
     } else if (seller.value != null) {
       _showSnackbar(
         'Contact Info',
@@ -515,7 +432,6 @@ class BuyerProductViewController extends GetxController {
         'Getting directions to ${seller.value?.businessName}',
         Colors.blue,
       );
-      // In real app: launch maps
     } else if (seller.value != null) {
       _showSnackbar(
         'Location Info',
@@ -534,36 +450,28 @@ class BuyerProductViewController extends GetxController {
       'Sharing ${product.value?.name}',
       Colors.blue,
     );
-    // In real app: use share package
   }
 
   void viewRelatedProduct(Product relatedProduct) {
-    // Track view before navigation
     _trackRelatedProductView(relatedProduct);
-    // Navigate to product view with new product
     Get.toNamed('/buyer-product-view', arguments: relatedProduct);
   }
 
   void _trackRelatedProductView(Product product) {
-    final authService = Get.find<AuthService>();
-    final currentUser = authService.currentUser;
+    final currentUser = _authService.currentUser;
     
     if (currentUser?.userid == null) return;
     
     final productId = int.tryParse(product.id);
     if (productId == null) return;
     
-    final buyerService = Get.find<BuyerService>();
-    buyerService.trackView(
+    _productService.trackProductView(
       userId: currentUser!.userid!,
-      refId: productId,
-      type: 'P',
+      productId: productId,
     ).then((response) {
-      if (response.isSuccess) {
-        
-      }
+      // Track view succeeded
     }).catchError((e) {
-      
+      // Track view failed - not critical
     });
   }
 
@@ -591,7 +499,6 @@ class BuyerProductViewController extends GetxController {
             ),
             const SizedBox(height: 20),
             
-            // Quick inquiry buttons
             _buildInquiryOption(
               icon: Icons.chat,
               title: 'Ask about availability',
@@ -670,10 +577,8 @@ class BuyerProductViewController extends GetxController {
       Colors.green.withValues(alpha: 0.9),
       duration: const Duration(seconds: 3),
     );
-    // In real app: launch WhatsApp with pre-filled message
   }
 
-  // Safe snackbar method
   void _showSnackbar(String title, String message, Color backgroundColor, {Duration? duration}) {
     Get.snackbar(
       title,

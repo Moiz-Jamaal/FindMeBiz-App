@@ -10,11 +10,13 @@ import 'package:image_picker/image_picker.dart';
 import '../../../../services/product_service.dart';
 import '../../../../services/auth_service.dart';
 import '../../../../services/category_service.dart';
+import '../../../../services/seller_service.dart';
 
 class AddProductController extends GetxController {
   final ProductService _productService = ProductService.instance;
   final AuthService _authService = Get.find<AuthService>();
   final CategoryService _categoryService = Get.find<CategoryService>();
+  final SellerService _sellerService = Get.find<SellerService>();
   
   // Form controllers
   final nameController = TextEditingController();
@@ -50,7 +52,75 @@ class AddProductController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    _checkSubscriptionAndInit();
+  }
+
+  Future<void> _checkSubscriptionAndInit() async {
+    final hasSubscription = await _checkSellerSubscription();
+    if (!hasSubscription) {
+      _showSubscriptionRequiredDialog();
+      return;
+    }
     _loadCategories();
+  }
+
+  Future<bool> _checkSellerSubscription() async {
+    try {
+      // Some parts of the app cache subscription state on the dashboard controller.
+      // Honor that if available to avoid redundant calls and mismatches.
+      try {
+        final dashboard = Get.find<dynamic>(tag: null);
+        if (dashboard is GetxController && dashboard.runtimeType.toString().contains('SellerDashboardController')) {
+          final hasActive = (dashboard as dynamic).hasActiveSubscription as bool?;
+          if (hasActive == true) return true;
+        }
+      } catch (_) {
+        // ignore if dashboard is not in memory
+      }
+
+      final sellerId = _authService.currentSeller?.sellerid ?? _authService.currentSeller?.sellerId;
+      if (sellerId == null) return false;
+
+      // Use the unified subscription endpoint
+      final response = await _sellerService.checkSubscription(sellerId);
+      if (response.success && response.data != null) {
+        final data = response.data!;
+        final active = (data['hasActiveSubscription'] == true) && (data['isExpired'] != true);
+        return active;
+      }
+      return false;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  void _showSubscriptionRequiredDialog() {
+    Get.dialog(
+      AlertDialog(
+        title: const Text('Subscription Required'),
+        content: const Text(
+          'You need an active subscription to add products. Please subscribe to continue.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Get.back(); // Close dialog
+              Get.back(); // Go back to previous screen
+            },
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Get.back(); // Close dialog
+              Get.back(); // Go back to previous screen
+              Get.toNamed('/seller-publish'); // Navigate to subscription page
+            },
+            child: const Text('Subscribe Now'),
+          ),
+        ],
+      ),
+      barrierDismissible: false,
+    );
   }
 
   @override
@@ -402,7 +472,12 @@ class AddProductController extends GetxController {
 
   Future<void> saveProduct() async {
     
-    
+    // Check subscription before saving
+    final hasSubscription = await _checkSellerSubscription();
+    if (!hasSubscription) {
+      _showSubscriptionRequiredDialog();
+      return;
+    }
     
     if (!_validateAllSteps()) {
       
@@ -419,7 +494,7 @@ class AddProductController extends GetxController {
       _openSavingDialog();
       
       // Get current seller ID
-      final sellerId = _authService.currentSeller?.sellerId;
+      final sellerId = _authService.currentSeller?.sellerid;
       
       
       if (sellerId == null) {

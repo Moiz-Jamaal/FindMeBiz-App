@@ -125,13 +125,17 @@ class AuthService extends BaseApiService {
   // Clear all app data (for debugging or reset)
   Future<void> clearAllData() async {
     _clearUserData();
-    
+    _currentSeller.value = null;
+
     // Clear all role and seller data from role service
     if (Get.isRegistered<RoleService>()) {
       Get.find<RoleService>().clearAllRoleData();
     }
-    
-    
+
+    // Erase all locally stored data
+    try {
+      await _box.erase();
+    } catch (_) {}
   }
 
   // Check if email is available
@@ -256,13 +260,20 @@ class AuthService extends BaseApiService {
 
   // Logout
   Future<void> logout() async {
+    // Clear in-memory user and seller
     _clearUserData();
-    
+    _currentSeller.value = null;
+
     // Clear all role and seller data from role service
     if (Get.isRegistered<RoleService>()) {
       Get.find<RoleService>().clearAllRoleData();
     }
-    
+
+    // Wipe ALL locally persisted data (GetStorage)
+    try {
+      await _box.erase();
+    } catch (_) {}
+
     // Navigate to welcome screen
     Get.offAllNamed('/welcome');
   }

@@ -22,6 +22,17 @@ class SellerOnboardingView extends GetView<SellerOnboardingController> {
                 onPressed: controller.previousStep,
               )
             : const SizedBox()),
+        actions: [
+          TextButton.icon(
+            onPressed: () => Get.offAllNamed('/buyer-home'),
+            icon: const Icon(Icons.shopping_bag_outlined, size: 18),
+            label: const Text('Back to Buyers'),
+            style: TextButton.styleFrom(
+              foregroundColor: AppTheme.sellerPrimary,
+              textStyle: const TextStyle(fontSize: 14),
+            ),
+          ),
+        ],
       ),
       body: Column(
         children: [

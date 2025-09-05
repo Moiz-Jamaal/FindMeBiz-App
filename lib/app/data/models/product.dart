@@ -44,6 +44,15 @@ class Product {
 
   // Get primary image URL
   String get primaryImageUrl {
+print('Product ID: $id, Name: $name');
+print('Media isEmpty: ${media?.isEmpty ?? "null"}');
+if (media?.isNotEmpty == true) {
+for (int i = 0; i < media!.length; i++) {
+        final m = media![i];
+}
+    }
+print('Images: $images');
+    
     if (media?.isNotEmpty == true) {
       final primaryMedia = media!.firstWhere(
         (m) => m.isPrimary && m.mediaType == 'image',
@@ -52,11 +61,14 @@ class Product {
           orElse: () => media!.first,
         ),
       );
+print('=== END PRIMARY IMAGE DEBUG ===');
       return primaryMedia.mediaUrl;
     }
     if (images.isNotEmpty) {
+print('=== END PRIMARY IMAGE DEBUG ===');
       return images.first;
     }
+print('=== END PRIMARY IMAGE DEBUG ===');
     return 'https://via.placeholder.com/300x300/E0E0E0/FFFFFF?text=No+Image';
   }
 
@@ -94,8 +106,6 @@ class Product {
   }
 
   factory Product.fromJson(Map<String, dynamic> json) {
-     // Debug log
-    
     // Handle both old and new JSON structures
     final categoriesData = json['categories'] ?? json['Categories'];
     List<ProductCategory>? productCategories;
@@ -103,28 +113,43 @@ class Product {
     
     if (categoriesData is List) {
       productCategories = categoriesData.map((item) => ProductCategory.fromJson(item)).toList();
-      // For now, use placeholder category names since CategoryNames is null in API
-      categories = productCategories.map((pc) => 'Category ${pc.catId}').toList();
     }
     
     final mediaData = json['media'] ?? json['Media'];
     List<ProductMedia>? media;
     List<String> images = [];
+print('Product ID in JSON: ${json['productId'] ?? json['ProductId'] ?? json['id']}');
+print('Media data type: ${mediaData?.runtimeType}');
+print('Media length: ${mediaData?.length ?? "null"}');
     
     if (mediaData is List) {
-      media = mediaData.map((item) => ProductMedia.fromJson(item)).toList();
-      images = media
-          .where((m) => m.mediaType == 'image')
-          .map((m) => m.mediaUrl)
+media = mediaData.map((item) {
+return ProductMedia.fromJson(item);
+      }).toList();
+images = media
+          .where((m) => m.mediaType == 'image' && (m.mediaUrl).toString().isNotEmpty)
+          .map((m) => m.mediaUrl.trim())
           .toList();
-    }
-
-    // Override with explicit categoryNames if provided
-    if (json['categoryNames'] != null) {
+}
+// Parse category names with better handling of different formats
+    if (json['categoryNames'] != null && json['categoryNames'] is List && (json['categoryNames'] as List).isNotEmpty) {
       categories = List<String>.from(json['categoryNames']);
     }
+    else if (json['CategoryNames'] != null) {
+      if (json['CategoryNames'] is String && (json['CategoryNames'] as String).isNotEmpty) {
+        final categoryNamesStr = json['CategoryNames'] as String;
+        categories = categoryNamesStr.split(', ').where((name) => name.isNotEmpty).toList();
+      }
+      else if (json['CategoryNames'] is List && (json['CategoryNames'] as List).isNotEmpty) {
+        categories = List<String>.from(json['CategoryNames']);
+      }
+    }
+    // Fallback: Use productCategories with placeholder names
+    else if (productCategories != null && productCategories.isNotEmpty) {
+      categories = productCategories.map((pc) => 'Category ${pc.catId}').toList();
+    }
 
-    // Use Pascal case field names from API
+    // Use Pascal case field names from API with better null/empty handling
     final productId = json['productId'] ?? json['ProductId'] ?? json['id'];
     final sellerId = json['sellerId'] ?? json['SellerId'];
     final productName = json['productName'] ?? json['ProductName'] ?? json['name'];
@@ -137,13 +162,25 @@ class Product {
     final updatedAt = json['updatedAt'] ?? json['UpdatedAt'] ?? json['updated_at'];
     final customAttributes = json['customAttributes'] ?? json['CustomAttributes'] ?? {};
 
-     // Debug log
+    // Provide fallbacks for empty values and generate test data if needed
+    final finalProductName = (productName != null && productName.toString().isNotEmpty) 
+        ? productName.toString() 
+        : 'Product ${productId ?? DateTime.now().millisecondsSinceEpoch}';
+    
+    // If we have no categories but have productCategories, generate some test categories
+    if (categories.isEmpty && productCategories != null && productCategories.isNotEmpty) {
+      categories = productCategories.map((pc) => 'Category ${pc.catId}').toList();
+    }
+    // If still no categories, add a default one for testing
+    else if (categories.isEmpty) {
+      categories = ['General'];
+    }
 
     return Product(
       id: productId.toString(),
       sellerId: sellerId.toString(),
-      name: productName ?? '',
-      description: description,
+      name: finalProductName,
+      description: description?.toString(),
       price: price,
       priceOnInquiry: priceOnInquiry,
       categories: categories,
@@ -155,7 +192,7 @@ class Product {
       customAttributes: Map<String, dynamic>.from(customAttributes),
       productCategories: productCategories,
       media: media,
-      categoryNames: json['categoryNames'] != null ? List<String>.from(json['categoryNames']) : null,
+      categoryNames: categories.isNotEmpty ? categories : null,
       seller: json['seller'] != null ? SellerInfo.fromJson(json['seller']) : null,
     );
   }
@@ -319,6 +356,30 @@ class ProductMedia {
   });
 
   factory ProductMedia.fromJson(Map<String, dynamic> json) {
+    // Robust createdAt parsing: handle nulls and invalid formats gracefully
+    DateTime parsedCreatedAt;
+    final createdAtRaw = json['createdAt'] ?? json['CreatedAt'];
+    if (createdAtRaw == null || (createdAtRaw is String && createdAtRaw.isEmpty)) {
+      parsedCreatedAt = DateTime.now();
+    } else if (createdAtRaw is String) {
+      try {
+        parsedCreatedAt = DateTime.parse(createdAtRaw);
+      } catch (_) {
+        parsedCreatedAt = DateTime.now();
+      }
+    } else if (createdAtRaw is int) {
+      // Support unix epoch seconds/millis heuristically
+      try {
+        parsedCreatedAt = createdAtRaw > 2000000000
+            ? DateTime.fromMillisecondsSinceEpoch(createdAtRaw)
+            : DateTime.fromMillisecondsSinceEpoch(createdAtRaw * 1000);
+      } catch (_) {
+        parsedCreatedAt = DateTime.now();
+      }
+    } else {
+      parsedCreatedAt = DateTime.now();
+    }
+
     return ProductMedia(
       mediaId: json['mediaId'] ?? json['MediaId'],
       productId: json['productId'] ?? json['ProductId'],
@@ -332,7 +393,7 @@ class ProductMedia {
       mimeType: json['mimeType'] ?? json['MimeType'],
       durationSeconds: json['durationSeconds'] ?? json['DurationSeconds'],
       thumbnailUrl: json['thumbnailUrl'] ?? json['ThumbnailUrl'],
-      createdAt: DateTime.parse(json['createdAt'] ?? json['CreatedAt'] ?? DateTime.now().toIso8601String()),
+      createdAt: parsedCreatedAt,
     );
   }
 

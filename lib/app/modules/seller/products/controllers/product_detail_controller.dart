@@ -4,6 +4,9 @@ import '../../../../core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 
 class ProductDetailController extends GetxController {
+  // Tracks the currently visible image in the gallery
+  final RxInt currentImageIndex = 0.obs;
+
   String formatDate(DateTime date) {
     final now = DateTime.now();
     final diff = now.difference(date);
@@ -36,6 +39,7 @@ class ProductDetailController extends GetxController {
     final productData = Get.arguments as Product?;
     if (productData != null) {
       product.value = productData;
+  currentImageIndex.value = 0;
       
       // Simulate loading analytics
       isLoading.value = true;
@@ -46,6 +50,10 @@ class ProductDetailController extends GetxController {
       Get.back();
       Get.snackbar('Error', 'Product not found');
     }
+  }
+
+  void onImagePageChanged(int index) {
+    currentImageIndex.value = index;
   }
 
   void editProduct() {

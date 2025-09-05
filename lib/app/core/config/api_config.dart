@@ -1,11 +1,13 @@
 // API Configuration
 // Update this file with your actual API URLs
 
+import 'package:flutter/foundation.dart';
+
 class ApiConfig {
   // *** UPDATE THIS WITH YOUR ACTUAL API URL ***
   // Example: 'https://your-domain.com' or 'http://localhost:5000' for local development
-  static const String baseUrl = 'https://gaqyd2vyo7.execute-api.us-east-1.amazonaws.com/Prod'; 
-  
+  static const String baseUrl = kDebugMode ? 'http://10.0.2.2:5002' : 'https://gaqyd2vyo7.execute-api.us-east-1.amazonaws.com/Prod';
+
   // If you're running the API locally for development, use:
   // static const String baseUrl = 'http://localhost:5000'; 
   // or whatever port your .NET API is running on

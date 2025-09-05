@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/constants/app_constants.dart';
@@ -9,10 +8,8 @@ import '../../../shared/widgets/module_switcher.dart';
 import '../../../../services/ad_service.dart';
 import '../../../../services/url_handler_service.dart';
 import '../../../shared/widgets/ads/banner_ad_tile.dart';
-import '../../../shared/widgets/ads/native_ad_card.dart';
 import '../../../shared/widgets/ads/rotating_banner_carousel.dart';
 import '../../../../data/models/sponsored_content.dart';
-import '../../../../core/widgets/app_logo.dart';
 
 class BuyerHomeView extends GetView<BuyerHomeController> {
   const BuyerHomeView({super.key});
@@ -28,7 +25,7 @@ class BuyerHomeView extends GetView<BuyerHomeController> {
   // Register the route for the settings/info page (if not already present)
   // Add this to your GetMaterialApp routes/pages list, typically in your main.dart or route config:
   // GetPage(
-  //   name: '/app-info-settings',
+  //   name: '/app-info-seings',
   //   page: () => const AppInfoSettingsView(),
   // ),
 
@@ -252,27 +249,12 @@ class BuyerHomeView extends GetView<BuyerHomeController> {
         children: [
           Padding(
             padding: const EdgeInsets.all(AppConstants.defaultPadding),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Featured Sellers',
-                  style: Get.textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.textPrimary,
-                  ),
-                ),
-                TextButton(
-                  onPressed: () => Get.toNamed('/buyer-search', arguments: {
-                    'type': 'featured_sellers',
-                    'title': 'Featured Sellers',
-                  }),
-                  child: Text(
-                    'See all',
-                    style: TextStyle(color: AppTheme.buyerPrimary),
-                  ),
-                ),
-              ],
+            child: Text(
+              'Featured Sellers',
+              style: Get.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: AppTheme.textPrimary,
+              ),
             ),
           ),
           SizedBox(
@@ -379,27 +361,12 @@ class BuyerHomeView extends GetView<BuyerHomeController> {
           const SizedBox(height: 16),
           Padding(
             padding: const EdgeInsets.all(AppConstants.defaultPadding),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Featured Products',
-                  style: Get.textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.textPrimary,
-                  ),
-                ),
-                TextButton(
-                  onPressed: () => Get.toNamed('/buyer-search', arguments: {
-                    'type': 'featured_products',
-                    'title': 'Featured Products',
-                  }),
-                  child: Text(
-                    'See all',
-                    style: TextStyle(color: AppTheme.buyerPrimary),
-                  ),
-                ),
-              ],
+            child: Text(
+              'Featured Products',
+              style: Get.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: AppTheme.textPrimary,
+              ),
             ),
           ),
           SizedBox(

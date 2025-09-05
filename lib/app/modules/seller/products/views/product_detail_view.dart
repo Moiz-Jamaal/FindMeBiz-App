@@ -90,20 +90,50 @@ class ProductDetailView extends GetView<ProductDetailController> {
 
       return SizedBox(
         height: 300,
-        child: PageView.builder(
-          itemCount: product.images.length,
-          itemBuilder: (context, index) {
-            return Container(
-              margin: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                image: DecorationImage(
-                  image: NetworkImage(product.images[index]),
-                  fit: BoxFit.cover,
+        child: Stack(
+          children: [
+            PageView.builder(
+              itemCount: product.images.length,
+              onPageChanged: controller.onImagePageChanged,
+              itemBuilder: (context, index) {
+                return Container(
+                  margin: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    image: DecorationImage(
+                      image: NetworkImage(product.images[index]),
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                );
+              },
+            ),
+
+            // Page indicators
+            Positioned(
+              bottom: 12,
+              left: 0,
+              right: 0,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(
+                  product.images.length,
+                  (index) => Obx(() => AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        margin: const EdgeInsets.symmetric(horizontal: 4),
+                        width: controller.currentImageIndex.value == index ? 10 : 8,
+                        height: controller.currentImageIndex.value == index ? 10 : 8,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: controller.currentImageIndex.value == index
+                              ? AppTheme.sellerPrimary
+                              : Colors.white.withValues(alpha: 0.6),
+                        ),
+                      )),
                 ),
               ),
-            );
-          },
+            ),
+          ],
         ),
       );
     });

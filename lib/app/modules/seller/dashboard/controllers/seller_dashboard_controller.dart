@@ -1,6 +1,5 @@
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
-import 'dart:convert';
 import '../../../../services/auth_service.dart';
 import '../../../../services/seller_service.dart';
 import '../../../../services/product_service.dart';
@@ -105,7 +104,13 @@ class SellerDashboardController extends GetxController {
       // Process products response
       final productsResponse = results[0] as dynamic; // Adjust type based on actual response type
       if (productsResponse.isSuccess && productsResponse.data != null) {
-        totalProducts.value = productsResponse.data!.totalCount;
+print('Dashboard products count: ${productsResponse.data!.totalCount}');
+        if (productsResponse.data!.products.isNotEmpty) {
+          final firstProduct = productsResponse.data!.products.first;
+print('Price: ${firstProduct.price}');
+print('Primary image URL: ${firstProduct.primaryImageUrl}');
+        }
+totalProducts.value = productsResponse.data!.totalCount;
       }
 
       // Process reviews response
@@ -189,25 +194,28 @@ class SellerDashboardController extends GetxController {
 
   Future<void> _loadSubscriptionDetails(int sellerId) async {
     try {
-      final settings = sellerProfile.value?.settings?.firstOrNull;
-      if (settings?.subscriptionDetails != null) {
-        try {
-          final details = jsonDecode(settings!.subscriptionDetails!);
-          currentSubscription.value = details;
-        } catch (e) {
-          // If JSON parsing fails, create a basic subscription object
+      // Use the new subscription check endpoint
+      final response = await _sellerService.checkSubscription(sellerId);
+      if (response.success && response.data != null) {
+        final data = response.data!;
+        if (data['hasActiveSubscription'] == true) {
+          // User has a real paid subscription
           currentSubscription.value = {
-            'planId': null,
-            'name': settings!.subscriptionPlan ?? 'Basic',
-            'amount': 250,
-            'currency': 'INR',
-            'startDate': null,
-            'endDate': null,
+            'planId': data['subscriptionPlan'],
+            'name': data['subscriptionPlan'] ?? 'Basic',
+            'hasActiveSubscription': true,
+            'endDate': data['endDate'],
+            'isExpired': data['isExpired'] ?? false,
           };
+          return;
         }
       }
+      
+      // No active subscription - user only published (free)
+      currentSubscription.value = null;
     } catch (e) {
-      // Handle error gracefully
+      // No subscription data available
+      currentSubscription.value = null;
     }
   }
 
@@ -237,7 +245,79 @@ class SellerDashboardController extends GetxController {
   }
 
   void addProduct() {
-    Get.toNamed('/seller-add-product');
+  _checkSubscriptionBeforeAddProduct();
+  }
+
+  Future<void> _checkSubscriptionBeforeAddProduct() async {
+    final hasSubscription = await _checkSellerSubscription();
+    if (!hasSubscription) {
+      _showSubscriptionRequiredDialog();
+      return;
+    }
+
+    // Navigate and refresh when a product was actually created
+    final result = await Get.toNamed('/seller-add-product');
+    if (result != null) {
+      refreshData();
+    }
+  }
+
+  Future<bool> _checkSellerSubscription() async {
+    // Prefer the cached value first
+    if (hasActiveSubscription) return true;
+
+    try {
+      final sellerId = _authService.currentSeller?.sellerid ?? sellerProfile.value?.sellerid;
+      if (sellerId == null) return false;
+
+      // Call the same endpoint used for the header card to avoid mismatch
+      final response = await _sellerService.checkSubscription(sellerId);
+      if (response.success && response.data != null) {
+        final data = response.data!;
+        final active = (data['hasActiveSubscription'] == true) && (data['isExpired'] != true);
+        if (active) {
+          // Update cache so UI stays consistent
+          currentSubscription.value = {
+            'planId': data['subscriptionPlan'],
+            'name': data['subscriptionPlan'] ?? 'Basic',
+            'hasActiveSubscription': true,
+            'startDate': data['startDate'],
+            'endDate': data['endDate'],
+            'isExpired': data['isExpired'] ?? false,
+            'amount': data['amount'],
+            'currency': data['currency'],
+          };
+          return true;
+        }
+      }
+      return false;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  void _showSubscriptionRequiredDialog() {
+    Get.dialog(
+      AlertDialog(
+        title: const Text('Subscription Required'),
+        content: const Text(
+          'You need an active subscription to add products. Please subscribe to continue.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Get.back();
+              Get.toNamed('/seller-publish');
+            },
+            child: const Text('Subscribe Now'),
+          ),
+        ],
+      ),
+    );
   }
 
   void editProfile() {
@@ -277,6 +357,10 @@ class SellerDashboardController extends GetxController {
   }
 
   // Subscription helper methods
+  bool get hasActiveSubscription {
+    return currentSubscription.value?['hasActiveSubscription'] == true;
+  }
+
   String get subscriptionPlanName {
     return currentSubscription.value?['name'] ?? 'Basic';
   }

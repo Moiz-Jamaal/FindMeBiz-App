@@ -6,10 +6,14 @@ import '../../../../data/models/seller.dart';
 import '../../../../data/models/product.dart';
 import '../../../../data/models/api/seller_details.dart';
 import '../../../../services/buyer_service.dart';
+import '../../../../services/product_service.dart';
 import '../../../../services/auth_service.dart';
 import '../../../../core/theme/app_theme.dart';
 
 class SellerProfileViewController extends GetxController {
+  // Services
+  final ProductService _productService = ProductService.instance;
+  
   // Seller data
   final Rx<Seller?> seller = Rx<Seller?>(null);
   final RxList<Product> products = <Product>[].obs;
@@ -99,7 +103,6 @@ class SellerProfileViewController extends GetxController {
     
     
     // Use actual API service to fetch seller details
-    final buyerService = Get.find<BuyerService>();
     final sellerIdInt = int.tryParse(sellerId);
     
     if (sellerIdInt == null) {
@@ -109,7 +112,7 @@ class SellerProfileViewController extends GetxController {
     }
     
     // Try the new API endpoint first (searches by sellerId)
-    buyerService.getSellerDetailsBySellerId(sellerIdInt).then((response) {
+    _productService.getSellerDetailsBySellerId(sellerIdInt).then((response) {
       if (response.isSuccess && response.data != null) {
         
         
@@ -197,7 +200,6 @@ class SellerProfileViewController extends GetxController {
     
     
     // Use actual API service to fetch seller's products
-    final buyerService = Get.find<BuyerService>();
     final sellerIdInt = int.tryParse(seller.value!.id);
     
     if (sellerIdInt == null) {
@@ -208,23 +210,40 @@ class SellerProfileViewController extends GetxController {
       return;
     }
     
-    buyerService.searchProducts(
+    _productService.searchProducts(
       sellerId: sellerIdInt,
       pageSize: 50, // Get more products for seller profile
     ).then((response) {
       if (response.isSuccess && response.data != null) {
+print('Total products received: ${response.data!.products.length}');
+        
+        for (int i = 0; i < response.data!.products.length; i++) {
+          final product = response.data!.products[i];
+print('  - Media count: ${product.media?.length ?? 0}');
+if (product.media?.isNotEmpty == true) {
+}
+print('  - Categories: ${product.categories}');
+        }
         
         products.clear();
         products.addAll(response.data!.products);
         _extractProductCategories();
-      } else {
-        
+print('Total products in controller: ${products.length}');
+        for (int i = 0; i < products.length; i++) {
+          final product = products[i];
+print('  - Media count: ${product.media?.length ?? 0}');
+}
+print('Filtered products count: ${filteredProducts.length}');
+        for (int i = 0; i < filteredProducts.length; i++) {
+          final product = filteredProducts[i];
+print('  - Media count: ${product.media?.length ?? 0}');
+}
+} else {
         // Clear products if API call fails - no fallback to mock data
         products.clear();
         _extractProductCategories();
       }
     }).catchError((e) {
-      
       // Clear products if API call fails - no fallback to mock data
       products.clear();
       _extractProductCategories();
@@ -255,11 +274,9 @@ class SellerProfileViewController extends GetxController {
       return;
     }
     
-    final buyerService = Get.find<BuyerService>();
-    buyerService.checkIfFavorite(
+    _productService.checkIfSellerFavorite(
       userId: currentUser!.userid!,
-      refId: sellerId,
-      type: 'S', // 'S' for seller
+      sellerId: sellerId,
     ).then((response) {
       if (response.isSuccess && response.data != null) {
         isFavorite.value = response.data!['isFavorite'] == true;
@@ -362,11 +379,9 @@ class SellerProfileViewController extends GetxController {
     final sellerId = int.tryParse(seller.value!.id);
     if (sellerId == null) return;
     
-    final buyerService = Get.find<BuyerService>();
-    buyerService.trackView(
+    _productService.trackSellerView(
       userId: currentUser!.userid!,
-      refId: sellerId,
-      type: 'S',
+      sellerId: sellerId,
     ).then((response) {
       if (response.isSuccess) {
         
@@ -420,22 +435,18 @@ class SellerProfileViewController extends GetxController {
     final wasAlreadyFavorite = isFavorite.value;
     isFavorite.value = !isFavorite.value;
     
-    final buyerService = Get.find<BuyerService>();
-    
     Future<ApiResponse<Map<String, dynamic>>> apiCall;
     if (wasAlreadyFavorite) {
       // Remove from favorites
-      apiCall = buyerService.removeFromFavorites(
+      apiCall = _productService.removeSellerFromFavorites(
         userId: currentUser!.userid!,
-        refId: sellerId,
-        type: 'S',
+        sellerId: sellerId,
       );
     } else {
       // Add to favorites
-      apiCall = buyerService.addToFavorites(
+      apiCall = _productService.addSellerToFavorites(
         userId: currentUser!.userid!,
-        refId: sellerId,
-        type: 'S',
+        sellerId: sellerId,
       );
     }
     
@@ -589,11 +600,9 @@ class SellerProfileViewController extends GetxController {
     final productId = int.tryParse(product.id);
     if (productId == null) return;
     
-    final buyerService = Get.find<BuyerService>();
-    buyerService.trackView(
+    _productService.trackProductView(
       userId: currentUser!.userid!,
-      refId: productId,
-      type: 'P',
+      productId: productId,
     ).then((response) {
       if (response.isSuccess) {
         

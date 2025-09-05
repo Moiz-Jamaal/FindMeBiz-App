@@ -1,16 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'dart:convert';
+import 'package:razorpay_flutter/razorpay_flutter.dart';
 import '../../../../services/auth_service.dart';
 import '../../../../services/seller_service.dart';
 import '../../../../services/subscription_service.dart';
 import '../../../../data/models/api/index.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../dashboard/controllers/seller_dashboard_controller.dart';
 
 class ProfilePublishController extends GetxController {
   final AuthService _authService = Get.find<AuthService>();
   final SellerService _sellerService = Get.find<SellerService>();
   final SubscriptionService _subscriptionService = Get.find<SubscriptionService>();
+  
+  // Razorpay instance
+  late Razorpay _razorpay;
   
   // Profile data
   final Rx<SellerDetailsExtended?> sellerProfile = Rx<SellerDetailsExtended?>(null);
@@ -29,13 +34,6 @@ class ProfilePublishController extends GetxController {
       'icon': Icons.payment,
       'recommended': true,
     },
-    {
-      'id': 'upi',
-      'name': 'UPI',
-      'description': 'Pay directly with UPI apps',
-      'icon': Icons.account_balance_wallet,
-      'recommended': false,
-    },
   ];
   
   // Payment state
@@ -50,13 +48,27 @@ class ProfilePublishController extends GetxController {
   
   // UI state
   final RxBool isLoading = false.obs;
-  final RxInt currentStep = 0.obs; // 0: Preview, 1: Payment, 2: Success
+  final RxInt currentStep = 0.obs; // 0: Preview, 1: Success
 
   @override
   void onInit() {
     super.onInit();
+    _initializeRazorpay();
     _loadProfileData();
-    _loadSubscriptions();
+    loadSubscriptions();
+  }
+
+  @override
+  void onClose() {
+    _razorpay.clear();
+    super.onClose();
+  }
+
+  void _initializeRazorpay() {
+    _razorpay = Razorpay();
+    _razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, _handlePaymentSuccess);
+    _razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, _handlePaymentError);
+    _razorpay.on(Razorpay.EVENT_EXTERNAL_WALLET, _handleExternalWallet);
   }
 
   @override
@@ -89,7 +101,7 @@ class ProfilePublishController extends GetxController {
         isPublished.value = response.data!.ispublished ?? false;
         
         if (isPublished.value) {
-          currentStep.value = 2; // Already published, show success
+          currentStep.value = 1; // Already published, show success
         }
       } else {
         Get.snackbar('Error', 'No seller profile found. Please complete onboarding first.');
@@ -104,8 +116,10 @@ class ProfilePublishController extends GetxController {
     }
   }
 
-  Future<void> _loadSubscriptions() async {
+  Future<void> loadSubscriptions() async {
     try {
+      isLoading.value = true;
+      
       final response = await _subscriptionService.getSubscriptions();
       
       if (response.success && response.data != null) {
@@ -123,23 +137,45 @@ class ProfilePublishController extends GetxController {
       }
       
     } catch (e) {
-      Get.snackbar('Error', 'Failed to load subscription plans');
-      
+      Get.snackbar(
+        'Network Error',
+        'Unable to load subscription plans. Please check your internet connection and try again.',
+        backgroundColor: Colors.red.withValues(alpha: 0.1),
+        colorText: Colors.red,
+      );
+    } finally {
+      isLoading.value = false;
     }
   }
 
   Future<void> _createBasicSubscription() async {
-   
+    try {
       final response = await _subscriptionService.ensureBasicSubscription();
       if (response.success && response.data != null) {
         selectedSubscription.value = response.data;
         availableSubscriptions.add(response.data!);
+      } else {
+        Get.snackbar(
+          'Subscription Error',
+          'Unable to create subscription plans. Please try again later.',
+          backgroundColor: Colors.red.withValues(alpha: 0.1),
+          colorText: Colors.red,
+        );
       }
-   
+    } catch (e) {
+      Get.snackbar(
+        'Network Error',
+        'Unable to initialize subscription plans. Please check your internet connection.',
+        backgroundColor: Colors.red.withValues(alpha: 0.1),
+        colorText: Colors.red,
+      );
+    }
   }
 
   void selectSubscription(SubscriptionMaster subscription) {
     selectedSubscription.value = subscription;
+    // Force refresh of UI elements that depend on subscription data
+    selectedSubscription.refresh();
   }
 
   void selectPaymentMethod(String method) {
@@ -147,7 +183,7 @@ class ProfilePublishController extends GetxController {
   }
 
   void nextStep() {
-    if (currentStep.value < 2) {
+    if (currentStep.value < 1) {
       currentStep.value++;
     }
   }
@@ -159,71 +195,183 @@ class ProfilePublishController extends GetxController {
   }
 
   Future<void> processPayment() async {
-    if (selectedSubscription.value == null) {
-      Get.snackbar('Error', 'Please select a subscription plan');
+    if (selectedSubscription.value == null || sellerProfile.value?.sellerid == null) {
+      Get.snackbar('Error', 'Missing subscription or seller data');
+      return;
+    }
+
+    // Check if subscription has valid pricing data
+    if (subscriptionAmount == null || subscriptionCurrency == null) {
+      Get.snackbar(
+        'Payment Error',
+        'Unable to load subscription details. Please check your internet connection and try again.',
+        backgroundColor: Colors.red.withValues(alpha: 0.1),
+        colorText: Colors.red,
+      );
       return;
     }
 
     try {
       isProcessingPayment.value = true;
       
-      // Simulate payment processing with Razorpay
-      // In real implementation, integrate with Razorpay SDK
-      await Future.delayed(const Duration(seconds: 3));
-      
-      // Mock successful payment
-      paymentCompleted.value = true;
-      paymentId.value = 'pay_${DateTime.now().millisecondsSinceEpoch}';
-      
-      Get.snackbar(
-        'Payment Successful',
-        'Your payment has been processed successfully',
-        backgroundColor: AppTheme.successColor,
-        colorText: Colors.white,
+      // Create Razorpay order
+      final orderResponse = await _sellerService.createRazorpayOrder(
+        sellerId: sellerProfile.value!.sellerid!,
+        subscriptionId: selectedSubscription.value!.subid!,
       );
       
-      // Proceed to publish profile
-      await publishProfile();
+      if (!orderResponse.success || orderResponse.data == null) {
+        String errorMsg = 'Unable to initialize payment';
+        if (orderResponse.errorMessage?.isNotEmpty == true) {
+          errorMsg = orderResponse.errorMessage!;
+        } else if (orderResponse.message?.isNotEmpty == true) {
+          errorMsg = orderResponse.message!;
+        }
+        
+        Get.snackbar(
+          'Payment Error',
+          errorMsg,
+          backgroundColor: Colors.red.withValues(alpha: 0.1),
+          colorText: Colors.red,
+        );
+        return;
+      }
+      
+      // Launch Razorpay payment
+      final options = {
+        'key': orderResponse.data!['keyId'],
+        'amount': orderResponse.data!['amount'],
+        'name': 'Souq Subscription',
+        'description': 'Seller subscription payment',
+        'order_id': orderResponse.data!['orderId'],
+        'prefill': {
+          'contact': sellerProfile.value?.mobileno ?? '',
+          'email': _authService.currentUser?.emailid ?? '',
+        },
+        'theme': {
+          'color': '#0EA5A4'
+        }
+      };
+      
+      _razorpay.open(options);
       
     } catch (e) {
-      Get.snackbar('Payment Failed', 'Failed to process payment. Please try again.');
+      Get.snackbar(
+        'Network Error',
+        'Unable to process payment. Please check your internet connection and try again.',
+        backgroundColor: Colors.red.withValues(alpha: 0.1),
+        colorText: Colors.red,
+      );
+      isProcessingPayment.value = false;
+    }
+  }
+
+  void _handlePaymentSuccess(PaymentSuccessResponse response) async {
+    try {
+      // Verify payment on backend
+      final verifyResponse = await _sellerService.verifyRazorpayPayment(
+        sellerId: sellerProfile.value!.sellerid!,
+        subscriptionId: selectedSubscription.value!.subid!,
+        paymentId: response.paymentId!,
+        orderId: response.orderId!,
+        signature: response.signature!,
+      );
       
+      if (verifyResponse.success) {
+        paymentCompleted.value = true;
+        paymentId.value = response.paymentId!;
+        
+        // Show success message
+        Get.snackbar(
+          'Payment Successful',
+          'Your subscription has been activated successfully',
+          backgroundColor: AppTheme.successColor,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 2),
+        );
+        
+        // Wait a moment for user to see the success message
+        await Future.delayed(const Duration(seconds: 1));
+        
+        // Navigate to dashboard and clear all previous routes
+        _navigateToDashboardAndRefresh();
+        
+      } else {
+        Get.snackbar(
+          'Payment Verification Failed',
+          'Payment was successful but verification failed. Please contact support if amount is deducted.',
+          backgroundColor: Colors.orange.withValues(alpha: 0.1),
+          colorText: Colors.orange.shade700,
+        );
+      }
+    } catch (e) {
+      Get.snackbar(
+        'Network Error',
+        'Payment verification failed due to network error. Please check your internet connection.',
+        backgroundColor: Colors.red.withValues(alpha: 0.1),
+        colorText: Colors.red,
+      );
     } finally {
       isProcessingPayment.value = false;
     }
   }
 
+  void _navigateToDashboardAndRefresh() {
+    // Clear all routes and navigate to dashboard
+    Get.offAllNamed('/seller-dashboard');
+    
+    // Refresh dashboard data after navigation
+    Future.delayed(const Duration(milliseconds: 500), () {
+      try {
+        final dashboardController = Get.find<SellerDashboardController>();
+        dashboardController.refreshData();
+      } catch (e) {
+}
+    });
+  }
+
+  void _handlePaymentError(PaymentFailureResponse response) {
+    isProcessingPayment.value = false;
+    
+    String errorMessage = 'Payment was unsuccessful';
+    if (response.message?.toLowerCase().contains('network') == true ||
+        response.message?.toLowerCase().contains('internet') == true) {
+      errorMessage = 'Network error. Please check your internet connection and try again.';
+    } else if (response.message?.toLowerCase().contains('cancelled') == true) {
+      errorMessage = 'Payment was cancelled by user.';
+    } else if (response.message?.isNotEmpty == true) {
+      errorMessage = response.message!;
+    }
+    
+    Get.snackbar(
+      'Payment Failed', 
+      errorMessage,
+      backgroundColor: Colors.red.withValues(alpha: 0.1),
+      colorText: Colors.red,
+    );
+  }
+
+  void _handleExternalWallet(ExternalWalletResponse response) {
+    Get.snackbar('External Wallet', 'External wallet selected: ${response.walletName}');
+  }
+
   Future<void> publishProfile() async {
-    if (sellerProfile.value?.sellerid == null || selectedSubscription.value == null) {
-      Get.snackbar('Error', 'Profile or subscription data missing');
+    if (sellerProfile.value?.sellerid == null) {
+      Get.snackbar('Error', 'Profile data missing');
       return;
     }
 
     try {
       isPublishing.value = true;
       
-      // Parse subscription config to get amount details
-      Map<String, dynamic> subscriptionConfig = {};
-      try {
-        subscriptionConfig = jsonDecode(selectedSubscription.value!.subconfig );
-      } catch (e) {
-        subscriptionConfig = {'amount': 250, 'currency': 'INR'};
-      }
-      
-      // Set seller subscription
-      final response = await _sellerService.setSellerSubscription(
+      // Publish profile directly without subscription requirement
+      final response = await _sellerService.publishSellerProfile(
         sellerId: sellerProfile.value!.sellerid!,
-        planName: selectedSubscription.value!.subname,
-        amount: (subscriptionConfig['amount'] as num?)?.toDouble(),
-        currency: subscriptionConfig['currency'] as String?,
-        razorpayPaymentId: paymentId.value.isNotEmpty ? paymentId.value : null,
-        startDate: DateTime.now(),
-        endDate: DateTime.now().add(const Duration(days: 365)), // 1 year
       );
       
       if (response.success) {
         isPublished.value = true;
-        currentStep.value = 2; // Success step
+        currentStep.value = 1; // Success step
         
         Get.snackbar(
           'Profile Published!',
@@ -249,7 +397,7 @@ class ProfilePublishController extends GetxController {
   }
 
   void goToDashboard() {
-    Get.offAllNamed('/seller-dashboard');
+    _navigateToDashboardAndRefresh();
   }
 
   void retryPayment() {
@@ -343,38 +491,41 @@ class ProfilePublishController extends GetxController {
   }
 
   // Subscription Getters with JSON parsing
-  Map<String, dynamic> get subscriptionConfig {
+  Map<String, dynamic>? get subscriptionConfig {
     if (selectedSubscription.value?.subconfig == null) {
-      return {'amount': 250, 'currency': 'INR', 'period': 'year', 'interval': 1};
+      return null;
     }
     
     try {
       return jsonDecode(selectedSubscription.value!.subconfig);
     } catch (e) {
-      return {'amount': 250, 'currency': 'INR', 'period': 'year', 'interval': 1};
+      return null; // No fallback - return null on error
     }
   }
 
-  double get subscriptionAmount {
-    return (subscriptionConfig['amount'] as num?)?.toDouble() ?? 250.0;
+  double? get subscriptionAmount {
+    final config = subscriptionConfig;
+    if (config == null) return null;
+    return (config['amount'] as num?)?.toDouble();
   }
 
-  String get subscriptionCurrency {
-    return subscriptionConfig['currency'] as String? ?? 'INR';
+  String? get subscriptionCurrency {
+    final config = subscriptionConfig;
+    return config?['currency'] as String?;
   }
   
   String get subscriptionPeriod {
-    return subscriptionConfig['period'] as String? ?? 'year';
+    return subscriptionConfig!['period'] as String? ?? 'year';
   }
   
   int get subscriptionInterval {
-    return subscriptionConfig['interval'] as int? ?? 1;
+    return subscriptionConfig!['interval'] as int? ?? 1;
   }
   
   // Formatted subscription details for display
   List<MapEntry<String, String>> get subscriptionDetails {
     final config = subscriptionConfig;
-    return config.entries
+    return config!.entries
         .map((entry) => MapEntry(entry.key, entry.value.toString()))
         .toList();
   }
@@ -384,8 +535,6 @@ class ProfilePublishController extends GetxController {
       case 0:
         return 'Preview Your Profile';
       case 1:
-        return 'Complete Payment';
-      case 2:
         return 'Profile Published!';
       default:
         return 'Publish Profile';
@@ -397,8 +546,6 @@ class ProfilePublishController extends GetxController {
       case 0:
         return 'Review your profile before publishing';
       case 1:
-        return 'Pay $subscriptionCurrency ${subscriptionAmount.toStringAsFixed(0)} to make your profile visible';
-      case 2:
         return 'Your profile is now live and visible to buyers';
       default:
         return '';
@@ -410,8 +557,6 @@ class ProfilePublishController extends GetxController {
       case 0:
         return sellerProfile.value != null && isProfileValid;
       case 1:
-        return selectedPaymentMethod.value.isNotEmpty && !isProcessingPayment.value;
-      case 2:
         return true;
       default:
         return false;

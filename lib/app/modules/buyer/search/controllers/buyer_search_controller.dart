@@ -1,6 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:souq/app/data/models/seller.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../../../../services/buyer_service.dart';
 import '../../../../services/category_service.dart';
 import '../../../../services/viewed_history_service.dart';
@@ -12,6 +16,7 @@ class BuyerSearchController extends GetxController {
   final BuyerService _buyerService = Get.find<BuyerService>();
   final CategoryService _categoryService = Get.find<CategoryService>();
   final ViewedHistoryService _viewedHistoryService = Get.find<ViewedHistoryService>();
+  final ProductService _productService = ProductService.instance;
   
   // Search controllers
   final searchTextController = TextEditingController();
@@ -59,6 +64,195 @@ class BuyerSearchController extends GetxController {
   // UI state
   final RxBool showFilters = false.obs;
   final RxInt totalResultsCount = 0.obs;
+  
+  // Location methods
+  Future<void> getCurrentLocation() async {
+    try {
+      // Check if location service is enabled
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        Get.snackbar(
+          'Location Disabled',
+          'Please enable location services in your device settings',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.orange,
+          colorText: Colors.white,
+        );
+        return;
+      }
+
+      // Check location permission
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          Get.snackbar(
+            'Permission Denied',
+            'Location permission is required for nearby search',
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: Colors.red,
+            colorText: Colors.white,
+          );
+          return;
+        }
+      }
+      
+      if (permission == LocationPermission.deniedForever) {
+        Get.dialog(
+          AlertDialog(
+            title: const Text('Location Permission Required'),
+            content: const Text('Location permission is permanently denied. Please enable it in app settings to use nearby search.'),
+            actions: [
+              TextButton(
+                onPressed: () => Get.back(),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () {
+                  Get.back();
+                  openAppSettings();
+                },
+                child: const Text('Settings'),
+              ),
+            ],
+          ),
+        );
+        return;
+      }
+
+      // Show loading
+      Get.snackbar(
+        'Getting Location',
+        'Please wait while we get your current location...',
+        snackPosition: SnackPosition.BOTTOM,
+        duration: const Duration(seconds: 2),
+      );
+
+      // Get current position
+      Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+        timeLimit: const Duration(seconds: 10),
+      );
+
+      userLatitude.value = position.latitude;
+      userLongitude.value = position.longitude;
+      useLocation.value = true;
+      
+      Get.snackbar(
+        'Location Found',
+        'Loading nearby sellers...',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+        duration: const Duration(seconds: 2),
+      );
+      
+      // Automatically search for nearby sellers
+      await _searchNearbySellers();
+      
+    } on LocationServiceDisabledException {
+      Get.snackbar(
+        'Location Services Disabled',
+        'Please enable location services in your device settings',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.orange,
+        colorText: Colors.white,
+      );
+    } on PermissionDeniedException {
+      Get.snackbar(
+        'Permission Denied',
+        'Location permission is required for nearby search',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    } on TimeoutException {
+      Get.snackbar(
+        'Location Timeout',
+        'Could not get location. Please try again or check GPS signal',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.orange,
+        colorText: Colors.white,
+      );
+    } catch (e) {
+Get.snackbar(
+        'Location Error',
+        'Could not get location: ${e.toString()}',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    }
+  }
+
+  // Auto-search nearby sellers when location is obtained
+  Future<void> _searchNearbySellers() async {
+    try {
+      isSearching.value = true;
+      hasSearched.value = true;
+      
+      // Clear previous results
+      sellerResults.clear();
+      productResults.clear();
+      currentPage.value = 1;
+      
+      // Search for nearby sellers without any search query
+      await _searchSellers('');
+      
+      _updateResultsCount();
+      
+      if (sellerResults.isNotEmpty) {
+        Get.snackbar(
+          'Nearby Sellers Found',
+          'Found ${sellerResults.length} sellers near you',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 2),
+        );
+      } else {
+        Get.snackbar(
+          'No Nearby Sellers',
+          'No sellers found within ${radiusKm.value.toInt()} km',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.orange,
+          colorText: Colors.white,
+        );
+      }
+    } catch (e) {
+      errorMessage.value = 'Failed to load nearby sellers: ${e.toString()}';
+    } finally {
+      isSearching.value = false;
+    }
+  }
+
+  void toggleLocationSearch() async {
+    if (useLocation.value) {
+      // Disable location search
+      useLocation.value = false;
+      if (hasSearched.value) {
+        performSearch();
+      }
+    } else {
+      // Enable location search - get current location
+      await getCurrentLocation();
+    }
+  }
+
+  // Check if we have valid location data
+  bool get hasValidLocation => 
+      userLatitude.value != null && 
+      userLongitude.value != null &&
+      userLatitude.value! >= -90 && 
+      userLatitude.value! <= 90 &&
+      userLongitude.value! >= -180 && 
+      userLongitude.value! <= 180;
+
+  // Location-based search
+  final Rx<double?> userLatitude = Rx<double?>(null);
+  final Rx<double?> userLongitude = Rx<double?>(null);
+  final RxDouble radiusKm = 10.0.obs;
+  final RxBool useLocation = false.obs;
   
   // Recent searches
   final RxList<String> recentSearches = <String>[].obs;
@@ -198,12 +392,16 @@ class BuyerSearchController extends GetxController {
   }
 
   Future<void> _searchSellers(String query) async {
- 
+    try {
       final response = await _buyerService.searchSellers(
         businessName: query.isNotEmpty ? query : null,
         city: selectedCity.value.isNotEmpty ? selectedCity.value : null,
         area: selectedArea.value.isNotEmpty ? selectedArea.value : null,
         categoryId: selectedCategoryIds.isNotEmpty ? selectedCategoryIds.first : null,
+        address: null, // Can add address filter if needed
+        userLat: useLocation.value ? userLatitude.value : null,
+        userLng: useLocation.value ? userLongitude.value : null,
+        radiusKm: useLocation.value ? radiusKm.value : null,
       );
       
       if (response.isSuccess && response.data != null) {
@@ -213,12 +411,13 @@ class BuyerSearchController extends GetxController {
           sellerResults.addAll(response.data!);
         }
       }
-   
+    } catch (e) {
+}
   }
 
   Future<void> _searchProducts(String query) async {
  
-      final response = await _buyerService.searchProducts(
+      final response = await _productService.searchProducts(
         productName: query.isNotEmpty ? query : null,
         categoryIds: selectedCategoryIds.isNotEmpty ? selectedCategoryIds : null,
         minPrice: minPrice.value,

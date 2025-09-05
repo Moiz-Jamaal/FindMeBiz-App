@@ -133,7 +133,7 @@ class ProductsCategoryFilterSliver extends GetView<ProductsController> {
       child: Container(
         height: 60,
         padding: const EdgeInsets.symmetric(horizontal: AppConstants.defaultPadding),
-        child: ListView.builder(
+        child: Obx(() => ListView.builder(
           scrollDirection: Axis.horizontal,
           itemCount: controller.categories.length,
           itemBuilder: (context, index) {
@@ -162,7 +162,7 @@ class ProductsCategoryFilterSliver extends GetView<ProductsController> {
               );
             });
           },
-        ),
+        )),
       ),
     );
   }

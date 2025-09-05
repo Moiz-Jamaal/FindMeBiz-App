@@ -23,6 +23,7 @@ import 'app/services/auth_service.dart';
 import 'app/services/seller_service.dart';
 import 'app/services/category_service.dart';
 import 'app/services/subscription_service.dart';
+import 'services/product_service.dart';
 import 'app/services/image_upload_service.dart';
 import 'app/services/location_service.dart';
 import 'package:get_storage/get_storage.dart';
@@ -57,6 +58,7 @@ Future<void> main() async {
   
   Get.put<SellerService>(SellerService(), permanent: true);
   Get.put<CategoryService>(CategoryService(), permanent: true);
+  Get.put<ProductService>(ProductService(), permanent: true);
   Get.put<SubscriptionService>(SubscriptionService(), permanent: true);
   Get.put<ImageUploadService>(ImageUploadService(), permanent: true);
   Get.put<LocationService>(LocationService(), permanent: true);
