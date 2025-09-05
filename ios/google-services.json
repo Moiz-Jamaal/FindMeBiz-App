@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "580968294391",
+    "project_id": "findmebiz-b8cd9",
+    "storage_bucket": "findmebiz-b8cd9.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:580968294391:android:0ffc4d460cd4ee2a0330f2",
+        "android_client_info": {
+          "package_name": "com.application.findmebiz"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDYopoPl_WObN3duEmsxsUhObSyYN5SzPA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
