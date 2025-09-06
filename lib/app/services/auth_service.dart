@@ -19,6 +19,8 @@ class AuthService extends BaseApiService {
   SellerDetails? get currentSeller => _currentSeller.value;
   bool get isLoggedIn => _currentUser.value != null;
   RxBool get isLoggedInReactive => (_currentUser.value != null).obs;
+  // True if the logged-in user has an associated seller profile
+  bool get isSeller => _currentSeller.value != null;
   
   @override
   void onInit() {
