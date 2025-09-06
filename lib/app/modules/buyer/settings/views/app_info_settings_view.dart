@@ -184,6 +184,8 @@ class AppInfoSettingsView extends StatelessWidget {
     final auth = Get.find<AuthService>();
     
     try {
+      bool shouldLogout = false;
+      
       if (isSeller) {
         // Delete seller first
         if (auth.currentSeller?.sellerid != null) {
@@ -193,28 +195,36 @@ class AppInfoSettingsView extends StatelessWidget {
           if (!res.success) {
             Get.snackbar('Delete seller failed', res.message ?? 'Unable to delete seller account', snackPosition: SnackPosition.BOTTOM);
             if (!deleteUserToo) return; // If only deleting seller and it failed, stop here
+          } else {
+            shouldLogout = !deleteUserToo; // Logout if only deleting seller
           }
         }
         
         // If also deleting user account
         if (deleteUserToo) {
-          final resp = await auth.deleteAccount();
+          final resp = await auth.deleteAccount(); // This already handles logout internally
           if (resp.success) {
             Get.snackbar('Accounts deleted', 'Your seller and user accounts have been deleted', snackPosition: SnackPosition.BOTTOM);
           } else {
             Get.snackbar('User delete failed', resp.message ?? 'Seller deleted but unable to delete user account', snackPosition: SnackPosition.BOTTOM);
+            shouldLogout = true; // Still logout since seller was deleted
           }
         } else {
           Get.snackbar('Seller deleted', 'Your seller account has been deleted', snackPosition: SnackPosition.BOTTOM);
         }
       } else {
-        // Delete user account only (for non-sellers)
+        // Delete user account only (for non-sellers) - this already handles logout internally
         final resp = await auth.deleteAccount();
         if (resp.success) {
           Get.snackbar('Account deleted', 'Your account has been deleted', snackPosition: SnackPosition.BOTTOM);
         } else {
           Get.snackbar('Delete failed', resp.message ?? 'Unable to delete account', snackPosition: SnackPosition.BOTTOM);
         }
+      }
+      
+      // Logout if needed (seller deletion without user deletion)
+      if (shouldLogout) {
+        await auth.logout();
       }
     } catch (e) {
       Get.snackbar('Error', e.toString(), snackPosition: SnackPosition.BOTTOM);
