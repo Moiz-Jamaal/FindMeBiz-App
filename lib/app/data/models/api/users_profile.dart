@@ -28,22 +28,29 @@ class UsersProfile {
   });
 
   factory UsersProfile.fromJson(Map<String, dynamic> json) {
+    // Accept both PascalCase (API typed models) and lowercase (raw SELECT) keys
+    T? pick<T>(String a, String b) {
+      final v = json[a];
+      if (v != null) return v as T;
+      final v2 = json[b];
+      return v2 == null ? null : v2 as T;
+    }
     return UsersProfile(
-      userid: json['UserId'] as int?,
-      username: json['Username'] as String,
-      fullname: json['FullName'] as String?,
-      emailid: json['EmailId'] as String,
-      upassword: json['UPassword'] as String?,
-      dob: json['Dob'] as String?,
-      sex: json['Sex'] as String?,
-      mobileno: json['MobileNo'] as String?,
-      whatsappno: json['WhatsappNo'] as String?,
-      active: json['Active'] as bool? ?? true,
-      createddt: json['CreatedDt'] != null 
-          ? DateTime.parse(json['CreatedDt'] as String)
+      userid: pick<int>('UserId', 'userid'),
+      username: (pick<String>('Username', 'username'))!,
+      fullname: pick<String>('FullName', 'fullname'),
+      emailid: (pick<String>('EmailId', 'emailid'))!,
+      upassword: pick<String>('UPassword', 'upassword'),
+      dob: pick<String>('Dob', 'dob'),
+      sex: pick<String>('Sex', 'sex'),
+      mobileno: pick<String>('MobileNo', 'mobileno'),
+      whatsappno: pick<String>('WhatsappNo', 'whatsappno'),
+      active: (pick<bool>('Active', 'active')) ?? true,
+      createddt: (json['CreatedDt'] ?? json['createddt']) != null 
+          ? DateTime.parse(((json['CreatedDt'] ?? json['createddt']) as String))
           : null,
-      updateddt: json['UpdatedDt'] != null 
-          ? DateTime.parse(json['UpdatedDt'] as String)
+      updateddt: (json['UpdatedDt'] ?? json['updateddt']) != null 
+          ? DateTime.parse(((json['UpdatedDt'] ?? json['updateddt']) as String))
           : null,
     );
   }

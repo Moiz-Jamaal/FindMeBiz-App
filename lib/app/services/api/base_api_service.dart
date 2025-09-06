@@ -171,6 +171,11 @@ abstract class BaseApiService extends GetxService {
   }) async {
     try {
       final response = await apiClient.delete(endpoint, queryParams: queryParams);
+      // Some DELETE endpoints return 200 with a JSON body; since caller expects void,
+      // treat any 2xx as success and ignore body for broad compatibility.
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return ApiResponse.success(null);
+      }
       return _handleResponse<void>(response, null);
     } catch (e) {
       return ApiResponse.error('Network error: $e');

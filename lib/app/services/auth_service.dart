@@ -237,6 +237,13 @@ class AuthService extends BaseApiService {
     if (user.userid == null) {
       return ApiResponse.error('User ID is required for update');
     }
+    // Server requires UPassword on update; ensure we send one
+    if (user.upassword == null || user.upassword!.isEmpty) {
+      final existing = _currentUser.value;
+      if (existing?.upassword != null && existing!.upassword!.isNotEmpty) {
+        user = user.copyWith(upassword: existing.upassword);
+      }
+    }
     
     final response = await put<void>(
       '/User/${user.userid}',
