@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
+import 'dart:convert';
 import 'api/base_api_service.dart';
 import 'api/api_exception.dart';
 import 'role_service.dart';
@@ -287,19 +288,33 @@ class AuthService extends BaseApiService {
     Get.offAllNamed('/welcome');
   }
 
-  // Delete user account (soft delete)
+  // Delete user account 
   Future<ApiResponse<void>> deleteAccount() async {
     if (_currentUser.value?.userid == null) {
       return ApiResponse.error('No user logged in');
     }
     
-    final response = await delete('/User/${_currentUser.value!.userid}');
-    
-    if (response.success) {
-      _clearUserData();
-      Get.offAllNamed('/welcome');
+    // Use DELETE method and handle JSON response from backend
+    try {
+      final response = await apiClient.delete('/User/${_currentUser.value!.userid}');
+      
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        _clearUserData();
+        Get.offAllNamed('/welcome');
+        return ApiResponse.success(null);
+      } else {
+        // Try to parse error message from response
+        String errorMessage = 'Failed to delete account';
+        try {
+          final jsonResponse = jsonDecode(response.body);
+          errorMessage = jsonResponse['message'] ?? errorMessage;
+        } catch (_) {
+          errorMessage = response.body.isNotEmpty ? response.body : errorMessage;
+        }
+        return ApiResponse.error(errorMessage);
+      }
+    } catch (e) {
+      return ApiResponse.error('Network error: $e');
     }
-    
-    return response;
   }
 }

@@ -54,8 +54,25 @@ class SellerService extends BaseApiService {
 
   // Delete seller profile
   Future<ApiResponse<void>> deleteSeller(int sellerId) async {
-    final response = await delete('/Seller/$sellerId');
-    return response;
+    try {
+      final response = await apiClient.delete('/Seller/$sellerId');
+      
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return ApiResponse.success(null);
+      } else {
+        // Parse error message from response
+        String errorMessage = 'Failed to delete seller';
+        try {
+          final jsonResponse = jsonDecode(response.body);
+          errorMessage = jsonResponse['message'] ?? errorMessage;
+        } catch (_) {
+          errorMessage = response.body.isNotEmpty ? response.body : errorMessage;
+        }
+        return ApiResponse.error(errorMessage);
+      }
+    } catch (e) {
+      return ApiResponse.error('Network error: $e');
+    }
   }
 
   // Get seller settings
