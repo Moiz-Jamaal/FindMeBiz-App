@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'package:get/get.dart';
 import 'package:souq/app/data/models/api/category_master.dart';
 import 'package:souq/core/widgets/enhanced_network_image.dart';
@@ -275,7 +276,7 @@ class SearchView extends GetView<BuyerSearchController> {
             ),
             const SizedBox(height: 8),
             Text(
-              category.catname ?? 'Category',
+              category.catname,
               style: Get.textTheme.bodySmall?.copyWith(
                 fontWeight: FontWeight.w500,
               ),
@@ -502,24 +503,39 @@ class SearchView extends GetView<BuyerSearchController> {
       future: Get.find<AdService>().getSponsoredForSlotSync(AdSlot.searchProducts),
       builder: (context, snapshot) {
         final ads = snapshot.data ?? [];
-        // Deterministic: show a single slim banner above grid if there are any products
-        final showBanner = controller.productResults.isNotEmpty && ads.isNotEmpty;
-        final ad = showBanner ? ads.first : null;
+        // Only attempt to show a banner if we have products and a candidate ad with a URL
+  final hasCandidates = controller.productResults.isNotEmpty && ads.isNotEmpty;
+  final ad = hasCandidates ? ads.first : null;
+  final bannerUrl = ad?.imageUrl;
+  final shouldTryBanner = hasCandidates && bannerUrl != null && bannerUrl.isNotEmpty;
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (showBanner && ad != null) ...[
-              BannerAdTile(
-                ad: ad,
-                onTap: () {
-                  if (ad.deeplinkRoute != null) {
-                    Get.toNamed(ad.deeplinkRoute!, arguments: ad.payload);
+      if (shouldTryBanner && ad != null)
+              FutureBuilder<bool>(
+        future: _imageLoads(context, ad.imageUrl!),
+                builder: (context, snap) {
+                  final ok = snap.data == true;
+                  if (ok) {
+                    return Column(
+                      children: [
+                        BannerAdTile(
+                          ad: ad,
+                          onTap: () {
+                            if (ad.deeplinkRoute != null) {
+                              Get.toNamed(ad.deeplinkRoute!, arguments: ad.payload);
+                            }
+                          },
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+                    );
                   }
+                  // If image is loading or failed, do not show any fallback banner
+                  return const SizedBox.shrink();
                 },
               ),
-              const SizedBox(height: 12),
-            ],
             GridView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
@@ -539,6 +555,31 @@ class SearchView extends GetView<BuyerSearchController> {
         );
       },
     );
+  }
+
+  // Ensure we only show banner ads when the image actually loads from the internet.
+  Future<bool> _imageLoads(BuildContext context, String url) async {
+    try {
+      final completer = Completer<bool>();
+      final provider = NetworkImage(url);
+      final ImageStream stream = provider.resolve(ImageConfiguration.empty);
+      late final ImageStreamListener listener;
+      listener = ImageStreamListener(
+        (ImageInfo _, bool __) {
+          stream.removeListener(listener);
+          if (!completer.isCompleted) completer.complete(true);
+        },
+        onError: (Object _, StackTrace? __) {
+          stream.removeListener(listener);
+          if (!completer.isCompleted) completer.complete(false);
+        },
+      );
+      stream.addListener(listener);
+      // Avoid hanging forever if the request stalls.
+      return completer.future.timeout(const Duration(seconds: 6), onTimeout: () => false);
+    } catch (_) {
+      return false;
+    }
   }
   Widget _buildSellerCard(seller) {
     return Card(
