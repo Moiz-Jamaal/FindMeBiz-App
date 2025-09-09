@@ -381,7 +381,7 @@ class SellerProfileView extends GetView<SellerProfileViewController> {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        'Stall Location',
+                        'Seller Location',
                         style: Get.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w600,
                         ),
@@ -389,10 +389,7 @@ class SellerProfileView extends GetView<SellerProfileViewController> {
                     ],
                   ),
                   const SizedBox(height: 12),
-                  if (stallLocation.stallNumber != null) ...[
-                    _buildInfoRow('Stall Number', stallLocation.stallNumber!),
-                    const SizedBox(height: 8),
-                  ],
+
                   if (stallLocation.area != null) ...[
                     _buildInfoRow('Area', stallLocation.area!),
                     const SizedBox(height: 8),
