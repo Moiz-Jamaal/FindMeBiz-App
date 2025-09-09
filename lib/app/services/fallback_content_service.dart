@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
 import '../data/models/sponsored_content.dart';
 import '../data/models/api/index.dart';
@@ -20,9 +21,9 @@ class FallbackContentService extends GetxService {
       case AdSlot.homeNewSellers:
         return _getNewSellersFallback(limit);
       case AdSlot.searchSellers:
-        return _getSearchSellersFallback(limit);
+        return SizedBox(width: 0, height: 0) as Future<List<SponsoredContent>>; // No fallback for search sellers
       case AdSlot.searchProducts:
-        return _getSearchProductsFallback(limit);
+        return SizedBox(width: 0, height: 0) as Future<List<SponsoredContent>>; // No fallback for search products
       default:
         return [];
     }
