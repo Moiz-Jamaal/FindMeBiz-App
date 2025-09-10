@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../../services/auth_service.dart';
 import '../../../../services/seller_service.dart';
 
@@ -34,7 +35,7 @@ class AppInfoSettingsView extends StatelessWidget {
                   Text('Email: admin@findmebiz.com'),
                 ],
               ),
-              onTap: () {},
+              onTap: () => _openUrl('https://merchant.razorpay.com/policy/RAbtoU7UlbasYr/contact_us'),
             ),
           ),
 
@@ -44,7 +45,21 @@ class AppInfoSettingsView extends StatelessWidget {
             child: ListTile(
               leading: const Icon(Icons.description, color: Colors.blueGrey),
               title: const Text('Terms and Conditions', style: TextStyle(fontWeight: FontWeight.bold)),
-              subtitle: const Text('By using Souq, you agree to our terms of service. All transactions are subject to our platform rules and local regulations. Please review our full terms for details.'),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'By using FindMeBiz, you agree to our Terms of Service and platform policies. '
+                    'For complete details on our terms, privacy, refunds, and shipping, please refer to the documents below (hosted with our payment partner Razorpay).',
+                  ),
+                  const SizedBox(height: 8),
+                  _PolicyLink(label: 'Terms of Service', url: 'https://merchant.razorpay.com/policy/RAbtoU7UlbasYr/terms'),
+                  _PolicyLink(label: 'Privacy Policy', url: 'https://merchant.razorpay.com/policy/RAbtoU7UlbasYr/privacy'),
+                  _PolicyLink(label: 'Refund Policy', url: 'https://merchant.razorpay.com/policy/RAbtoU7UlbasYr/refund'),
+                  _PolicyLink(label: 'Shipping Policy', url: 'https://merchant.razorpay.com/policy/RAbtoU7UlbasYr/shipping'),
+                  _PolicyLink(label: 'Contact Us', url: 'https://merchant.razorpay.com/policy/RAbtoU7UlbasYr/contact_us'),
+                ],
+              ),
             ),
           ),
 
@@ -54,7 +69,9 @@ class AppInfoSettingsView extends StatelessWidget {
             child: ListTile(
               leading: const Icon(Icons.privacy_tip, color: Colors.blueGrey),
               title: const Text('Privacy Policy', style: TextStyle(fontWeight: FontWeight.bold)),
-              subtitle: const Text('Your privacy is important to us. We protect your data and do not share personal information without consent. See our privacy policy for more.'),
+              subtitle: const Text('Your privacy is important to us. Read our full privacy policy for details on data collection, use, and retention.'),
+              trailing: const Icon(Icons.open_in_new, size: 16, color: Colors.blueGrey),
+              onTap: () => _openUrl('https://merchant.razorpay.com/policy/RAbtoU7UlbasYr/privacy'),
             ),
           ),
 
@@ -229,5 +246,53 @@ class AppInfoSettingsView extends StatelessWidget {
     } catch (e) {
       Get.snackbar('Error', e.toString(), snackPosition: SnackPosition.BOTTOM);
     }
+  }
+
+  Future<void> _openUrl(String url) async {
+    final uri = Uri.parse(url);
+    try {
+      final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!ok) {
+        Get.snackbar('Could not open link', url, snackPosition: SnackPosition.BOTTOM);
+      }
+    } catch (e) {
+      Get.snackbar('Error', e.toString(), snackPosition: SnackPosition.BOTTOM);
+    }
+  }
+}
+
+class _PolicyLink extends StatelessWidget {
+  final String label;
+  final String url;
+
+  const _PolicyLink({required this.label, required this.url});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: () async {
+        final uri = Uri.parse(url);
+        try {
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+        } catch (_) {}
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.open_in_new, size: 16, color: Colors.blueGrey),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: const TextStyle(
+                color: Colors.blue,
+                decoration: TextDecoration.underline,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
