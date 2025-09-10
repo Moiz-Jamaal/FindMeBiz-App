@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'dart:convert';
-import 'package:razorpay_flutter/razorpay_flutter.dart';
+import 'package:razorpay_web/razorpay_web.dart';
 import '../../../../services/auth_service.dart';
 import '../../../../services/seller_service.dart';
 import '../../../../services/subscription_service.dart';
@@ -14,8 +14,8 @@ class ProfilePublishController extends GetxController {
   final SellerService _sellerService = Get.find<SellerService>();
   final SubscriptionService _subscriptionService = Get.find<SubscriptionService>();
   
-  // Razorpay instance
-  late Razorpay _razorpay;
+  // Razorpay instance - works on all platforms with razorpay_web
+  Razorpay? _razorpay;
   
   // Profile data
   final Rx<SellerDetailsExtended?> sellerProfile = Rx<SellerDetailsExtended?>(null);
@@ -60,15 +60,17 @@ class ProfilePublishController extends GetxController {
 
   @override
   void onClose() {
-    _razorpay.clear();
+    _razorpay?.clear();
     super.onClose();
   }
 
   void _initializeRazorpay() {
+    // Only initialize Razorpay on supported platforms (not web)
+    // Initialize Razorpay - now works on all platforms with razorpay_web
     _razorpay = Razorpay();
-    _razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, _handlePaymentSuccess);
-    _razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, _handlePaymentError);
-    _razorpay.on(Razorpay.EVENT_EXTERNAL_WALLET, _handleExternalWallet);
+    _razorpay!.on(RazorpayEvents.EVENT_PAYMENT_SUCCESS, _handlePaymentSuccess);
+    _razorpay!.on(RazorpayEvents.EVENT_PAYMENT_ERROR, _handlePaymentError);
+    _razorpay!.on(RazorpayEvents.EVENT_EXTERNAL_WALLET, _handleExternalWallet);
   }
 
   @override
@@ -253,7 +255,13 @@ class ProfilePublishController extends GetxController {
         }
       };
       
-      _razorpay.open(options);
+      // Check if Razorpay is available (not on web)
+      if (_razorpay != null) {
+        _razorpay!.open(options);
+      } else {
+        // Web platform - show alternative payment method
+        _handleWebPayment(orderResponse.data!);
+      }
       
     } catch (e) {
       Get.snackbar(
@@ -264,6 +272,52 @@ class ProfilePublishController extends GetxController {
       );
       isProcessingPayment.value = false;
     }
+  }
+
+  void _handleWebPayment(Map<String, dynamic> orderData) {
+    // For web platform, show information about alternative payment methods
+    Get.dialog(
+      AlertDialog(
+        title: const Text('Payment Not Available'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Payment processing is not available on the web version of this app.',
+              style: TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'To complete your subscription and publish your profile, please:',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            const Text('• Use the mobile app (Android/iOS)'),
+            const Text('• Contact our support team for manual processing'),
+            const SizedBox(height: 16),
+            Text(
+              'Order ID: ${orderData['orderId']}',
+              style: const TextStyle(
+                fontFamily: 'monospace',
+                fontSize: 12,
+                color: Colors.grey,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Get.back();
+              isProcessingPayment.value = false;
+            },
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+      barrierDismissible: false,
+    );
   }
 
   void _handlePaymentSuccess(PaymentSuccessResponse response) async {

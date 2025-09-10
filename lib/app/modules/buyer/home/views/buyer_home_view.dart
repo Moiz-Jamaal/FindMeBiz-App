@@ -168,6 +168,17 @@ class BuyerHomeView extends GetView<BuyerHomeController> {
                 const ModuleSwitchButton(),
                 IconButton(
                   icon: const Icon(
+                    Icons.favorite_outline,
+                    color: AppTheme.textPrimary,
+                    size: 28,
+                  ),
+                  onPressed: () {
+                    Get.toNamed('/buyer-favorites');
+                  },
+                  tooltip: 'Favorites',
+                ),
+                IconButton(
+                  icon: const Icon(
                     Icons.settings,
                     color: AppTheme.textPrimary,
                     size: 28,

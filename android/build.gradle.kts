@@ -3,6 +3,39 @@ allprojects {
         google()
         mavenCentral()
     }
+     subprojects {
+        afterEvaluate {
+            plugins.withId("com.android.application") {
+                extensions.configure<com.android.build.gradle.AppExtension>("android") {
+                    if (namespace == null) {
+                        namespace = project.name
+                    }
+                    compileOptions {
+                        sourceCompatibility = JavaVersion.VERSION_11
+                        targetCompatibility = JavaVersion.VERSION_11
+                    }
+                }
+            }
+            plugins.withId("com.android.library") {
+                extensions.configure<com.android.build.gradle.LibraryExtension>("android") {
+                    if (namespace == null) {
+                        namespace = project.name
+                    }
+                    compileOptions {
+                        sourceCompatibility = JavaVersion.VERSION_11
+                        targetCompatibility = JavaVersion.VERSION_11
+                    }
+                }
+            }
+            
+            // Force Kotlin JVM target for all projects
+            tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
+                kotlinOptions {
+                    jvmTarget = "11"
+                }
+            }
+        }
+    }
 }
 
 buildscript {

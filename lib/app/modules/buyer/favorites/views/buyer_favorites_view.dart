@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/constants/app_constants.dart';
+import '../../../../data/models/api/index.dart';
 import '../controllers/buyer_favorites_controller.dart';
 
 class BuyerFavoritesView extends GetView<BuyerFavoritesController> {
@@ -14,6 +15,7 @@ class BuyerFavoritesView extends GetView<BuyerFavoritesController> {
       appBar: _buildAppBar(),
       body: Column(
         children: [
+          _buildTabSection(),
           _buildFiltersSection(),
           Expanded(
             child: Obx(() {
@@ -46,7 +48,7 @@ class BuyerFavoritesView extends GetView<BuyerFavoritesController> {
         onPressed: () => Get.back(),
       ),
       actions: [
-        Obx(() => controller.favoriteSellers.isNotEmpty
+        Obx(() => controller.hasFavorites
             ? PopupMenuButton<String>(
                 onSelected: (value) {
                   switch (value) {
@@ -86,6 +88,136 @@ class BuyerFavoritesView extends GetView<BuyerFavoritesController> {
     );
   }
 
+  Widget _buildTabSection() {
+    return Container(
+      color: Colors.white,
+      child: Row(
+        children: [
+          Expanded(
+            child: Obx(() => InkWell(
+              onTap: () => controller.switchTab('sellers'),
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                decoration: BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(
+                      color: controller.currentTab.value == 'sellers'
+                          ? AppTheme.buyerPrimary
+                          : Colors.transparent,
+                      width: 2,
+                    ),
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    Icon(
+                      Icons.store,
+                      color: controller.currentTab.value == 'sellers'
+                          ? AppTheme.buyerPrimary
+                          : AppTheme.textSecondary,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Sellers',
+                      style: Get.textTheme.bodyMedium?.copyWith(
+                        color: controller.currentTab.value == 'sellers'
+                            ? AppTheme.buyerPrimary
+                            : AppTheme.textSecondary,
+                        fontWeight: controller.currentTab.value == 'sellers'
+                            ? FontWeight.w600
+                            : FontWeight.normal,
+                      ),
+                    ),
+                    if (controller.favoritesCount.value != null) ...[
+                      const SizedBox(height: 2),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: controller.currentTab.value == 'sellers'
+                              ? AppTheme.buyerPrimary
+                              : AppTheme.textHint,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          '${controller.favoritesCount.value!.sellersCount}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            )),
+          ),
+          Expanded(
+            child: Obx(() => InkWell(
+              onTap: () => controller.switchTab('products'),
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                decoration: BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(
+                      color: controller.currentTab.value == 'products'
+                          ? AppTheme.buyerPrimary
+                          : Colors.transparent,
+                      width: 2,
+                    ),
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    Icon(
+                      Icons.shopping_bag,
+                      color: controller.currentTab.value == 'products'
+                          ? AppTheme.buyerPrimary
+                          : AppTheme.textSecondary,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Products',
+                      style: Get.textTheme.bodyMedium?.copyWith(
+                        color: controller.currentTab.value == 'products'
+                            ? AppTheme.buyerPrimary
+                            : AppTheme.textSecondary,
+                        fontWeight: controller.currentTab.value == 'products'
+                            ? FontWeight.w600
+                            : FontWeight.normal,
+                      ),
+                    ),
+                    if (controller.favoritesCount.value != null) ...[
+                      const SizedBox(height: 2),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: controller.currentTab.value == 'products'
+                              ? AppTheme.buyerPrimary
+                              : AppTheme.textHint,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          '${controller.favoritesCount.value!.productsCount}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            )),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildFiltersSection() {
     return Container(
       color: Colors.white,
@@ -96,7 +228,7 @@ class BuyerFavoritesView extends GetView<BuyerFavoritesController> {
           Row(
             children: [
               Obx(() => Text(
-                '${controller.favoriteSellers.length} favorites',
+                '${controller.currentTabCount} ${controller.currentTab.value}',
                 style: Get.textTheme.bodyMedium?.copyWith(
                   color: AppTheme.textSecondary,
                 ),
@@ -154,22 +286,49 @@ class BuyerFavoritesView extends GetView<BuyerFavoritesController> {
   Widget _buildFavoritesList() {
     return RefreshIndicator(
       onRefresh: () async => controller.refreshFavorites(),
-      child: ListView.builder(
-        padding: const EdgeInsets.all(AppConstants.defaultPadding),
-        itemCount: controller.favoriteSellers.length,
-        itemBuilder: (context, index) {
-          final seller = controller.favoriteSellers[index];
-          return _buildFavoriteCard(seller);
-        },
-      ),
+      child: Obx(() {
+        if (controller.currentTab.value == 'sellers') {
+          return _buildSellersGrid();
+        } else {
+          return _buildProductsGrid();
+        }
+      }),
     );
   }
 
-  Widget _buildFavoriteCard(seller) {
+  Widget _buildSellersGrid() {
+    return ListView.builder(
+      padding: const EdgeInsets.all(AppConstants.defaultPadding),
+      itemCount: controller.favoriteSellers.length,
+      itemBuilder: (context, index) {
+        final seller = controller.favoriteSellers[index];
+        return _buildFavoriteSellerCard(seller);
+      },
+    );
+  }
+
+  Widget _buildProductsGrid() {
+    return GridView.builder(
+      padding: const EdgeInsets.all(AppConstants.defaultPadding),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        childAspectRatio: 0.7,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+      ),
+      itemCount: controller.favoriteProducts.length,
+      itemBuilder: (context, index) {
+        final product = controller.favoriteProducts[index];
+        return _buildFavoriteProductCard(product);
+      },
+    );
+  }
+
+  Widget _buildFavoriteSellerCard(seller) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: InkWell(
-        onTap: () => controller.viewSeller(seller),
+        onTap: () => controller.viewSeller(seller.sellerid ?? 0),
         borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -216,27 +375,7 @@ class BuyerFavoritesView extends GetView<BuyerFavoritesController> {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ],
-                        if (seller.stallLocation != null) ...[
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.location_on,
-                                size: 16,
-                                color: AppTheme.textHint,
-                              ),
-                              const SizedBox(width: 4),
-                              Expanded(
-                                child: Text(
-                                  '${seller.stallLocation!.area} • ${seller.stallLocation!.stallNumber}',
-                                  style: Get.textTheme.bodySmall?.copyWith(
-                                    color: AppTheme.textSecondary,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
+                       
                       ],
                     ),
                   ),
@@ -247,7 +386,10 @@ class BuyerFavoritesView extends GetView<BuyerFavoritesController> {
                       Icons.favorite,
                       color: Colors.red,
                     ),
-                    onPressed: () => controller.removeFavorite(seller),
+                    onPressed: () => controller.toggleSellerFavorite(
+                      seller.sellerid ?? 0,
+                      seller.businessname ?? 'Seller',
+                    ),
                   ),
                 ],
               ),
@@ -263,7 +405,7 @@ class BuyerFavoritesView extends GetView<BuyerFavoritesController> {
                   _buildActionButton(
                     icon: Icons.visibility,
                     label: 'View',
-                    onPressed: () => controller.viewSeller(seller),
+                    onPressed: () => controller.viewSeller(seller.sellerid ?? 0),
                   ),
                   Container(
                     height: 30,
@@ -304,6 +446,125 @@ class BuyerFavoritesView extends GetView<BuyerFavoritesController> {
     );
   }
 
+  Widget _buildFavoriteProductCard(Product product) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: InkWell(
+        onTap: () => controller.viewProduct(int.tryParse(product.id) ?? 0),
+        borderRadius: BorderRadius.circular(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Product Image
+            Expanded(
+              flex: 3,
+              child: Container(
+                width: double.infinity,
+                decoration: const BoxDecoration(
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(12),
+                    topRight: Radius.circular(12),
+                  ),
+                ),
+                child: Stack(
+                  children: [
+                    ClipRRect(
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(12),
+                        topRight: Radius.circular(12),
+                      ),
+                      child: Image.network(
+                        product.primaryImageUrl,
+                        width: double.infinity,
+                        height: double.infinity,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            color: Colors.grey.shade200,
+                            child: Icon(
+                              Icons.shopping_bag,
+                              size: 40,
+                              color: Colors.grey.shade400,
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    // Favorite button
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: Container(
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                        ),
+                        child: IconButton(
+                          icon: const Icon(
+                            Icons.favorite,
+                            color: Colors.red,
+                            size: 20,
+                          ),
+                          onPressed: () => controller.toggleProductFavorite(
+                            int.tryParse(product.id) ?? 0, 
+                            product.name,
+                          ),
+                          padding: const EdgeInsets.all(4),
+                          constraints: const BoxConstraints(),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            // Product Details
+            Expanded(
+              flex: 2,
+              child: Padding(
+                padding: const EdgeInsets.all(8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      product.name,
+                      style: Get.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    if (product.categoryNames?.isNotEmpty == true)
+                      Text(
+                        product.categoryNames!.first,
+                        style: Get.textTheme.bodySmall?.copyWith(
+                          color: AppTheme.textHint,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    const Spacer(),
+                    Text(
+                      product.formattedPrice,
+                      style: Get.textTheme.bodyMedium?.copyWith(
+                        color: AppTheme.buyerPrimary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildActionButton({
     required IconData icon,
     required String label,
@@ -339,46 +600,54 @@ class BuyerFavoritesView extends GetView<BuyerFavoritesController> {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(AppConstants.defaultPadding),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.favorite_border,
-              size: 80,
-              color: AppTheme.textHint,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'No Favorites Yet',
-              style: Get.textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: AppTheme.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Start exploring and add sellers to your favorites\nto see them here!',
-              style: Get.textTheme.bodyMedium?.copyWith(
+        child: Obx(() {
+          final isSellerTab = controller.currentTab.value == 'sellers';
+          final tabName = isSellerTab ? 'Sellers' : 'Products';
+          final icon = isSellerTab ? Icons.store : Icons.shopping_bag;
+          
+          return Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: 80,
                 color: AppTheme.textHint,
               ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: () => Get.offAllNamed('/buyer-home'),
-              icon: const Icon(Icons.explore),
-              label: const Text('Explore Sellers'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.buyerPrimary,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 12,
+              const SizedBox(height: 16),
+              Text(
+                'No Favorite $tabName Yet',
+                style: Get.textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.textSecondary,
                 ),
               ),
-            ),
-          ],
-        ),
+              const SizedBox(height: 8),
+              Text(
+                isSellerTab
+                    ? 'Start exploring and add sellers to your favorites\nto see them here!'
+                    : 'Start exploring and add products to your favorites\nto see them here!',
+                style: Get.textTheme.bodyMedium?.copyWith(
+                  color: AppTheme.textHint,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton.icon(
+                onPressed: () => Get.offAllNamed('/buyer-home'),
+                icon: Icon(isSellerTab ? Icons.explore : Icons.shopping_bag),
+                label: Text(isSellerTab ? 'Explore Sellers' : 'Explore Products'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.buyerPrimary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
+                  ),
+                ),
+              ),
+            ],
+          );
+        }),
       ),
     );
   }

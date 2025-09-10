@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:get/get.dart';
-import 'package:razorpay_flutter/razorpay_flutter.dart';
+import 'package:razorpay_web/razorpay_web.dart';
 
 /// Lightweight payment result
 class PaymentResult {
@@ -37,16 +37,17 @@ abstract class PaymentService {
 
 /// Razorpay implementation
 class RazorpayPaymentService extends GetxService implements PaymentService {
-  late final Razorpay _razorpay;
+  Razorpay? _razorpay;
   final _completer = Rx<Completer<PaymentResult>?>(null);
 
   @override
   void onInit() {
     super.onInit();
+    // Initialize Razorpay - now works on all platforms with razorpay_web
     _razorpay = Razorpay();
-    _razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, _handlePaymentSuccess);
-    _razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, _handlePaymentError);
-    _razorpay.on(Razorpay.EVENT_EXTERNAL_WALLET, _handleExternalWallet);
+    _razorpay!.on(RazorpayEvents.EVENT_PAYMENT_SUCCESS, _handlePaymentSuccess);
+    _razorpay!.on(RazorpayEvents.EVENT_PAYMENT_ERROR, _handlePaymentError);
+    _razorpay!.on(RazorpayEvents.EVENT_EXTERNAL_WALLET, _handleExternalWallet);
   }
 
   @override
@@ -78,12 +79,15 @@ class RazorpayPaymentService extends GetxService implements PaymentService {
 
     final completer = Completer<PaymentResult>();
     _completer.value = completer;
+    
+    // Razorpay is now available on all platforms with razorpay_web
     try {
-      _razorpay.open(options);
+      _razorpay!.open(options);
     } catch (e) {
       _completer.value = null;
       return PaymentResult.failure(e.toString());
     }
+    
     return completer.future.timeout(
       const Duration(minutes: 5),
       onTimeout: () => PaymentResult.failure('Payment timed out'),
@@ -122,7 +126,7 @@ class RazorpayPaymentService extends GetxService implements PaymentService {
 
   @override
   void onClose() {
-    _razorpay.clear();
+    _razorpay?.clear();
     super.onClose();
   }
 }
