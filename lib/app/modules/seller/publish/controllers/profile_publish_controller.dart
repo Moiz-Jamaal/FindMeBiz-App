@@ -243,7 +243,7 @@ class ProfilePublishController extends GetxController {
       final options = {
         'key': orderResponse.data!['keyId'],
         'amount': orderResponse.data!['amount'],
-        'name': 'Souq Subscription',
+        'name': 'FindMeBiz Subscription',
         'description': 'Seller subscription payment',
         'order_id': orderResponse.data!['orderId'],
         'prefill': {
