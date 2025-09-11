@@ -44,16 +44,12 @@ class Product {
 
   // Get primary image URL
   String get primaryImageUrl {
-print('Product ID: $id, Name: $name');
-print('Media isEmpty: ${media?.isEmpty ?? "null"}');
 if (media?.isNotEmpty == true) {
 for (int i = 0; i < media!.length; i++) {
         final m = media![i];
 }
     }
-print('Images: $images');
-    
-    if (media?.isNotEmpty == true) {
+if (media?.isNotEmpty == true) {
       final primaryMedia = media!.firstWhere(
         (m) => m.isPrimary && m.mediaType == 'image',
         orElse: () => media!.firstWhere(
@@ -61,15 +57,12 @@ print('Images: $images');
           orElse: () => media!.first,
         ),
       );
-print('=== END PRIMARY IMAGE DEBUG ===');
-      return primaryMedia.mediaUrl;
+return primaryMedia.mediaUrl;
     }
     if (images.isNotEmpty) {
-print('=== END PRIMARY IMAGE DEBUG ===');
-      return images.first;
+return images.first;
     }
-print('=== END PRIMARY IMAGE DEBUG ===');
-    return 'https://via.placeholder.com/300x300/E0E0E0/FFFFFF?text=No+Image';
+return 'https://via.placeholder.com/300x300/E0E0E0/FFFFFF?text=No+Image';
   }
 
   // Get all image URLs
@@ -118,11 +111,7 @@ print('=== END PRIMARY IMAGE DEBUG ===');
     final mediaData = json['media'] ?? json['Media'];
     List<ProductMedia>? media;
     List<String> images = [];
-print('Product ID in JSON: ${json['productId'] ?? json['ProductId'] ?? json['id']}');
-print('Media data type: ${mediaData?.runtimeType}');
-print('Media length: ${mediaData?.length ?? "null"}');
-    
-    if (mediaData is List) {
+if (mediaData is List) {
 media = mediaData.map((item) {
 return ProductMedia.fromJson(item);
       }).toList();

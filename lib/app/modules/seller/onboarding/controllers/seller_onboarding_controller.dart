@@ -246,10 +246,7 @@ class SellerOnboardingController extends GetxController {
         );
 
         // Debug: Check services state before navigation
-        print('DEBUG: Before navigation - Current user: ${_authService.currentUser?.userid}');
-        print('DEBUG: Seller creation response: ${response.data}');
-
-        try {
+try {
           // Ensure seller data is loaded in AuthService
           if (Get.isRegistered<RoleService>()) {
             await Get.find<RoleService>().checkSellerData();
@@ -261,8 +258,7 @@ class SellerOnboardingController extends GetxController {
           // Navigate to seller home with error handling
           await _navigateToSellerHome();
         } catch (navigationError) {
-          print('DEBUG: Navigation error: $navigationError');
-          // Fallback navigation
+// Fallback navigation
           _handleNavigationError(navigationError);
         }
       } else {
@@ -353,30 +349,20 @@ class SellerOnboardingController extends GetxController {
         final sellerResponse = await sellerService.getSellerByUserId(authService.currentUser!.userid!);
         
         if (!sellerResponse.success || sellerResponse.data == null) {
-          print('DEBUG: Warning - Could not load seller data after creation');
-        } else {
-          print('DEBUG: Successfully loaded seller data after creation');
-        }
+} else {
+}
       }
-
-      print('DEBUG: Navigation - User ID: ${authService.currentUser?.userid}');
-      print('DEBUG: Navigation - Is Seller: ${authService.isSeller}');
-      print('DEBUG: Navigation - All services OK, navigating to seller dashboard');
-
-      // Navigate to seller dashboard (correct route name)
+// Navigate to seller dashboard (correct route name)
       Get.offAllNamed(Routes.SELLER_DASHBOARD);
       
     } catch (e) {
-      print('DEBUG: Navigation error in _navigateToSellerHome: $e');
-      rethrow;
+rethrow;
     }
   }
 
   // Handle navigation errors with fallback options
   void _handleNavigationError(dynamic error) {
-    print('DEBUG: Handling navigation error: $error');
-    
-    Get.snackbar(
+Get.snackbar(
       'Navigation Issue',
       'Redirecting you to the main page...',
       backgroundColor: Colors.orange.withValues(alpha: 0.1),
@@ -398,8 +384,7 @@ class SellerOnboardingController extends GetxController {
           });
         } catch (e2) {
           // Option 3: Last resort - go to buyer home
-          print('DEBUG: All navigation attempts failed, going to buyer home');
-          Get.offAllNamed(Routes.BUYER_HOME);
+Get.offAllNamed(Routes.BUYER_HOME);
         }
       }
     });

@@ -110,24 +110,12 @@ class LocationSelectorController extends GetxController {
   }
 
   void onMapTap(double latitude, double longitude) {
-    print('DEBUG: onMapTap called with coordinates: $latitude, $longitude');
-    
-    selectedLatitude.value = latitude;
+selectedLatitude.value = latitude;
     selectedLongitude.value = longitude;
     hasLocationSelected.value = true;
-    
-    print('DEBUG: Updated reactive values:');
-    print('  - selectedLatitude: ${selectedLatitude.value}');
-    print('  - selectedLongitude: ${selectedLongitude.value}');
-    print('  - hasLocationSelected: ${hasLocationSelected.value}');
-    
-    // Update geolocation coordinates
+// Update geolocation coordinates
     currentGeoLocation.value = '$latitude,$longitude';
-    print('DEBUG: Updated currentGeoLocation: ${currentGeoLocation.value}');
-    
-    print('DEBUG: About to call _updateAddressFromCoordinates');
-    
-    // Reverse geocoding to get address details
+// Reverse geocoding to get address details
     _updateAddressFromCoordinates(latitude, longitude);
     
     // Move map to tapped location
@@ -143,35 +131,19 @@ class LocationSelectorController extends GetxController {
   }
 
   Future<void> _updateAddressFromCoordinates(double lat, double lng) async {
-    print('DEBUG: _updateAddressFromCoordinates called with lat: $lat, lng: $lng');
-    
-    try {
+try {
       isLoading.value = true;
-      print('DEBUG: Set isLoading to true');
-      
-      Get.snackbar(
+Get.snackbar(
         'Getting Address',
         'Fetching location details...',
         backgroundColor: Colors.blue.withValues(alpha: 0.1),
         colorText: Colors.blue,
         duration: const Duration(seconds: 1),
       );
-      
-      print('DEBUG: About to call LocationService.getAddressFromCoordinates');
-      final locationDetails = await _locationService.getAddressFromCoordinates(lat, lng);
-      print('DEBUG: LocationService returned: $locationDetails');
-      
-      if (locationDetails != null) {
-        print('DEBUG: LocationDetails found:');
-        print('  - formattedAddress: ${locationDetails.formattedAddress}');
-        print('  - area: ${locationDetails.area}');
-        print('  - city: ${locationDetails.city}');
-        print('  - state: ${locationDetails.state}');
-        print('  - pincode: ${locationDetails.pincode}');
-        
-        // Update all address fields
-        print('DEBUG: Updating text controllers...');
-        addressController.text = locationDetails.formattedAddress;
+final locationDetails = await _locationService.getAddressFromCoordinates(lat, lng);
+if (locationDetails != null) {
+// Update all address fields
+addressController.text = locationDetails.formattedAddress;
         areaController.text = locationDetails.area;
         cityController.text = locationDetails.city;
         stateController.text = locationDetails.state;
@@ -179,15 +151,7 @@ class LocationSelectorController extends GetxController {
         
         // Force UI update by triggering reactive value
         update();
-        
-        print('DEBUG: Text controllers updated:');
-        print('  - addressController.text: ${addressController.text}');
-        print('  - areaController.text: ${areaController.text}');
-        print('  - cityController.text: ${cityController.text}');
-        print('  - stateController.text: ${stateController.text}');
-        print('  - pincodeController.text: ${pincodeController.text}');
-        
-        Get.snackbar(
+Get.snackbar(
           'Address Updated',
           'Location details fetched successfully',
           backgroundColor: Colors.green.withValues(alpha: 0.1),
@@ -195,18 +159,14 @@ class LocationSelectorController extends GetxController {
           duration: const Duration(seconds: 2),
         );
       } else {
-        print('DEBUG: LocationDetails is null, using fallback');
-        // Fallback: Set coordinates as address if reverse geocoding fails
+// Fallback: Set coordinates as address if reverse geocoding fails
         addressController.text = 'Lat: ${lat.toStringAsFixed(6)}, Lng: ${lng.toStringAsFixed(6)}';
         // Clear other fields to let user fill manually
         areaController.text = '';
         cityController.text = '';
         stateController.text = '';
         pincodeController.text = '';
-        
-        print('DEBUG: Fallback values set');
-        
-        Get.snackbar(
+Get.snackbar(
           'Address Not Found',
           'Please fill address details manually',
           backgroundColor: Colors.orange.withValues(alpha: 0.1),
@@ -215,10 +175,7 @@ class LocationSelectorController extends GetxController {
         );
       }
     } catch (e) {
-      print('DEBUG: Exception in _updateAddressFromCoordinates: $e');
-      print('DEBUG: Exception stack trace: ${StackTrace.current}');
-      
-      // Fallback: Set coordinates as address
+// Fallback: Set coordinates as address
       addressController.text = 'Lat: ${lat.toStringAsFixed(6)}, Lng: ${lng.toStringAsFixed(6)}';
       areaController.text = '';
       cityController.text = '';
@@ -234,8 +191,7 @@ class LocationSelectorController extends GetxController {
       );
     } finally {
       isLoading.value = false;
-      print('DEBUG: Set isLoading to false');
-    }
+}
   }
 
   void zoomIn() {
@@ -418,17 +374,9 @@ class LocationSelectorController extends GetxController {
       final pincode = address['postcode'] ?? 
                       address['postal_code'] ?? '';
       pincodeController.text = pincode;
-      
-      print('DEBUG: Search result address fields updated:');
-      print('  Address: ${addressController.text}');
-      print('  Area: ${areaController.text}');
-      print('  City: ${cityController.text}');
-      print('  State: ${stateController.text}');
-      print('  Pincode: ${pincodeController.text}');
-    } else {
+} else {
       // If no address details in search result, try reverse geocoding
-      print('DEBUG: No address details in search result, trying reverse geocoding...');
-      _updateAddressFromCoordinates(lat, lon);
+_updateAddressFromCoordinates(lat, lon);
     }
     
     _searchResults.clear();
@@ -462,29 +410,14 @@ class LocationSelectorController extends GetxController {
 
   // DEBUG: Test method to check if location service is working
   Future<void> testLocationService() async {
-    print('DEBUG: Testing LocationService with known coordinates...');
-    
-    // Test with coordinates for Surat, Gujarat
+// Test with coordinates for Surat, Gujarat
     const testLat = 21.1702;
     const testLng = 72.8311;
-    
-    print('DEBUG: Testing with Surat coordinates: $testLat, $testLng');
-    
-    try {
+try {
       final result = await _locationService.getAddressFromCoordinates(testLat, testLng);
-      print('DEBUG: Test result: $result');
-      
-      if (result != null) {
-        print('DEBUG: Test SUCCESS - LocationService is working');
-        print('  - Address: ${result.formattedAddress}');
-        print('  - Area: ${result.area}');
-        print('  - City: ${result.city}');
-        print('  - State: ${result.state}');
-        print('  - Pincode: ${result.pincode}');
-        
-        // Test updating the text controllers directly
-        print('DEBUG: Testing text controller updates...');
-        addressController.text = "TEST: ${result.formattedAddress}";
+if (result != null) {
+// Test updating the text controllers directly
+addressController.text = "TEST: ${result.formattedAddress}";
         areaController.text = "TEST: ${result.area}";
         cityController.text = "TEST: ${result.city}";
         stateController.text = "TEST: ${result.state}";
@@ -492,19 +425,14 @@ class LocationSelectorController extends GetxController {
         
         // Force update
         update();
-        
-        print('DEBUG: Text controllers set to test values');
-        
-        Get.snackbar(
+Get.snackbar(
           'Test Complete',
           'Check console logs and address fields',
           backgroundColor: Colors.green.withValues(alpha: 0.1),
           colorText: Colors.green,
         );
       } else {
-        print('DEBUG: Test FAILED - LocationService returned null');
-        
-        // Test with dummy data
+// Test with dummy data
         addressController.text = "TEST: Dummy Address";
         areaController.text = "TEST: Dummy Area";
         cityController.text = "TEST: Dummy City";
@@ -521,9 +449,7 @@ class LocationSelectorController extends GetxController {
         );
       }
     } catch (e) {
-      print('DEBUG: Test EXCEPTION - LocationService threw error: $e');
-      
-      // Test with error data
+// Test with error data
       addressController.text = "ERROR: $e";
       areaController.text = "ERROR";
       cityController.text = "ERROR";

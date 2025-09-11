@@ -291,21 +291,16 @@ class BuyerProductViewController extends GetxController {
         pageSize: 10,
       ).then((response) {
         if (response.isSuccess && response.data != null) {
-print('Related products count: ${response.data!.products.length}');
-          if (response.data!.products.isNotEmpty) {
+if (response.data!.products.isNotEmpty) {
             final firstProduct = response.data!.products.first;
-print('Price: ${firstProduct.price}');
-print('Primary image URL: ${firstProduct.primaryImageUrl}');
-          }
+}
 relatedProducts.clear();
           final filtered = response.data!.products.where((p) => p.id != product.value!.id).toList();
           relatedProducts.addAll(filtered);
         } else {
-print('Error: ${response.errorMessage}');
 relatedProducts.clear();
         }
       }).catchError((e) {
-print('Exception: $e');
 relatedProducts.clear();
       });
     } else {

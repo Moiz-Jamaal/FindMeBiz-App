@@ -215,28 +215,20 @@ class SellerProfileViewController extends GetxController {
       pageSize: 50, // Get more products for seller profile
     ).then((response) {
       if (response.isSuccess && response.data != null) {
-print('Total products received: ${response.data!.products.length}');
-        
-        for (int i = 0; i < response.data!.products.length; i++) {
+for (int i = 0; i < response.data!.products.length; i++) {
           final product = response.data!.products[i];
-print('  - Media count: ${product.media?.length ?? 0}');
 if (product.media?.isNotEmpty == true) {
 }
-print('  - Categories: ${product.categories}');
-        }
+}
         
         products.clear();
         products.addAll(response.data!.products);
         _extractProductCategories();
-print('Total products in controller: ${products.length}');
-        for (int i = 0; i < products.length; i++) {
+for (int i = 0; i < products.length; i++) {
           final product = products[i];
-print('  - Media count: ${product.media?.length ?? 0}');
 }
-print('Filtered products count: ${filteredProducts.length}');
-        for (int i = 0; i < filteredProducts.length; i++) {
+for (int i = 0; i < filteredProducts.length; i++) {
           final product = filteredProducts[i];
-print('  - Media count: ${product.media?.length ?? 0}');
 }
 } else {
         // Clear products if API call fails - no fallback to mock data

@@ -29,13 +29,10 @@ class CashfreePaymentService extends GetxService implements PaymentService {
 
   void _initializeCashfree() {
     try {
-      print('🔵 Initializing Cashfree SDK...');
-      _cfPaymentGatewayService = CFPaymentGatewayService();
+_cfPaymentGatewayService = CFPaymentGatewayService();
       _cfPaymentGatewayService!.setCallback(_onCashfreeVerify, _onCashfreeError);
-      print('🟢 Cashfree SDK initialized successfully');
-    } catch (e) {
-      print('🔴 Failed to initialize Cashfree SDK: $e');
-      Get.snackbar('Initialization Error', 'Failed to initialize Cashfree: $e');
+} catch (e) {
+Get.snackbar('Initialization Error', 'Failed to initialize Cashfree: $e');
     }
   }
 
@@ -50,31 +47,17 @@ class CashfreePaymentService extends GetxService implements PaymentService {
     Map<String, dynamic>? notes,
   }) async {
     try {
-      print('🔵 CASHFREE PAYMENT START');
-      print('🔵 Amount in paise: $amountInPaise');
-      print('🔵 Name: $name');
-      print('🔵 Email: $email');
-      print('🔵 Contact: $contact');
-      print('🔵 Notes: $notes');
-      
-      // Convert paise to rupees for Cashfree (they expect amount in rupees)
+// Convert paise to rupees for Cashfree (they expect amount in rupees)
       double amountInRupees = amountInPaise / 100.0;
-      print('🔵 Amount in rupees: $amountInRupees');
-      
-      // Extract seller and subscription IDs from notes
+// Extract seller and subscription IDs from notes
       final sellerId = notes?['seller_id'] != null 
           ? int.tryParse(notes!['seller_id'].toString()) 
           : null;
       final subscriptionId = notes?['subscription_id'] != null 
           ? int.tryParse(notes!['subscription_id'].toString()) 
           : null;
-      
-      print('🔵 Extracted Seller ID: $sellerId');
-      print('🔵 Extracted Subscription ID: $subscriptionId');
-      
-      if (sellerId == null || subscriptionId == null) {
-        print('🔴 Missing seller or subscription information');
-        return PaymentResult.failure('Missing seller or subscription information');
+if (sellerId == null || subscriptionId == null) {
+return PaymentResult.failure('Missing seller or subscription information');
       }
       
       // Create order on backend first
@@ -90,20 +73,11 @@ class CashfreePaymentService extends GetxService implements PaymentService {
       );
       
       if (orderData == null) {
-        print('🔴 Failed to create order - orderData is null');
-        return PaymentResult.failure('Failed to create payment order');
+return PaymentResult.failure('Failed to create payment order');
       }
-      
-      print('🔵 Order data received: $orderData');
-      
-      // Create Cashfree session
-      print('🔵 Creating Cashfree session...');
-      print('🔵 Order Token: ${orderData['orderToken']}');
-      print('🔵 Order ID: ${orderData['orderId']}');
-      
-      if (orderData['orderToken'] == null || orderData['orderToken'].toString().isEmpty) {
-        print('🔴 Order token is null or empty!');
-        return PaymentResult.failure('Invalid order token received');
+// Create Cashfree session
+if (orderData['orderToken'] == null || orderData['orderToken'].toString().isEmpty) {
+return PaymentResult.failure('Invalid order token received');
       }
       
       CFSession? cfSession;
@@ -114,19 +88,12 @@ class CashfreePaymentService extends GetxService implements PaymentService {
             .setOrderId(orderData['orderId'].toString())
             .setPaymentSessionId(orderData['orderToken'].toString())
             .build();
-        
-        print('🟢 Cashfree session created successfully');
-      } on CFException catch (e) {
-        print('🔴 CFException creating session: ${e.message}');
-        return PaymentResult.failure('Failed to create payment session: ${e.message}');
+} on CFException catch (e) {
+return PaymentResult.failure('Failed to create payment session: ${e.message}');
       } catch (e) {
-        print('🔴 General error creating session: $e');
-        return PaymentResult.failure('Failed to create payment session: $e');
+return PaymentResult.failure('Failed to create payment session: $e');
       }
-      
-      print('🔵 Session created, building payment object...');
-      
-      // Create payment object
+// Create payment object
       final cfDropCheckoutPayment = CFDropCheckoutPaymentBuilder()
           .setSession(cfSession!)
           .setTheme(_buildCashfreeTheme())
@@ -135,23 +102,18 @@ class CashfreePaymentService extends GetxService implements PaymentService {
       // Set up completer for async payment result
       final completer = Completer<PaymentResult>();
       _completer.value = completer;
-      
-      print('🔵 Launching Cashfree payment...');
-      
-      // Launch payment
+// Launch payment
       _cfPaymentGatewayService!.doPayment(cfDropCheckoutPayment);
       
       return completer.future.timeout(
         const Duration(minutes: 5),
         onTimeout: () {
-          print('🔴 Payment timeout');
-          return PaymentResult.failure('Payment timed out');
+return PaymentResult.failure('Payment timed out');
         },
       );
       
     } catch (e) {
-      print('🔴 Exception in payINR: $e');
-      return PaymentResult.failure('Payment initialization failed: $e');
+return PaymentResult.failure('Payment initialization failed: $e');
     }
   }
 
@@ -167,12 +129,7 @@ class CashfreePaymentService extends GetxService implements PaymentService {
     Map<String, dynamic>? notes,
   }) async {
     try {
-      print('🔵 CASHFREE DEBUG: Starting order creation');
-      print('🔵 Seller ID: $sellerId');
-      print('🔵 Subscription ID: $subscriptionId');
-      print('🔵 Amount: $amount $currency');
-      
-      final headers = {
+final headers = {
         'Content-Type': 'application/json',
       };
 
@@ -183,10 +140,8 @@ class CashfreePaymentService extends GetxService implements PaymentService {
           utf8.encode('${currentUser!.emailid}:${currentUser.upassword}')
         );
         headers['Authorization'] = 'Basic $credentials';
-        print('🔵 Authorization added for: ${currentUser.emailid}');
-      } else {
-        print('🔴 No user credentials available');
-      }
+} else {
+}
 
       final requestBody = {
         'sellerId': sellerId,
@@ -195,12 +150,7 @@ class CashfreePaymentService extends GetxService implements PaymentService {
         'customerEmail': customerEmail,
         'customerPhone': customerPhone,
       };
-
-      print('🔵 Request URL: ${ApiConfig.baseUrl}/FMB/CreateCashfreeOrder');
-      print('🔵 Request Body: ${jsonEncode(requestBody)}');
-      print('🔵 Headers: $headers');
-      
-      // Add a small delay to ensure request is properly formed
+// Add a small delay to ensure request is properly formed
       await Future.delayed(const Duration(milliseconds: 100));
 
       final response = await http.post(
@@ -208,28 +158,19 @@ class CashfreePaymentService extends GetxService implements PaymentService {
         headers: headers,
         body: jsonEncode(requestBody),
       );
-
-      print('🔵 Response Status: ${response.statusCode}');
-      print('🔵 Response Body: ${response.body}');
-
-      if (response.statusCode == 200) {
+if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
-        print('🔵 Parsed Response: $responseData');
-        
-        if (responseData['success'] == true && responseData['data'] != null) {
-          print('🟢 Order created successfully: ${responseData['data']}');
-          return responseData['data'];
+if (responseData['success'] == true && responseData['data'] != null) {
+return responseData['data'];
         } else {
-          print('🔴 Order creation failed: ${responseData['message']}');
-          Get.snackbar(
+Get.snackbar(
             'Order Creation Failed',
             responseData['message'] ?? 'Failed to create order',
           );
           return null;
         }
       } else {
-        print('🔴 HTTP Error ${response.statusCode}: ${response.body}');
-        Get.snackbar(
+Get.snackbar(
           'Network Error',
           'Failed to create order. Status: ${response.statusCode}',
         );
@@ -237,8 +178,7 @@ class CashfreePaymentService extends GetxService implements PaymentService {
       }
       
     } catch (e) {
-      print('🔴 Exception in order creation: $e');
-      Get.snackbar('Order Creation Failed', 'Unable to create payment order: $e');
+Get.snackbar('Order Creation Failed', 'Unable to create payment order: $e');
       return null;
     }
   }
@@ -257,33 +197,24 @@ class CashfreePaymentService extends GetxService implements PaymentService {
   /// Handle successful payment verification
   void _onCashfreeVerify(String orderId) async {
     try {
-      print('🟢 CASHFREE VERIFY CALLBACK: $orderId');
-      
-      // Verify payment on backend
+// Verify payment on backend
       final isVerified = await _verifyCashfreePayment(orderId);
-      
-      print('🔵 Verification result: $isVerified');
-      
-      final completer = _completer.value;
+final completer = _completer.value;
       if (completer != null && !completer.isCompleted) {
         if (isVerified) {
-          print('🟢 Payment verified successfully, completing with success');
-          completer.complete(PaymentResult.success(
+completer.complete(PaymentResult.success(
             paymentId: orderId,
             orderId: orderId,
             signature: null, // Cashfree doesn't use signature like Razorpay
           ));
         } else {
-          print('🔴 Payment verification failed');
-          completer.complete(PaymentResult.failure('Payment verification failed'));
+completer.complete(PaymentResult.failure('Payment verification failed'));
         }
         _completer.value = null;
       } else {
-        print('🔴 No completer available or already completed');
-      }
+}
     } catch (e) {
-      print('🔴 Exception in verify callback: $e');
-      final completer = _completer.value;
+final completer = _completer.value;
       if (completer != null && !completer.isCompleted) {
         completer.complete(PaymentResult.failure('Verification error: $e'));
         _completer.value = null;
@@ -293,12 +224,7 @@ class CashfreePaymentService extends GetxService implements PaymentService {
 
   /// Handle payment errors
   void _onCashfreeError(CFErrorResponse errorResponse, String orderId) {
-    print('🔴 CASHFREE ERROR CALLBACK');
-    print('🔴 Order ID: $orderId');
-    print('🔴 Error Message: ${errorResponse.getMessage()}');
-    print('🔴 Error Status: ${errorResponse.getStatus()}');
-    
-    final completer = _completer.value;
+final completer = _completer.value;
     if (completer != null && !completer.isCompleted) {
       completer.complete(PaymentResult.failure(
         'Payment failed: ${errorResponse.getMessage()} (${errorResponse.getStatus()})'
@@ -310,9 +236,7 @@ class CashfreePaymentService extends GetxService implements PaymentService {
   /// Verify payment on backend
   Future<bool> _verifyCashfreePayment(String orderId) async {
     try {
-      print('🔵 VERIFYING PAYMENT: $orderId');
-      
-      final headers = {
+final headers = {
         'Content-Type': 'application/json',
       };
 
@@ -323,36 +247,24 @@ class CashfreePaymentService extends GetxService implements PaymentService {
           utf8.encode('${currentUser!.emailid}:${currentUser.upassword}')
         );
         headers['Authorization'] = 'Basic $credentials';
-        print('🔵 Verification auth for: ${currentUser.emailid}');
-      } else {
-        print('🔴 No auth for verification');
-      }
+} else {
+}
 
       final requestBody = {
         'orderId': orderId,
         'paymentId': orderId, // For Cashfree, payment ID can be same as order ID
       };
-
-      print('🔵 Verification URL: ${ApiConfig.baseUrl}/FMB/VerifyCashfreePayment');
-      print('🔵 Verification Body: ${jsonEncode(requestBody)}');
-
-      final response = await http.post(
+final response = await http.post(
         Uri.parse('${ApiConfig.baseUrl}/FMB/VerifyCashfreePayment'),
         headers: headers,
         body: jsonEncode(requestBody),
       );
-
-      print('🔵 Verification Status: ${response.statusCode}');
-      print('🔵 Verification Response: ${response.body}');
-
-      if (response.statusCode == 200) {
+if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
         final success = responseData['success'] == true;
-        print('🔵 Verification success: $success');
-        return success;
+return success;
       } else {
-        print('🔴 Verification HTTP error: ${response.statusCode}');
-        Get.snackbar(
+Get.snackbar(
           'Verification Error',
           'Failed to verify payment. Status: ${response.statusCode}',
         );
@@ -360,8 +272,7 @@ class CashfreePaymentService extends GetxService implements PaymentService {
       }
       
     } catch (e) {
-      print('🔴 Verification exception: $e');
-      Get.snackbar('Verification Failed', 'Unable to verify payment: $e');
+Get.snackbar('Verification Failed', 'Unable to verify payment: $e');
       return false;
     }
   }

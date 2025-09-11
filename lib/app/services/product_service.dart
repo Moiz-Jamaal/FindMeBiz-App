@@ -55,14 +55,11 @@ class ProductService extends BaseApiService {
       '/Products',
       queryParams: queryParams,
       fromJson: (json) {
-print('Response keys: ${json.keys.toList()}');
-        if (json['Products'] != null) {
+if (json['Products'] != null) {
           final productsList = json['Products'] as List;
 for (int i = 0; i < productsList.length; i++) {
             final product = productsList[i];
-print('  - Media in JSON: ${product['Media']}');
-print('  - Media length: ${product['Media']?.length ?? 'null'}');
-          }
+}
         }
 return ProductSearchResponse.fromJson(json);
       },

@@ -76,27 +76,21 @@ class LocationService extends GetxService {
 
   /// Reverse geocoding to get address from coordinates
   Future<LocationDetails?> getAddressFromCoordinates(double latitude, double longitude) async {
-    print('DEBUG LocationService: getAddressFromCoordinates called with lat: $latitude, lng: $longitude');
-    
-    try {
+try {
       // Try primary service (Nominatim)
       final primaryResult = await _tryNominatimGeocoding(latitude, longitude);
       if (primaryResult != null) {
-        print('DEBUG LocationService: Primary service succeeded');
-        return primaryResult;
+return primaryResult;
       }
       
       // Fallback: Try alternative service
-      print('DEBUG LocationService: Primary service failed, trying fallback...');
-      final fallbackResult = await _tryFallbackGeocoding(latitude, longitude);
+final fallbackResult = await _tryFallbackGeocoding(latitude, longitude);
       if (fallbackResult != null) {
-        print('DEBUG LocationService: Fallback service succeeded');
-        return fallbackResult;
+return fallbackResult;
       }
       
       // Last resort: return basic location details
-      print('DEBUG LocationService: All services failed, using basic fallback');
-      return LocationDetails(
+return LocationDetails(
         latitude: latitude,
         longitude: longitude,
         formattedAddress: 'Lat: ${latitude.toStringAsFixed(6)}, Lng: ${longitude.toStringAsFixed(6)}',
@@ -107,8 +101,7 @@ class LocationService extends GetxService {
         country: '',
       );
     } catch (e) {
-      print('DEBUG LocationService: Exception in main method: $e');
-      return LocationDetails(
+return LocationDetails(
         latitude: latitude,
         longitude: longitude,
         formattedAddress: 'Error: ${e.toString()}',
@@ -125,22 +118,15 @@ class LocationService extends GetxService {
   Future<LocationDetails?> _tryNominatimGeocoding(double latitude, double longitude) async {
     try {
       final url = 'https://nominatim.openstreetmap.org/reverse?format=json&lat=$latitude&lon=$longitude&zoom=18&addressdetails=1';
-      print('DEBUG LocationService: Making Nominatim request to: $url');
-      
-      final response = await http.get(
+final response = await http.get(
         Uri.parse(url),
         headers: {
           'User-Agent': 'SouqApp/1.0',
         },
       ).timeout(const Duration(seconds: 10));
-
-      print('DEBUG LocationService: Nominatim response status: ${response.statusCode}');
-      
-      if (response.statusCode == 200) {
+if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        print('DEBUG LocationService: Nominatim response data: $data');
-        
-        if (data != null && data['address'] != null) {
+if (data != null && data['address'] != null) {
           final address = data['address'];
           
           return LocationDetails(
@@ -158,8 +144,7 @@ class LocationService extends GetxService {
       
       return null;
     } catch (e) {
-      print('DEBUG LocationService: Nominatim exception: $e');
-      return null;
+return null;
     }
   }
 
@@ -168,19 +153,12 @@ class LocationService extends GetxService {
     try {
       // Using a different free service as fallback
       final url = 'https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=$latitude&longitude=$longitude&localityLanguage=en';
-      print('DEBUG LocationService: Making fallback request to: $url');
-      
-      final response = await http.get(
+final response = await http.get(
         Uri.parse(url),
       ).timeout(const Duration(seconds: 10));
-
-      print('DEBUG LocationService: Fallback response status: ${response.statusCode}');
-      
-      if (response.statusCode == 200) {
+if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        print('DEBUG LocationService: Fallback response data: $data');
-        
-        if (data != null) {
+if (data != null) {
           return LocationDetails(
             latitude: latitude,
             longitude: longitude,
@@ -196,8 +174,7 @@ class LocationService extends GetxService {
       
       return null;
     } catch (e) {
-      print('DEBUG LocationService: Fallback exception: $e');
-      return null;
+return null;
     }
   }
 

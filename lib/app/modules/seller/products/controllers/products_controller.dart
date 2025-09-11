@@ -83,11 +83,8 @@ class ProductsController extends GetxController {
       );
 
       if (response.isSuccess && response.data != null) {
-print('Seller products count: ${response.data!.products.length}');
-        if (response.data!.products.isNotEmpty) {
+if (response.data!.products.isNotEmpty) {
           final firstProduct = response.data!.products.first;
-print('Price: ${firstProduct.price}');
-print('Images count: ${firstProduct.images.length}');
 }
 final searchResponse = response.data!;
         

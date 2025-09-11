@@ -104,12 +104,9 @@ class SellerDashboardController extends GetxController {
       // Process products response
       final productsResponse = results[0] as dynamic; // Adjust type based on actual response type
       if (productsResponse.isSuccess && productsResponse.data != null) {
-print('Dashboard products count: ${productsResponse.data!.totalCount}');
-        if (productsResponse.data!.products.isNotEmpty) {
+if (productsResponse.data!.products.isNotEmpty) {
           final firstProduct = productsResponse.data!.products.first;
-print('Price: ${firstProduct.price}');
-print('Primary image URL: ${firstProduct.primaryImageUrl}');
-        }
+}
 totalProducts.value = productsResponse.data!.totalCount;
       }
 
