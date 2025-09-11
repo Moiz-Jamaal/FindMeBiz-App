@@ -38,6 +38,7 @@ dependencies:
   url_launcher: ^6.3.2
   get_storage: ^2.1.1
   razorpay_web: ^3.0.0
+  flutter_cashfree_pg_sdk: ^2.2.9+47
   firebase_core: ^3.4.0
   firebase_messaging: ^15.1.2
   flutter_local_notifications: 19.4.0

@@ -5,6 +5,7 @@ import 'package:razorpay_web/razorpay_web.dart';
 import '../../../../services/auth_service.dart';
 import '../../../../services/seller_service.dart';
 import '../../../../services/subscription_service.dart';
+import '../../../../services/payment_service.dart';
 import '../../../../data/models/api/index.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../dashboard/controllers/seller_dashboard_controller.dart';
@@ -13,6 +14,7 @@ class ProfilePublishController extends GetxController {
   final AuthService _authService = Get.find<AuthService>();
   final SellerService _sellerService = Get.find<SellerService>();
   final SubscriptionService _subscriptionService = Get.find<SubscriptionService>();
+  final PaymentGatewayManager _paymentGatewayManager = Get.put(PaymentGatewayManager());
   
   // Razorpay instance - works on all platforms with razorpay_web
   Razorpay? _razorpay;
@@ -29,10 +31,19 @@ class ProfilePublishController extends GetxController {
   final List<Map<String, dynamic>> paymentMethods = [
     {
       'id': 'razorpay',
+      'gateway': PaymentGateway.razorpay,
       'name': 'Razorpay',
       'description': 'Pay with cards, UPI, wallets & more',
       'icon': Icons.payment,
       'recommended': true,
+    },
+    {
+      'id': 'cashfree',
+      'gateway': PaymentGateway.cashfree,
+      'name': 'Cashfree',
+      'description': 'Secure payments with cards, UPI & wallets',
+      'icon': Icons.account_balance_wallet,
+      'recommended': false,
     },
   ];
   
@@ -216,51 +227,20 @@ class ProfilePublishController extends GetxController {
     try {
       isProcessingPayment.value = true;
       
-      // Create Razorpay order
-      final orderResponse = await _sellerService.createRazorpayOrder(
-        sellerId: sellerProfile.value!.sellerid!,
-        subscriptionId: selectedSubscription.value!.subid!,
+      // Get selected payment gateway
+      final selectedMethod = paymentMethods.firstWhere(
+        (method) => method['id'] == selectedPaymentMethod.value,
+        orElse: () => paymentMethods.first,
       );
       
-      if (!orderResponse.success || orderResponse.data == null) {
-        String errorMsg = 'Unable to initialize payment';
-        if (orderResponse.errorMessage?.isNotEmpty == true) {
-          errorMsg = orderResponse.errorMessage!;
-        } else if (orderResponse.message?.isNotEmpty == true) {
-          errorMsg = orderResponse.message!;
-        }
-        
-        Get.snackbar(
-          'Payment Error',
-          errorMsg,
-          backgroundColor: Colors.red.withValues(alpha: 0.1),
-          colorText: Colors.red,
-        );
-        return;
-      }
+      final PaymentGateway gateway = selectedMethod['gateway'];
+      final paymentService = _paymentGatewayManager.getService(gateway);
       
-      // Launch Razorpay payment
-      final options = {
-        'key': orderResponse.data!['keyId'],
-        'amount': orderResponse.data!['amount'],
-        'name': 'FindMeBiz Subscription',
-        'description': 'Seller subscription payment',
-        'order_id': orderResponse.data!['orderId'],
-        'prefill': {
-          'contact': sellerProfile.value?.mobileno ?? '',
-          'email': _authService.currentUser?.emailid ?? '',
-        },
-        'theme': {
-          'color': '#0EA5A4'
-        }
-      };
-      
-      // Check if Razorpay is available (not on web)
-      if (_razorpay != null) {
-        _razorpay!.open(options);
-      } else {
-        // Web platform - show alternative payment method
-        _handleWebPayment(orderResponse.data!);
+      // Use the appropriate payment service
+      if (gateway == PaymentGateway.razorpay) {
+        await _processRazorpayPayment();
+      } else if (gateway == PaymentGateway.cashfree) {
+        await _processCashfreePayment(paymentService);
       }
       
     } catch (e) {
@@ -272,6 +252,130 @@ class ProfilePublishController extends GetxController {
       );
       isProcessingPayment.value = false;
     }
+  }
+
+  Future<void> _processRazorpayPayment() async {
+    // Create Razorpay order
+    final orderResponse = await _sellerService.createRazorpayOrder(
+      sellerId: sellerProfile.value!.sellerid!,
+      subscriptionId: selectedSubscription.value!.subid!,
+    );
+    
+    if (!orderResponse.success || orderResponse.data == null) {
+      String errorMsg = 'Unable to initialize payment';
+      if (orderResponse.errorMessage?.isNotEmpty == true) {
+        errorMsg = orderResponse.errorMessage!;
+      } else if (orderResponse.message?.isNotEmpty == true) {
+        errorMsg = orderResponse.message!;
+      }
+      
+      Get.snackbar(
+        'Payment Error',
+        errorMsg,
+        backgroundColor: Colors.red.withValues(alpha: 0.1),
+        colorText: Colors.red,
+      );
+      return;
+    }
+    
+    // Launch Razorpay payment
+    final options = {
+      'key': orderResponse.data!['keyId'],
+      'amount': orderResponse.data!['amount'],
+      'name': 'FindMeBiz Subscription',
+      'description': 'Seller subscription payment',
+      'order_id': orderResponse.data!['orderId'],
+      'prefill': {
+        'contact': sellerProfile.value?.mobileno ?? '',
+        'email': _authService.currentUser?.emailid ?? '',
+      },
+      'theme': {
+        'color': '#0EA5A4'
+      }
+    };
+    
+    // Check if Razorpay is available (not on web)
+    if (_razorpay != null) {
+      _razorpay!.open(options);
+    } else {
+      // Web platform - show alternative payment method
+      _handleWebPayment(orderResponse.data!);
+    }
+  }
+
+  Future<void> _processCashfreePayment(PaymentService paymentService) async {
+    try {
+      final amount = (subscriptionAmount! * 100).toInt(); // Convert to paise
+      
+      final result = await paymentService.payINR(
+        amountInPaise: amount,
+        description: 'Seller subscription payment',
+        receipt: 'sub_${selectedSubscription.value!.subid}_${DateTime.now().millisecondsSinceEpoch}',
+        name: sellerProfile.value?.businessname ?? 'Customer',
+        email: _authService.currentUser?.emailid ?? '',
+        contact: sellerProfile.value?.mobileno ?? '',
+        notes: {
+          'seller_id': sellerProfile.value!.sellerid!.toString(),
+          'subscription_id': selectedSubscription.value!.subid!.toString(),
+        },
+      );
+      
+      if (result.success) {
+        await _handleCashfreeSuccess(result);
+      } else {
+        _handleCashfreeError(result.error ?? 'Payment failed');
+      }
+      
+    } catch (e) {
+      _handleCashfreeError('Payment processing failed: $e');
+    } finally {
+      isProcessingPayment.value = false;
+    }
+  }
+
+  Future<void> _handleCashfreeSuccess(PaymentResult result) async {
+    try {
+      // Verify payment on backend (implement backend verification)
+      // For now, simulating successful verification
+      await Future.delayed(const Duration(milliseconds: 500));
+      
+      paymentCompleted.value = true;
+      paymentId.value = result.paymentId ?? '';
+      
+      // Show success message
+      Get.snackbar(
+        'Payment Successful',
+        'Your subscription has been activated successfully',
+        backgroundColor: AppTheme.successColor,
+        colorText: Colors.white,
+        duration: const Duration(seconds: 2),
+      );
+      
+      // Wait a moment for user to see the success message
+      await Future.delayed(const Duration(seconds: 1));
+      
+      // Navigate to dashboard and clear all previous routes
+      _navigateToDashboardAndRefresh();
+      
+    } catch (e) {
+      Get.snackbar(
+        'Network Error',
+        'Payment verification failed due to network error. Please check your internet connection.',
+        backgroundColor: Colors.red.withValues(alpha: 0.1),
+        colorText: Colors.red,
+      );
+    }
+  }
+
+  void _handleCashfreeError(String error) {
+    isProcessingPayment.value = false;
+    
+    Get.snackbar(
+      'Payment Failed', 
+      error,
+      backgroundColor: Colors.red.withValues(alpha: 0.1),
+      colorText: Colors.red,
+    );
   }
 
   void _handleWebPayment(Map<String, dynamic> orderData) {

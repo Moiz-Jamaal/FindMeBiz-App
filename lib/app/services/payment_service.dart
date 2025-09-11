@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:get/get.dart';
 import 'package:razorpay_web/razorpay_web.dart';
+import 'cashfree_payment_service.dart';
 
 /// Lightweight payment result
 class PaymentResult {
@@ -33,6 +34,55 @@ abstract class PaymentService {
     String? contact,
     Map<String, dynamic>? notes,
   });
+}
+
+/// Payment gateway types
+enum PaymentGateway {
+  razorpay,
+  cashfree,
+}
+
+/// Payment gateway manager
+class PaymentGatewayManager extends GetxService {
+  final Map<PaymentGateway, PaymentService> _services = {};
+  
+  @override
+  void onInit() {
+    super.onInit();
+    _initializeServices();
+  }
+  
+  void _initializeServices() {
+    _services[PaymentGateway.razorpay] = RazorpayPaymentService();
+    _services[PaymentGateway.cashfree] = CashfreePaymentService();
+    
+    // Initialize services
+    for (var service in _services.values) {
+      if (service is GetxService) {
+        (service as GetxService).onInit();
+      }
+    }
+  }
+  
+  PaymentService getService(PaymentGateway gateway) {
+    final service = _services[gateway];
+    if (service == null) {
+      throw Exception('Payment service not found for gateway: $gateway');
+    }
+    return service;
+  }
+  
+  List<PaymentGateway> get availableGateways => _services.keys.toList();
+  
+  @override
+  void onClose() {
+    for (var service in _services.values) {
+      if (service is GetxService) {
+        (service as GetxService).onClose();
+      }
+    }
+    super.onClose();
+  }
 }
 
 /// Razorpay implementation
