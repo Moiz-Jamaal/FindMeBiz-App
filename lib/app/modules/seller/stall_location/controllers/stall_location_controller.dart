@@ -6,11 +6,15 @@ import 'dart:convert';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart' as ll;
 import '../../../../services/analytics_service.dart';
+import '../../../../services/location_service.dart';
 import '../../../../data/models/seller.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/theme/app_theme.dart';
 
 class StallLocationController extends GetxController {
+  // Services
+  final LocationService _locationService = Get.find<LocationService>();
+  
   // Map controller (flutter_map)
   final MapController mapController = MapController();
   // Map related
@@ -18,11 +22,17 @@ class StallLocationController extends GetxController {
   final RxDouble selectedLongitude = AppConstants.defaultLongitude.obs;
   final RxDouble currentZoom = AppConstants.defaultZoom.obs;
   
-  // Form controllers
-  final stallNumberController = TextEditingController();
-  final areaController = TextEditingController();
+  // Form controllers - matching onboarding and edit profile structure
   final addressController = TextEditingController();
+  final areaController = TextEditingController();
+  final cityController = TextEditingController();
+  final stateController = TextEditingController();
+  final pincodeController = TextEditingController();
   final searchTextController = TextEditingController();
+  
+  // Geolocation - matching onboarding and edit profile naming
+  final RxString currentGeoLocation = ''.obs; // Format: "latitude,longitude"
+  final RxBool isGettingLocation = false.obs;
   
   // UI state
   final RxBool isLoading = false.obs;
@@ -53,11 +63,13 @@ class StallLocationController extends GetxController {
 
   @override
   void onClose() {
-    stallNumberController.dispose();
-    areaController.dispose();
     addressController.dispose();
-  searchTextController.dispose();
-  _searchDebounce.dispose();
+    areaController.dispose();
+    cityController.dispose();
+    stateController.dispose();
+    pincodeController.dispose();
+    searchTextController.dispose();
+    _searchDebounce.dispose();
     super.onClose();
   }
 
@@ -115,6 +127,42 @@ class StallLocationController extends GetxController {
         if (display.isNotEmpty) {
           addressController.text = display;
         }
+        
+        // Extract structured address components
+        final address = data['address'] as Map<String, dynamic>?;
+        if (address != null) {
+          // Extract area (suburb, neighbourhood, or village)
+          final area = address['suburb'] ?? 
+                      address['neighbourhood'] ?? 
+                      address['village'] ?? 
+                      address['hamlet'] ?? '';
+          if (area.isNotEmpty && areaController.text.isEmpty) {
+            areaController.text = area.toString();
+          }
+          
+          // Extract city
+          final city = address['city'] ?? 
+                      address['town'] ?? 
+                      address['municipality'] ?? '';
+          if (city.isNotEmpty && cityController.text.isEmpty) {
+            cityController.text = city.toString();
+          }
+          
+          // Extract state
+          final state = address['state'] ?? '';
+          if (state.isNotEmpty && stateController.text.isEmpty) {
+            stateController.text = state.toString();
+          }
+          
+          // Extract pincode
+          final pincode = address['postcode'] ?? '';
+          if (pincode.isNotEmpty && pincodeController.text.isEmpty) {
+            pincodeController.text = pincode.toString();
+          }
+        }
+        
+        // Update geolocation coordinates
+        currentGeoLocation.value = '$lat,$lng';
       }
     } catch (_) {
       // Keep silent on reverse geocode errors
@@ -137,79 +185,97 @@ class StallLocationController extends GetxController {
 
   void resetToDefault() {
     _setDefaultLocation();
-    stallNumberController.clear();
-    areaController.clear();
     addressController.clear();
-  _moveMap();
+    areaController.clear();
+    cityController.clear();
+    stateController.clear();
+    pincodeController.clear();
+    currentGeoLocation.value = '';
+    _moveMap();
   }
 
   Future<void> useCurrentLocation() async {
-    isLoading.value = true;
     try {
-      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) {
-        isLoading.value = false;
-        Get.snackbar(
-          'Location disabled',
-          'Please enable Location (GPS) to use current location.',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.orange,
-          colorText: Colors.white,
-        );
-        return;
-      }
-
-      LocationPermission permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-      }
-      if (permission == LocationPermission.deniedForever ||
-          permission == LocationPermission.denied) {
-        isLoading.value = false;
-        Get.snackbar(
-          'Permission required',
-          'Location permission is needed to use your current location.',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.orange,
-          colorText: Colors.white,
-        );
-        if (permission == LocationPermission.deniedForever) {
-          await Geolocator.openAppSettings();
-        }
-        return;
-      }
-
-      final pos = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-      );
-      selectedLatitude.value = pos.latitude;
-      selectedLongitude.value = pos.longitude;
-      hasLocationSelected.value = true;
-
-      await _updateAddressFromCoordinates(pos.latitude, pos.longitude);
-
-  _moveMap();
-
+      isGettingLocation.value = true;
+      
       Get.snackbar(
-        'Location Found',
-        'Using your current location',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: AppTheme.successColor,
-        colorText: Colors.white,
+        'Getting Location',
+        'Please wait while we get your current location...',
+        backgroundColor: Colors.blue.withValues(alpha: 0.1),
+        colorText: Colors.blue,
+        duration: const Duration(seconds: 3),
       );
-  AnalyticsService.to.logEvent('seller_use_current_location');
+
+      final locationDetails = await _locationService.getCurrentLocationWithAddress();
+      
+      if (locationDetails != null) {
+        // Set coordinates
+        selectedLatitude.value = locationDetails.latitude;
+        selectedLongitude.value = locationDetails.longitude;
+        hasLocationSelected.value = true;
+        
+        // Auto-fill address fields from location
+        if (locationDetails.area.isNotEmpty) {
+          areaController.text = locationDetails.area;
+        }
+        if (locationDetails.city.isNotEmpty) {
+          cityController.text = locationDetails.city;
+        }
+        if (locationDetails.state.isNotEmpty) {
+          stateController.text = locationDetails.state;
+        }
+        if (locationDetails.pincode.isNotEmpty) {
+          pincodeController.text = locationDetails.pincode;
+        }
+        if (addressController.text.isEmpty && locationDetails.formattedAddress.isNotEmpty) {
+          // Only set address if it's empty, don't overwrite existing address
+          addressController.text = locationDetails.formattedAddress;
+        }
+        
+        // Save geolocation coordinates
+        currentGeoLocation.value = locationDetails.geoLocationString;
+        
+        _moveMap();
+
+        Get.snackbar(
+          'Location Updated',
+          'Address fields have been filled with your current location.',
+          backgroundColor: Colors.green.withValues(alpha: 0.1),
+          colorText: Colors.green,
+          duration: const Duration(seconds: 3),
+        );
+      }
     } catch (e) {
       Get.snackbar(
-        'Error',
-        'Unable to get current location',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
+        'Location Error',
+        'Failed to get current location. Please try again.',
+        backgroundColor: Colors.red.withValues(alpha: 0.1),
+        colorText: Colors.red,
       );
     } finally {
-      isLoading.value = false;
+      isGettingLocation.value = false;
     }
   }
+
+  // Add convenience method that matches onboarding and edit profile naming
+  Future<void> getCurrentLocation() async {
+    await useCurrentLocation();
+  }
+
+  // Get formatted location display - matching onboarding and edit profile
+  String get currentLocationDisplay {
+    if (currentGeoLocation.value.isEmpty) return 'No location set';
+    
+    final coords = _locationService.parseGeoLocation(currentGeoLocation.value);
+    if (coords != null) {
+      return 'Lat: ${coords['latitude']!.toStringAsFixed(6)}, Lng: ${coords['longitude']!.toStringAsFixed(6)}';
+    }
+    
+    return 'No location set';
+  }
+
+  // Check if location is set - matching onboarding and edit profile
+  bool get hasLocationSet => currentGeoLocation.value.isNotEmpty;
 
   Future<void> searchLocation(String query, {bool showToast = false}) async {
     if (query.trim().isEmpty) return;
@@ -299,7 +365,7 @@ class StallLocationController extends GetxController {
     if (!hasLocationSelected.value) {
       Get.snackbar(
         'Location Required',
-        'Please select your stall location on the map',
+        'Please select your location on the map or use current location',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.orange,
         colorText: Colors.white,
@@ -309,13 +375,17 @@ class StallLocationController extends GetxController {
 
     isLoading.value = true;
 
-    // Create stall location object
+    // Create location object that matches onboarding/edit profile structure (no stallNumber)
     final stallLocation = StallLocation(
       latitude: selectedLatitude.value,
       longitude: selectedLongitude.value,
-      address: addressController.text.trim(),
-      stallNumber: stallNumberController.text.trim(),
-      area: areaController.text.trim(),
+      address: addressController.text.trim().isNotEmpty ? addressController.text.trim() : null,
+      area: areaController.text.trim().isNotEmpty ? areaController.text.trim() : null,
+      city: cityController.text.trim().isNotEmpty ? cityController.text.trim() : null,
+      state: stateController.text.trim().isNotEmpty ? stateController.text.trim() : null,
+      pincode: pincodeController.text.trim().isNotEmpty ? pincodeController.text.trim() : null,
+      geolocation: currentGeoLocation.value.isNotEmpty ? currentGeoLocation.value : null,
+      // Note: stallNumber is intentionally excluded from location selection process
     );
 
     // Simulate API call to save location
@@ -324,7 +394,7 @@ class StallLocationController extends GetxController {
       
       Get.snackbar(
         'Success',
-        'Stall location saved successfully!',
+        'Location saved successfully!',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppTheme.successColor,
         colorText: Colors.white,
@@ -334,14 +404,15 @@ class StallLocationController extends GetxController {
         'lng': selectedLongitude.value,
       });
       
-      // Return to previous screen
+      // Return location data to previous screen
       Get.back(result: stallLocation);
     });
   }
 
   bool get canSave {
     return hasLocationSelected.value && 
-           addressController.text.trim().isNotEmpty;
+           addressController.text.trim().isNotEmpty &&
+           cityController.text.trim().isNotEmpty;
   }
 
   String get selectedLocationText {
@@ -356,13 +427,13 @@ class StallLocationController extends GetxController {
   List<Map<String, dynamic>> get quickLocations {
     return [
       {
-        'name': 'Main Entrance',
+        'name': 'Market Main Entrance',
         'lat': 21.1702,
         'lng': 72.8311,
         'area': 'Main Gate Area',
       },
       {
-        'name': 'Food Court',
+        'name': 'Food Court Area',
         'lat': 21.1705,
         'lng': 72.8315,
         'area': 'Food & Beverages Section',
@@ -388,10 +459,13 @@ class StallLocationController extends GetxController {
     hasLocationSelected.value = true;
     areaController.text = location['area'];
     
+    // Update geolocation coordinates
+    currentGeoLocation.value = '${location['lat']},${location['lng']}';
+    
     _updateAddressFromCoordinates(
       location['lat'], 
       location['lng'],
     );
-  _moveMap();
+    _moveMap();
   }
 }

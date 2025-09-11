@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart' as ll;
 import 'dart:io';
 import 'dart:typed_data';
 import '../../../../core/theme/app_theme.dart';
@@ -414,7 +416,7 @@ class SellerProfileEditView extends GetView<SellerProfileEditController> {
               ),
               const SizedBox(width: 8),
               Text(
-                'Current Location',
+                'Business Location',
                 style: Get.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w600,
                   color: AppTheme.sellerPrimary,
@@ -430,36 +432,78 @@ class SellerProfileEditView extends GetView<SellerProfileEditController> {
                         color: AppTheme.sellerPrimary,
                       ),
                     )
-                  : GestureDetector(
-                      onTap: controller.getCurrentLocation,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppTheme.sellerPrimary,
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.location_searching,
-                              size: 16,
-                              color: Colors.white,
+                  : Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        GestureDetector(
+                          onTap: controller.toggleMapSelection,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
                             ),
-                            const SizedBox(width: 4),
-                            Text(
-                              'Get Location',
-                              style: Get.textTheme.bodySmall?.copyWith(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w600,
+                            decoration: BoxDecoration(
+                              color: controller.showMapSelection.value
+                                  ? AppTheme.sellerPrimary.withValues(alpha: 0.2)
+                                  : Colors.transparent,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: AppTheme.sellerPrimary.withValues(alpha: 0.3),
                               ),
                             ),
-                          ],
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.map,
+                                  size: 14,
+                                  color: AppTheme.sellerPrimary,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Map',
+                                  style: Get.textTheme.bodySmall?.copyWith(
+                                    color: AppTheme.sellerPrimary,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
-                      ),
+                        const SizedBox(width: 8),
+                        GestureDetector(
+                          onTap: controller.getCurrentLocation,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppTheme.sellerPrimary,
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  Icons.location_searching,
+                                  size: 16,
+                                  color: Colors.white,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Get Location',
+                                  style: Get.textTheme.bodySmall?.copyWith(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
                     )),
             ],
           ),
@@ -517,9 +561,20 @@ class SellerProfileEditView extends GetView<SellerProfileEditController> {
               ],
             ),
           )),
+          
+          // Map Selection Section
+          Obx(() => controller.showMapSelection.value
+              ? Column(
+                  children: [
+                    const SizedBox(height: 16),
+                    _buildMapSelectionSection(),
+                  ],
+                )
+              : const SizedBox.shrink()),
+          
           const SizedBox(height: 8),
           Text(
-            'Get your current location to auto-fill address fields and help buyers find you on the map.',
+            'Get your current location to auto-fill address fields, or use the map to select a specific location.',
             style: Get.textTheme.bodySmall?.copyWith(
               color: AppTheme.textSecondary,
             ),
@@ -1070,5 +1125,218 @@ class SellerProfileEditView extends GetView<SellerProfileEditController> {
             ],
           )
         : const SizedBox());
+  }
+
+  Widget _buildMapSelectionSection() {
+    return Container(
+      height: 300,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: AppTheme.sellerPrimary.withValues(alpha: 0.3),
+        ),
+      ),
+      child: Column(
+        children: [
+          // Search Bar
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              border: Border(
+                bottom: BorderSide(
+                  color: Colors.grey.shade200,
+                ),
+              ),
+            ),
+            child: TextFormField(
+              controller: controller.searchTextController,
+              decoration: InputDecoration(
+                hintText: 'Search for location...',
+                prefixIcon: const Icon(Icons.search, size: 20),
+                suffixIcon: Obx(() {
+                  if (controller.searchResults.isNotEmpty || controller.searchTextController.text.isNotEmpty) {
+                    return IconButton(
+                      icon: const Icon(Icons.close, size: 20),
+                      onPressed: controller.clearSearch,
+                    );
+                  }
+                  return const SizedBox.shrink();
+                }),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide.none,
+                ),
+                filled: true,
+                fillColor: Colors.grey.shade50,
+              ),
+              onChanged: (q) => controller.locationSearchQuery.value = q,
+              onFieldSubmitted: (q) => controller.searchLocation(q, showToast: true),
+            ),
+          ),
+          
+          // Search Results or Map
+          Expanded(
+            child: Obx(() {
+              final results = controller.searchResults;
+              if (results.isNotEmpty) {
+                return ListView.separated(
+                  itemCount: results.length,
+                  separatorBuilder: (_, _) => Divider(height: 1, color: Colors.grey.shade200),
+                  itemBuilder: (context, index) {
+                    final item = results[index];
+                    return ListTile(
+                      dense: true,
+                      leading: const Icon(Icons.place, color: AppTheme.sellerPrimary, size: 20),
+                      title: Text(
+                        (item['display_name'] ?? '').toString(),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: Get.textTheme.bodySmall,
+                      ),
+                      onTap: () => controller.selectSearchResult(item),
+                    );
+                  },
+                );
+              } else {
+                return _buildMiniMap();
+              }
+            }),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMiniMap() {
+    return Obx(() {
+      final center = ll.LatLng(
+        controller.selectedLatitude.value,
+        controller.selectedLongitude.value,
+      );
+      final zoom = controller.currentZoom.value;
+      
+      return Stack(
+        children: [
+          FlutterMap(
+            options: MapOptions(
+              initialCenter: center,
+              initialZoom: zoom,
+              onTap: (tapPosition, latLng) {
+                controller.onMapTap(latLng.latitude, latLng.longitude);
+              },
+              onMapEvent: (evt) {
+                if (evt is MapEventMoveEnd) {
+                  controller.currentZoom.value = evt.camera.zoom;
+                }
+              },
+            ),
+            mapController: controller.mapController,
+            children: [
+              TileLayer(
+                urlTemplate: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                subdomains: const ['a','b','c'],
+                userAgentPackageName: 'com.findmebiz.app',
+              ),
+              MarkerLayer(
+                markers: [
+                  if (controller.hasLocationSelected.value)
+                    Marker(
+                      point: center,
+                      width: 30,
+                      height: 30,
+                      child: const Icon(
+                        Icons.location_on,
+                        color: AppTheme.sellerPrimary,
+                        size: 30,
+                      ),
+                    ),
+                ],
+              ),
+            ],
+          ),
+
+          // Zoom Controls
+          Positioned(
+            right: 8,
+            bottom: 8,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(4),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.1),
+                        blurRadius: 2,
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      InkWell(
+                        onTap: controller.zoomIn,
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          child: const Icon(Icons.add, size: 16),
+                        ),
+                      ),
+                      Container(
+                        width: 24,
+                        height: 1,
+                        color: Colors.grey.shade300,
+                      ),
+                      InkWell(
+                        onTap: controller.zoomOut,
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          child: const Icon(Icons.remove, size: 16),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Location Info
+          if (controller.hasLocationSelected.value)
+            Positioned(
+              bottom: 8,
+              left: 8,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppTheme.sellerPrimary,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.location_on,
+                      color: Colors.white,
+                      size: 14,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Location Selected',
+                      style: Get.textTheme.bodySmall?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      );
+    });
   }
 }

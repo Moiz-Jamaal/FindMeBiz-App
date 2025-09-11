@@ -132,15 +132,23 @@ class StallLocation {
   final double latitude;
   final double longitude;
   final String? address;
-  final String? stallNumber;
   final String? area;
+  final String? city;
+  final String? state;
+  final String? pincode;
+  final String? geolocation; // Format: "latitude,longitude"
+  final String? stallNumber; // Keep for backward compatibility, but not used in location selection
 
   StallLocation({
     required this.latitude,
     required this.longitude,
     this.address,
-    this.stallNumber,
     this.area,
+    this.city,
+    this.state,
+    this.pincode,
+    this.geolocation,
+    this.stallNumber, // Optional for backward compatibility
   });
 
   factory StallLocation.fromJson(Map<String, dynamic> json) {
@@ -148,8 +156,12 @@ class StallLocation {
       latitude: (json['latitude'] as num).toDouble(),
       longitude: (json['longitude'] as num).toDouble(),
       address: json['address'] as String?,
-      stallNumber: json['stallNumber'] as String?,
       area: json['area'] as String?,
+      city: json['city'] as String?,
+      state: json['state'] as String?,
+      pincode: json['pincode'] as String?,
+      geolocation: json['geolocation'] as String?,
+      stallNumber: json['stallNumber'] as String?, // Keep for compatibility
     );
   }
 
@@ -158,8 +170,12 @@ class StallLocation {
       'latitude': latitude,
       'longitude': longitude,
       'address': address,
-      'stallNumber': stallNumber,
       'area': area,
+      'city': city,
+      'state': state,
+      'pincode': pincode,
+      'geolocation': geolocation,
+      'stallNumber': stallNumber, // Keep for compatibility
     };
   }
 
@@ -167,15 +183,23 @@ class StallLocation {
     double? latitude,
     double? longitude,
     String? address,
-    String? stallNumber,
     String? area,
+    String? city,
+    String? state,
+    String? pincode,
+    String? geolocation,
+    String? stallNumber,
   }) {
     return StallLocation(
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
       address: address ?? this.address,
-      stallNumber: stallNumber ?? this.stallNumber,
       area: area ?? this.area,
+      city: city ?? this.city,
+      state: state ?? this.state,
+      pincode: pincode ?? this.pincode,
+      geolocation: geolocation ?? this.geolocation,
+      stallNumber: stallNumber ?? this.stallNumber,
     );
   }
 }

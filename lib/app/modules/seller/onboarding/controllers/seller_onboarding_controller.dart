@@ -1,18 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../../../services/role_service.dart';
 import '../../../../services/auth_service.dart';
 import '../../../../services/seller_service.dart';
 import '../../../../services/category_service.dart';
-import '../../../../services/location_service.dart';
+import '../../../../services/analytics_service.dart';
 import '../../../../data/models/api/index.dart';
+import '../../../../shared/widgets/location_selector/index.dart';
 
 class SellerOnboardingController extends GetxController {
   final AuthService _authService = Get.find<AuthService>();
   final SellerService _sellerService = Get.find<SellerService>();
   final CategoryService _categoryService = Get.find<CategoryService>();
-  final LocationService _locationService = Get.find<LocationService>();
-  final RoleService _roleService = Get.find<RoleService>();
+  
+  // Location selector controller
+  late final LocationSelectorController locationSelector;
   
   // Current step in onboarding process
   final RxInt currentStep = 0.obs;
@@ -22,11 +23,6 @@ class SellerOnboardingController extends GetxController {
   final profileNameController = TextEditingController();
   final bioController = TextEditingController();
   final contactController = TextEditingController();
-  final addressController = TextEditingController();
-  final areaController = TextEditingController();
-  final cityController = TextEditingController();
-  final stateController = TextEditingController();
-  final pincodeController = TextEditingController();
   final establishedYearController = TextEditingController();
   
   // Reactive mirrors of text fields for UI enable/disable states
@@ -43,12 +39,6 @@ class SellerOnboardingController extends GetxController {
   final RxList<CategoryMaster> selectedCategories = <CategoryMaster>[].obs;
   final RxString logoPath = ''.obs;
   
-  // Location data
-  final RxString currentLocation = ''.obs;
-  final RxBool isLoadingLocation = false.obs;
-  final RxBool hasLocationPermission = false.obs;
-  final RxBool isGettingLocation = false.obs;
-  
   // UI state
   final RxBool isLoading = false.obs;
   final RxBool isSubmitting = false.obs;
@@ -56,6 +46,11 @@ class SellerOnboardingController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    
+    // Initialize location selector
+    locationSelector = LocationSelectorController();
+    Get.put(locationSelector, tag: 'onboarding_location');
+    
     _loadCategories();
     _prefillUserData();
 
@@ -77,12 +72,13 @@ class SellerOnboardingController extends GetxController {
     profileNameController.dispose();
     bioController.dispose();
     contactController.dispose();
-    addressController.dispose();
-    areaController.dispose();
-    cityController.dispose();
-    stateController.dispose();
-    pincodeController.dispose();
     establishedYearController.dispose();
+    
+    // Dispose location selector
+    if (Get.isRegistered<LocationSelectorController>(tag: 'onboarding_location')) {
+      Get.delete<LocationSelectorController>(tag: 'onboarding_location');
+    }
+    
     super.onClose();
   }
 
@@ -91,21 +87,13 @@ class SellerOnboardingController extends GetxController {
     try {
       isLoading.value = true;
       final response = await _categoryService.getCategories();
-      
       if (response.success && response.data != null) {
-        availableCategories.value = response.data!;
-      } else {
-        Get.snackbar(
-          'Error',
-          'Failed to load categories',
-          backgroundColor: Colors.red.withValues(alpha: 0.1),
-          colorText: Colors.red,
-        );
+        availableCategories.assignAll(response.data!);
       }
     } catch (e) {
       Get.snackbar(
         'Error',
-        'Failed to connect to server',
+        'Failed to load categories: ${e.toString()}',
         backgroundColor: Colors.red.withValues(alpha: 0.1),
         colorText: Colors.red,
       );
@@ -118,6 +106,8 @@ class SellerOnboardingController extends GetxController {
   void _prefillUserData() {
     final currentUser = _authService.currentUser;
     if (currentUser != null) {
+      profileNameController.text = currentUser.fullname ?? '';
+      profileName.value = currentUser.fullname ?? '';
       contactController.text = currentUser.mobileno ?? '';
     }
   }
@@ -136,12 +126,14 @@ class SellerOnboardingController extends GetxController {
 
   bool _validateCurrentStep() {
     switch (currentStep.value) {
-      case 0:
+      case 0: // Basic info
         return basicInfoFormKey.currentState?.validate() ?? false;
-      case 1:
+      case 1: // Contact info
         return contactInfoFormKey.currentState?.validate() ?? false;
-      case 2:
+      case 2: // Business info
         return businessInfoFormKey.currentState?.validate() ?? false;
+      case 3: // Location (handled by location selector)
+        return locationSelector.isValid;
       default:
         return true;
     }
@@ -169,190 +161,82 @@ class SellerOnboardingController extends GetxController {
     logoPath.value = '';
   }
 
-  // Location management
-  Future<void> getCurrentLocation() async {
-    try {
-      isGettingLocation.value = true;
-      
+  // Location management - delegated to location selector
+  bool get hasLocationSet => locationSelector.hasLocationSet;
+  String get currentLocationDisplay => locationSelector.currentLocationDisplay;
+
+  // Complete onboarding process
+  Future<void> completeOnboarding() async {
+    if (!_validateCurrentStep()) {
       Get.snackbar(
-        'Getting Location',
-        'Please wait while we get your current location...',
-        backgroundColor: Colors.blue.withValues(alpha: 0.1),
-        colorText: Colors.blue,
-        duration: const Duration(seconds: 3),
+        'Validation Error',
+        'Please complete all required fields',
+        backgroundColor: Colors.orange.withValues(alpha: 0.1),
+        colorText: Colors.orange,
+      );
+      return;
+    }
+
+    try {
+      isSubmitting.value = true;
+
+      final stallLocation = locationSelector.currentStallLocation;
+      
+      // Create SellerDetails object
+      final sellerDetails = SellerDetails(
+        businessname: businessNameController.text.trim(),
+        profilename: profileNameController.text.trim(),
+        bio: bioController.text.trim(),
+        contactno: contactController.text.trim(),
+        logo: logoPath.value,
+        establishedyear: establishedYearController.text.trim().isNotEmpty 
+            ? int.tryParse(establishedYearController.text.trim()) 
+            : null,
+        address: stallLocation?.address,
+        area: stallLocation?.area,
+        city: stallLocation?.city,
+        state: stallLocation?.state,
+        pincode: stallLocation?.pincode,
+        geolocation: stallLocation?.geolocation,
+        ispublished: false,
       );
 
-      final locationDetails = await _locationService.getCurrentLocationWithAddress();
+      final response = await _sellerService.createSeller(sellerDetails);
       
-      if (locationDetails != null) {
-        // Auto-fill address fields from location
-        if (locationDetails.area.isNotEmpty) {
-          areaController.text = locationDetails.area;
-        }
-        if (locationDetails.city.isNotEmpty) {
-          cityController.text = locationDetails.city;
-        }
-        if (locationDetails.state.isNotEmpty) {
-          stateController.text = locationDetails.state;
-        }
-        if (locationDetails.pincode.isNotEmpty) {
-          pincodeController.text = locationDetails.pincode;
-        }
-        if (addressController.text.isEmpty && locationDetails.formattedAddress.isNotEmpty) {
-          // Only set address if it's empty, don't overwrite existing address
-          addressController.text = locationDetails.formattedAddress;
-        }
-        
-        // Save geolocation coordinates
-        currentLocation.value = locationDetails.geoLocationString;
-        
+      if (response.success) {
+        // Track analytics
+        AnalyticsService.to.logEvent('seller_onboarding_complete', parameters: {
+          'business_name': businessNameController.text.trim(),
+          'categories_count': selectedCategories.length,
+          'has_location': stallLocation != null,
+          'established_year': establishedYearController.text.trim(),
+        });
+
         Get.snackbar(
-          'Location Updated',
-          'Address fields have been filled with your current location.',
+          'Success',
+          'Your seller profile has been created successfully!',
           backgroundColor: Colors.green.withValues(alpha: 0.1),
           colorText: Colors.green,
           duration: const Duration(seconds: 3),
         );
-      }
-    } catch (e) {
-      Get.snackbar(
-        'Location Error',
-        'Failed to get current location. Please try again.',
-        backgroundColor: Colors.red.withValues(alpha: 0.1),
-        colorText: Colors.red,
-      );
-    } finally {
-      isGettingLocation.value = false;
-    }
-  }
 
-  Future<void> requestLocationPermission() async {
-    hasLocationPermission.value = await _locationService.checkAndRequestPermissions();
-    if (hasLocationPermission.value) {
-      await getCurrentLocation();
-    }
-  }
-
-  // Get formatted location display
-  String get currentLocationDisplay {
-    if (currentLocation.value.isEmpty) return 'No location set';
-    
-    final coords = _locationService.parseGeoLocation(currentLocation.value);
-    if (coords != null) {
-      return 'Lat: ${coords['latitude']!.toStringAsFixed(6)}, Lng: ${coords['longitude']!.toStringAsFixed(6)}';
-    }
-    
-    return 'No location set';
-  }
-
-  // Check if location is set
-  bool get hasLocationSet => currentLocation.value.isNotEmpty;
-
-  // Complete onboarding process
-  Future<void> completeOnboarding() async {
-    if (!_validateCurrentStep()) return;
-    
-    isSubmitting.value = true;
-    
-    try {
-      final currentUser = _authService.currentUser;
-      if (currentUser == null) {
+        // Navigate to seller home
+        Get.offAllNamed('/seller-home');
+      } else {
         Get.snackbar(
           'Error',
-          'No user found. Please login again.',
+          response.message ?? 'Failed to create seller profile',
           backgroundColor: Colors.red.withValues(alpha: 0.1),
           colorText: Colors.red,
         );
-        return;
       }
-
-      // Create seller details
-      final sellerDetails = SellerDetails(
-        userid: currentUser.userid,
-        businessname: businessNameController.text.trim(),
-        profilename: profileNameController.text.trim(),
-        bio: bioController.text.trim().isNotEmpty ? bioController.text.trim() : null,
-        logo: logoPath.value.isNotEmpty ? logoPath.value : null,
-        contactno: contactController.text.trim().isNotEmpty ? contactController.text.trim() : null,
-        mobileno: currentUser.mobileno,
-        whatsappno: currentUser.whatsappno,
-        address: addressController.text.trim().isNotEmpty ? addressController.text.trim() : null,
-        area: areaController.text.trim().isNotEmpty ? areaController.text.trim() : null,
-        city: cityController.text.trim().isNotEmpty ? cityController.text.trim() : null,
-        state: stateController.text.trim().isNotEmpty ? stateController.text.trim() : null,
-        pincode: pincodeController.text.trim().isNotEmpty ? pincodeController.text.trim() : null,
-        geolocation: currentLocation.value.isNotEmpty ? currentLocation.value : null,
-        establishedyear: establishedYearController.text.trim().isNotEmpty ? int.tryParse(establishedYearController.text.trim()) : null,
-        ispublished: false,
-      );
-
-      // Create seller profile
-      final sellerResponse = await _sellerService.createSeller(sellerDetails);
-      
-      if (!sellerResponse.success || sellerResponse.data == null) {
-        Get.snackbar(
-          'Error',
-          sellerResponse.message ?? 'Failed to create seller profile',
-          backgroundColor: Colors.red.withValues(alpha: 0.1),
-          colorText: Colors.red,
-        );
-        return;
-      }
-
-      final sellerId = sellerResponse.data!.sellerid;
-      if (sellerId == null) {
-        Get.snackbar(
-          'Error',
-          'Invalid seller ID received',
-          backgroundColor: Colors.red.withValues(alpha: 0.1),
-          colorText: Colors.red,
-        );
-        return;
-      }
-
-      // Add selected categories
-      for (final category in selectedCategories) {
-        if (category.catid != null) {
-          final sellerCategory = SellerCategory(
-            sellerid: sellerId,
-            catid: category.catid,
-            active: true,
-          );
-          
-          await _sellerService.addSellerCategory(sellerCategory);
-        }
-      }
-
-      // Create default seller settings
-      final sellerSettings = SellerSettings(
-        sellerid: sellerId,
-        isopen: true,
-        subscriptionPlan: 'basic',
-      );
-      
-      await _sellerService.createSellerSettings(sellerSettings);
-
-      // Mark seller as onboarded
-      _roleService.markSellerOnboarded();
-      
-      Get.snackbar(
-        'Success',
-        'Seller profile created successfully!',
-        backgroundColor: Colors.green.withValues(alpha: 0.1),
-        colorText: Colors.green,
-      );
-      
-      // Navigate to seller dashboard
-      Get.offAllNamed('/seller-dashboard');
-      
     } catch (e) {
       Get.snackbar(
         'Error',
-        'Failed to complete onboarding. Please try again.',
+        'Failed to create seller profile: ${e.toString()}',
         backgroundColor: Colors.red.withValues(alpha: 0.1),
         colorText: Colors.red,
       );
-      
     } finally {
       isSubmitting.value = false;
     }
@@ -373,29 +257,18 @@ class SellerOnboardingController extends GetxController {
     if (value == null || value.trim().isEmpty) {
       return 'Profile name is required';
     }
-    if (value.trim().length < 3) {
-      return 'Profile name must be at least 3 characters';
-    }
-    if (value.trim().contains(' ')) {
-      return 'Profile name cannot contain spaces';
+    if (value.trim().length < 2) {
+      return 'Profile name must be at least 2 characters';
     }
     return null;
   }
 
   String? contactValidator(String? value) {
-    if (value != null && value.trim().isNotEmpty) {
-      if (!GetUtils.isPhoneNumber(value.trim())) {
-        return 'Please enter a valid phone number';
-      }
+    if (value == null || value.trim().isEmpty) {
+      return 'Contact number is required';
     }
-    return null;
-  }
-
-  String? pincodeValidator(String? value) {
-    if (value != null && value.trim().isNotEmpty) {
-      if (value.trim().length != 6 || !RegExp(r'^\d{6}$').hasMatch(value.trim())) {
-        return 'Pincode must be 6 digits';
-      }
+    if (!RegExp(r'^\+?[\d\s\-\(\)]{10,15}$').hasMatch(value.trim())) {
+      return 'Please enter a valid contact number';
     }
     return null;
   }
@@ -403,27 +276,20 @@ class SellerOnboardingController extends GetxController {
   String? yearValidator(String? value) {
     if (value != null && value.trim().isNotEmpty) {
       final year = int.tryParse(value.trim());
-      if (year == null || year < 1900 || year > DateTime.now().year) {
+      if (year == null) {
         return 'Please enter a valid year';
+      }
+      final currentYear = DateTime.now().year;
+      if (year < 1900 || year > currentYear) {
+        return 'Please enter a year between 1900 and $currentYear';
       }
     }
     return null;
   }
 
   bool get canProceed {
-    switch (currentStep.value) {
-      case 0:
-  return businessName.value.trim().isNotEmpty && 
-         profileName.value.trim().isNotEmpty;
-      case 1:
-        return true; // Contact info is optional
-      case 2:
-        return selectedCategories.isNotEmpty;
-      case 3:
-        return true; // Final step - review
-      default:
-        return false;
-    }
+    return businessName.value.trim().isNotEmpty && 
+           profileName.value.trim().isNotEmpty;
   }
 
   bool get isLastStep => currentStep.value == 3;

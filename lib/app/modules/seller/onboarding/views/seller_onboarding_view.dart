@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../data/models/api/category_master.dart';
+import '../../../../shared/widgets/location_selector/index.dart';
 import '../controllers/seller_onboarding_controller.dart';
 
 class SellerOnboardingView extends GetView<SellerOnboardingController> {
@@ -28,7 +29,6 @@ class SellerOnboardingView extends GetView<SellerOnboardingController> {
             icon: const Icon(Icons.shopping_bag_outlined, size: 18),
             label: const Text('Back to Buyers'),
             style: TextButton.styleFrom(
-              foregroundColor: AppTheme.sellerPrimary,
               textStyle: const TextStyle(fontSize: 14),
             ),
           ),
@@ -42,13 +42,10 @@ class SellerOnboardingView extends GetView<SellerOnboardingController> {
           // Content
           Expanded(
             child: Obx(() {
-              // Explicitly access all observables that might be used in child widgets
               final currentStep = controller.currentStep.value;
               final isLoading = controller.isLoading.value;
               final availableCategories = controller.availableCategories.toList();
               final selectedCategories = controller.selectedCategories.toList();
-              // Also read lengths to guarantee dependency tracking on RxList
-              final _ = controller.availableCategories.length + controller.selectedCategories.length;
 
               Widget content;
               switch (currentStep) {
@@ -95,9 +92,7 @@ class SellerOnboardingView extends GetView<SellerOnboardingController> {
               height: 4,
               margin: EdgeInsets.only(right: index < 3 ? 8 : 0),
               decoration: BoxDecoration(
-                color: isActive 
-                    ? AppTheme.sellerPrimary 
-                    : AppTheme.sellerPrimary.withValues(alpha: 0.2),
+                color: isActive ? AppTheme.sellerPrimary : Colors.grey.shade300,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -116,7 +111,7 @@ class SellerOnboardingView extends GetView<SellerOnboardingController> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Tell us about your business',
+              'Basic Information',
               style: Get.textTheme.headlineMedium?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: AppTheme.textPrimary,
@@ -124,7 +119,7 @@ class SellerOnboardingView extends GetView<SellerOnboardingController> {
             ),
             const SizedBox(height: 8),
             Text(
-              'This information will help buyers find and connect with you',
+              'Let\'s start with the basics of your business',
               style: Get.textTheme.bodyMedium?.copyWith(
                 color: AppTheme.textSecondary,
               ),
@@ -136,6 +131,7 @@ class SellerOnboardingView extends GetView<SellerOnboardingController> {
               decoration: const InputDecoration(
                 labelText: 'Business Name *',
                 hintText: 'Enter your business name',
+                prefixIcon: Icon(Icons.business),
               ),
               validator: controller.businessNameValidator,
             ),
@@ -146,7 +142,8 @@ class SellerOnboardingView extends GetView<SellerOnboardingController> {
               controller: controller.profileNameController,
               decoration: const InputDecoration(
                 labelText: 'Profile Name *',
-                hintText: 'Enter a unique profile name',
+                hintText: 'Your name as it appears to customers',
+                prefixIcon: Icon(Icons.person),
               ),
               validator: controller.profileNameValidator,
             ),
@@ -173,7 +170,7 @@ class SellerOnboardingView extends GetView<SellerOnboardingController> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Buyers will use this to reach out to you',
+              'Help customers reach you easily',
               style: Get.textTheme.bodyMedium?.copyWith(
                 color: AppTheme.textSecondary,
               ),
@@ -185,6 +182,7 @@ class SellerOnboardingView extends GetView<SellerOnboardingController> {
               decoration: const InputDecoration(
                 labelText: 'Contact Number',
                 hintText: 'Enter your contact number',
+                prefixIcon: Icon(Icons.phone),
               ),
               keyboardType: TextInputType.phone,
               validator: controller.contactValidator,
@@ -192,28 +190,15 @@ class SellerOnboardingView extends GetView<SellerOnboardingController> {
             
             const SizedBox(height: 16),
             
-            // Geolocation Section
-            _buildGeolocationSection(),
-            
-            const SizedBox(height: 16),
-            
-            TextFormField(
-              controller: controller.addressController,
-              decoration: const InputDecoration(
-                labelText: 'Business Address',
-                hintText: 'Enter your business address',
-              ),
-              maxLines: 2,
-            ),
-            
-            const SizedBox(height: 16),
-            
-            TextFormField(
-              controller: controller.cityController,
-              decoration: const InputDecoration(
-                labelText: 'City',
-                hintText: 'Enter your city',
-              ),
+            // Location Selector Section
+            LocationSelector(
+              controller: Get.find<LocationSelectorController>(tag: 'onboarding_location'),
+              title: 'Business Location',
+              subtitle: 'Select your business location to help buyers find you',
+              primaryColor: AppTheme.sellerPrimary,
+              showMapByDefault: false,
+              showAddressForm: true,
+              formKey: controller.contactInfoFormKey,
             ),
           ],
         ),
@@ -230,7 +215,7 @@ class SellerOnboardingView extends GetView<SellerOnboardingController> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Business Categories',
+              'Business Details',
               style: Get.textTheme.headlineMedium?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: AppTheme.textPrimary,
@@ -238,14 +223,30 @@ class SellerOnboardingView extends GetView<SellerOnboardingController> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Select categories that best describe your business',
+              'Tell customers about your business',
               style: Get.textTheme.bodyMedium?.copyWith(
                 color: AppTheme.textSecondary,
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 32),
             
-            // Categories selection - Use passed parameters instead of accessing controller
+            // Categories selection
+            Text(
+              'Business Categories',
+              style: Get.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: AppTheme.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Select categories that best describe your business',
+              style: Get.textTheme.bodySmall?.copyWith(
+                color: AppTheme.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 16),
+            
             isLoading 
                 ? const Center(child: CircularProgressIndicator())
                 : availableCategories.isEmpty
@@ -260,9 +261,23 @@ class SellerOnboardingView extends GetView<SellerOnboardingController> {
                 labelText: 'Business Description (Optional)',
                 hintText: 'Describe your products, story, what makes you unique...',
                 alignLabelWithHint: true,
+                prefixIcon: Icon(Icons.description),
               ),
               maxLines: 4,
-              maxLength: AppConstants.maxBioLength,
+              maxLength: 500,
+            ),
+            
+            const SizedBox(height: 24),
+            
+            TextFormField(
+              controller: controller.establishedYearController,
+              decoration: const InputDecoration(
+                labelText: 'Established Year (Optional)',
+                hintText: 'e.g., 2010',
+                prefixIcon: Icon(Icons.calendar_today),
+              ),
+              keyboardType: TextInputType.number,
+              validator: controller.yearValidator,
             ),
           ],
         ),
@@ -275,12 +290,17 @@ class SellerOnboardingView extends GetView<SellerOnboardingController> {
       spacing: 12,
       runSpacing: 12,
       children: availableCategories.map((category) {
+        final isSelected = selectedCategories.contains(category);
         return FilterChip(
           label: Text(category.catname),
-          selected: selectedCategories.contains(category),
+          selected: isSelected,
           onSelected: (_) => controller.toggleCategory(category),
-          selectedColor: const Color(0xFF0EA5A4).withValues(alpha: 0.2),
-          checkmarkColor: const Color(0xFF0EA5A4),
+          selectedColor: AppTheme.sellerPrimary.withValues(alpha: 0.2),
+          checkmarkColor: AppTheme.sellerPrimary,
+          backgroundColor: Colors.grey.shade100,
+          side: BorderSide(
+            color: isSelected ? AppTheme.sellerPrimary : Colors.grey.shade300,
+          ),
         );
       }).toList(),
     );
@@ -327,143 +347,6 @@ class SellerOnboardingView extends GetView<SellerOnboardingController> {
     );
   }
 
-  Widget _buildGeolocationSection() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppTheme.sellerPrimary.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: AppTheme.sellerPrimary.withValues(alpha: 0.2),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.my_location,
-                color: AppTheme.sellerPrimary,
-                size: 20,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'Current Location',
-                style: Get.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: AppTheme.sellerPrimary,
-                ),
-              ),
-              const Spacer(),
-              Obx(() => controller.isGettingLocation.value
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: AppTheme.sellerPrimary,
-                      ),
-                    )
-                  : GestureDetector(
-                      onTap: controller.getCurrentLocation,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppTheme.sellerPrimary,
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.location_searching,
-                              size: 16,
-                              color: Colors.white,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              'Get Location',
-                              style: Get.textTheme.bodySmall?.copyWith(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    )),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Obx(() => Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: controller.hasLocationSet
-                    ? AppTheme.sellerPrimary.withValues(alpha: 0.3)
-                    : AppTheme.textHint.withValues(alpha: 0.3),
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      controller.hasLocationSet
-                          ? Icons.location_on
-                          : Icons.location_off,
-                      size: 16,
-                      color: controller.hasLocationSet
-                          ? AppTheme.sellerPrimary
-                          : AppTheme.textHint,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      controller.hasLocationSet
-                          ? 'Location Set'
-                          : 'No location set',
-                      style: Get.textTheme.bodySmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: controller.hasLocationSet
-                            ? AppTheme.sellerPrimary
-                            : AppTheme.textHint,
-                      ),
-                    ),
-                  ],
-                ),
-                if (controller.hasLocationSet) ...[
-                  const SizedBox(height: 6),
-                  Text(
-                    controller.currentLocationDisplay,
-                    style: Get.textTheme.bodySmall?.copyWith(
-                      color: AppTheme.textSecondary,
-                      fontFamily: 'monospace',
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          )),
-          const SizedBox(height: 8),
-          Text(
-            'Get your current location to auto-fill address fields and help buyers find you on the map.',
-            style: Get.textTheme.bodySmall?.copyWith(
-              color: AppTheme.textSecondary,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildBottomNavigation() {
     return Container(
       padding: const EdgeInsets.all(AppConstants.defaultPadding),
@@ -481,11 +364,10 @@ class SellerOnboardingView extends GetView<SellerOnboardingController> {
           width: double.infinity,
           height: 50,
           child: Obx(() {
-            // Ensure Obx depends on all needed observables
             final currentStep = controller.currentStep.value;
             final isSubmitting = controller.isSubmitting.value;
             
-            // Compute canProceed directly here to ensure reactive dependencies
+            // Compute canProceed for each step
             bool canProceed;
             switch (currentStep) {
               case 0:
@@ -493,7 +375,7 @@ class SellerOnboardingView extends GetView<SellerOnboardingController> {
                            controller.profileName.value.trim().isNotEmpty;
                 break;
               case 1:
-                canProceed = true; // Contact info is optional
+                canProceed = controller.locationSelector.isValid;
                 break;
               case 2:
                 canProceed = controller.selectedCategories.isNotEmpty;
@@ -506,13 +388,14 @@ class SellerOnboardingView extends GetView<SellerOnboardingController> {
             }
 
             return ElevatedButton(
-              onPressed: canProceed
+              onPressed: canProceed && !isSubmitting
                   ? (currentStep == 3
                       ? controller.completeOnboarding
                       : controller.nextStep)
                   : null,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.sellerPrimary,
+                disabledBackgroundColor: Colors.grey.shade300,
               ),
               child: isSubmitting
                   ? const SizedBox(

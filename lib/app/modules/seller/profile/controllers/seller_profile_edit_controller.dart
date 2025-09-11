@@ -1,14 +1,22 @@
-import 'package:flutter/material.dart';
-import 'package:get/get.dart';
-import 'package:image_picker/image_picker.dart';
 import 'dart:async';
+import 'dart:convert';
+
+import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:get/get.dart';
+import 'package:http/http.dart' as http;
+import 'package:image_picker/image_picker.dart';
+import 'package:latlong2/latlong.dart' as ll;
+import 'package:souq/app/core/constants/app_constants.dart';
+import 'package:souq/app/services/location_service.dart';
 import '../../../../services/auth_service.dart';
 import '../../../../services/seller_service.dart';
 import '../../../../services/image_upload_service.dart';
-import '../../../../services/location_service.dart';
 import '../../../../services/category_service.dart';
+import '../../../../services/analytics_service.dart';
 import '../../../../data/models/api/index.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../shared/widgets/location_selector/index.dart';
 
 class SellerProfileEditController extends GetxController {
   final AuthService _authService = Get.find<AuthService>();
@@ -52,6 +60,18 @@ class SellerProfileEditController extends GetxController {
   final RxString currentGeoLocation = ''.obs; // Format: "latitude,longitude"
   final RxBool isGettingLocation = false.obs;
   
+  // Map functionality (enhanced location selection)
+  final MapController mapController = MapController();
+  final RxDouble selectedLatitude = AppConstants.defaultLatitude.obs;
+  final RxDouble selectedLongitude = AppConstants.defaultLongitude.obs;
+  final RxDouble currentZoom = AppConstants.defaultZoom.obs;
+  final RxBool hasLocationSelected = false.obs;
+  final RxBool showMapSelection = false.obs;
+  final searchTextController = TextEditingController();
+  final RxString locationSearchQuery = ''.obs;
+  final RxList<Map<String, dynamic>> _searchResults = <Map<String, dynamic>>[].obs;
+  late Worker _searchDebounce;
+  
   // Validation state - reactive
   final RxBool _validationUpdateTrigger = false.obs;
   
@@ -70,12 +90,31 @@ class SellerProfileEditController extends GetxController {
     _loadCurrentProfile();
     // Social media platforms will be loaded after URLs are loaded
     _setupListeners();
+    
+    // Initialize map location selection
+    _setDefaultLocation();
+    
+    // Setup search debounce for location search
+    _searchDebounce = debounce<String>(
+      locationSearchQuery,
+      (q) {
+        final query = q.trim();
+        if (query.length >= 2) {
+          searchLocation(query);
+        } else {
+          _searchResults.clear();
+        }
+      },
+      time: const Duration(milliseconds: 400),
+    );
   }
 
   @override
   void onClose() {
     _isDisposed = true;
     _disposeControllers();
+    searchTextController.dispose();
+    _searchDebounce.dispose();
     super.onClose();
   }
 
@@ -134,6 +173,16 @@ class SellerProfileEditController extends GetxController {
     }
     
     currentGeoLocation.value = seller.geolocation ?? '';
+    
+    // Initialize map coordinates if geolocation exists
+    if (currentGeoLocation.value.isNotEmpty) {
+      final coords = _locationService.parseGeoLocation(currentGeoLocation.value);
+      if (coords != null) {
+        selectedLatitude.value = coords['latitude']!;
+        selectedLongitude.value = coords['longitude']!;
+        hasLocationSelected.value = true;
+      }
+    }
   }
 
   Future<void> _loadSocialUrls(int sellerId) async {
@@ -510,6 +559,11 @@ class SellerProfileEditController extends GetxController {
         currentGeoLocation.value = locationDetails.geoLocationString;
         hasChanges.value = true;
         
+        // Update map coordinates for consistency
+        selectedLatitude.value = locationDetails.latitude;
+        selectedLongitude.value = locationDetails.longitude;
+        hasLocationSelected.value = true;
+        
         Get.snackbar(
           'Location Updated',
           'Address fields have been filled with your current location.',
@@ -545,6 +599,179 @@ class SellerProfileEditController extends GetxController {
 
   // Check if location is set
   bool get hasLocationSet => currentGeoLocation.value.isNotEmpty;
+
+  // Map functionality methods
+  void _setDefaultLocation() {
+    selectedLatitude.value = AppConstants.defaultLatitude;
+    selectedLongitude.value = AppConstants.defaultLongitude;
+    hasLocationSelected.value = false;
+  }
+
+  void toggleMapSelection() {
+    showMapSelection.value = !showMapSelection.value;
+  }
+
+  void onMapTap(double latitude, double longitude) {
+    selectedLatitude.value = latitude;
+    selectedLongitude.value = longitude;
+    hasLocationSelected.value = true;
+    
+    // Update location coordinates in same format as getCurrentLocation
+    currentGeoLocation.value = '$latitude,$longitude';
+    
+    // Reverse geocoding and auto-fill
+    _updateAddressFromCoordinates(latitude, longitude);
+    _moveMap();
+    hasChanges.value = true;
+    
+    Get.snackbar(
+      'Location Selected',
+      'Address fields have been auto-filled from selected location',
+      snackPosition: SnackPosition.BOTTOM,
+      duration: const Duration(seconds: 2),
+    );
+    
+    AnalyticsService.to.logEvent('seller_profile_select_location', parameters: {
+      'lat': latitude,
+      'lng': longitude,
+    });
+  }
+
+  Future<void> _updateAddressFromCoordinates(double lat, double lng) async {
+    try {
+      final uri = Uri.parse(
+        'https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=$lat&lon=$lng',
+      );
+      final res = await http.get(
+        uri,
+        headers: {
+          'User-Agent': 'FindMeBiz/1.0 (support@findmebiz.com)'
+        },
+      );
+      if (res.statusCode == 200) {
+        final data = json.decode(res.body);
+        final display = (data['display_name'] ?? '').toString();
+        if (display.isNotEmpty && addressController.text.isEmpty) {
+          addressController.text = display;
+        }
+        
+        // Extract structured address components
+        final address = data['address'] as Map<String, dynamic>?;
+        if (address != null) {
+          // Extract area (suburb, neighbourhood, or village)
+          final area = address['suburb'] ?? 
+                      address['neighbourhood'] ?? 
+                      address['village'] ?? 
+                      address['hamlet'] ?? '';
+          if (area.isNotEmpty && areaController.text.isEmpty) {
+            areaController.text = area.toString();
+          }
+          
+          // Extract city
+          final city = address['city'] ?? 
+                      address['town'] ?? 
+                      address['municipality'] ?? '';
+          if (city.isNotEmpty && cityController.text.isEmpty) {
+            cityController.text = city.toString();
+          }
+          
+          // Extract state
+          final state = address['state'] ?? '';
+          if (state.isNotEmpty && stateController.text.isEmpty) {
+            stateController.text = state.toString();
+          }
+          
+          // Extract pincode
+          final pincode = address['postcode'] ?? '';
+          if (pincode.isNotEmpty && pincodeController.text.isEmpty) {
+            pincodeController.text = pincode.toString();
+          }
+        }
+      }
+    } catch (_) {
+      // Keep silent on reverse geocode errors
+    }
+  }
+
+  void zoomIn() {
+    if (currentZoom.value < AppConstants.maxZoom) {
+      currentZoom.value = currentZoom.value + 1;
+      _moveMap();
+    }
+  }
+
+  void zoomOut() {
+    if (currentZoom.value > AppConstants.minZoom) {
+      currentZoom.value = currentZoom.value - 1;
+      _moveMap();
+    }
+  }
+
+  void _moveMap({double? zoom}) {
+    final target = ll.LatLng(selectedLatitude.value, selectedLongitude.value);
+    final z = zoom ?? currentZoom.value;
+    try {
+      mapController.move(target, z);
+    } catch (_) {
+      // Map may not be ready yet; ignore
+    }
+  }
+
+  // Search functionality
+  List<Map<String, dynamic>> get searchResults => _searchResults;
+
+  Future<void> searchLocation(String query, {bool showToast = false}) async {
+    if (query.trim().isEmpty) return;
+    locationSearchQuery.value = query;
+    
+    try {
+      final uri = Uri.parse(
+        'https://nominatim.openstreetmap.org/search?format=jsonv2&q=${Uri.encodeQueryComponent(query)}&limit=5',
+      );
+      final res = await http.get(
+        uri,
+        headers: {
+          'User-Agent': 'FindMeBiz/1.0 (support@findmebiz.com)'
+        },
+      );
+      if (res.statusCode == 200) {
+        final List<dynamic> data = json.decode(res.body);
+        _searchResults.assignAll(data.map((e) => e as Map<String, dynamic>));
+        if (_searchResults.isEmpty && showToast) {
+          Get.snackbar(
+            'No results',
+            'Could not find any location for "$query"',
+            snackPosition: SnackPosition.BOTTOM,
+          );
+        }
+      }
+    } catch (e) {
+      if (showToast) {
+        Get.snackbar(
+          'Error',
+          'Unable to search address',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+      }
+    }
+  }
+
+  void clearSearch() {
+    searchTextController.clear();
+    locationSearchQuery.value = '';
+    _searchResults.clear();
+  }
+
+  void selectSearchResult(Map<String, dynamic> item) {
+    final lat = double.tryParse(item['lat']?.toString() ?? '');
+    final lon = double.tryParse(item['lon']?.toString() ?? '');
+    if (lat == null || lon == null) return;
+    
+    onMapTap(lat, lon); // This will handle all the coordinate setting and auto-fill
+    _searchResults.clear();
+  }
 
   Future<void> saveProfile() async {
     if (!formKey.currentState!.validate()) {

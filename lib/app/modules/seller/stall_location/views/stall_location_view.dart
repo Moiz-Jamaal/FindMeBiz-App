@@ -14,7 +14,7 @@ class StallLocationView extends GetView<StallLocationController> {
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
-        title: const Text('Select Stall Location'),
+        title: const Text('Select Business Location'),
         backgroundColor: Colors.white,
         elevation: 1,
         actions: [
@@ -369,7 +369,7 @@ class StallLocationView extends GetView<StallLocationController> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                'Stall Details',
+                'Business Location Details',
                 style: Get.textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: AppTheme.textPrimary,
@@ -377,15 +377,28 @@ class StallLocationView extends GetView<StallLocationController> {
               ),
               const SizedBox(height: 16),
               
-              // Stall Number
+              // Geolocation Section - matching onboarding and edit profile
+              _buildGeolocationSection(),
+              
+              const SizedBox(height: 16),
+              
+              // Business Address
               TextFormField(
-                controller: controller.stallNumberController,
+                controller: controller.addressController,
                 decoration: const InputDecoration(
-                  labelText: 'Stall Number',
-                  hintText: 'e.g., A-23, B-45',
-                  prefixIcon: Icon(Icons.store),
+                  labelText: 'Business Address *',
+                  hintText: 'Complete address of your business',
+                  prefixIcon: Icon(Icons.location_on),
+                  alignLabelWithHint: true,
                 ),
-                textCapitalization: TextCapitalization.characters,
+                maxLines: 2,
+                textCapitalization: TextCapitalization.sentences,
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Please enter the business address';
+                  }
+                  return null;
+                },
               ),
               
               const SizedBox(height: 16),
@@ -394,8 +407,8 @@ class StallLocationView extends GetView<StallLocationController> {
               TextFormField(
                 controller: controller.areaController,
                 decoration: const InputDecoration(
-                  labelText: 'Area/Section',
-                  hintText: 'e.g., Food Court, Handicraft Zone',
+                  labelText: 'Area',
+                  hintText: 'Local area or neighborhood',
                   prefixIcon: Icon(Icons.location_city),
                 ),
                 textCapitalization: TextCapitalization.words,
@@ -403,23 +416,53 @@ class StallLocationView extends GetView<StallLocationController> {
               
               const SizedBox(height: 16),
               
-              // Address
+              // City and State Row
+              Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: controller.cityController,
+                      decoration: const InputDecoration(
+                        labelText: 'City *',
+                        hintText: 'Enter city name',
+                        prefixIcon: Icon(Icons.location_city),
+                      ),
+                      textCapitalization: TextCapitalization.words,
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'City is required';
+                        }
+                        return null;
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: TextFormField(
+                      controller: controller.stateController,
+                      decoration: const InputDecoration(
+                        labelText: 'State',
+                        hintText: 'Enter state name',
+                        prefixIcon: Icon(Icons.map),
+                      ),
+                      textCapitalization: TextCapitalization.words,
+                    ),
+                  ),
+                ],
+              ),
+              
+              const SizedBox(height: 16),
+              
+              // Pincode
               TextFormField(
-                controller: controller.addressController,
+                controller: controller.pincodeController,
                 decoration: const InputDecoration(
-                  labelText: 'Full Address *',
-                  hintText: 'Complete address of your stall',
-                  prefixIcon: Icon(Icons.place),
-                  alignLabelWithHint: true,
+                  labelText: 'Pincode',
+                  hintText: 'Enter 6-digit pincode',
+                  prefixIcon: Icon(Icons.pin_drop),
                 ),
-                maxLines: 2,
-                textCapitalization: TextCapitalization.sentences,
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Please enter the stall address';
-                  }
-                  return null;
-                },
+                keyboardType: TextInputType.number,
+                maxLength: 6,
               ),
               
               const SizedBox(height: 24),
@@ -445,7 +488,7 @@ class StallLocationView extends GetView<StallLocationController> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Tap anywhere on the map above to select your exact stall location. This helps buyers find you easily!',
+                        'Use "Get Location" to auto-fill address fields from your current location, or tap on the map to select a specific location.',
                         style: Get.textTheme.bodySmall?.copyWith(
                           color: const Color(0xFF0B8584),
                         ),
@@ -477,7 +520,7 @@ class StallLocationView extends GetView<StallLocationController> {
                           ),
                         )
                       : const Text(
-                          'Save Stall Location',
+                          'Save Location',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
@@ -488,6 +531,143 @@ class StallLocationView extends GetView<StallLocationController> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildGeolocationSection() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.sellerPrimary.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: AppTheme.sellerPrimary.withValues(alpha: 0.2),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.my_location,
+                color: AppTheme.sellerPrimary,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Current Location',
+                style: Get.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.sellerPrimary,
+                ),
+              ),
+              const Spacer(),
+              Obx(() => controller.isGettingLocation.value
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AppTheme.sellerPrimary,
+                      ),
+                    )
+                  : GestureDetector(
+                      onTap: controller.getCurrentLocation,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppTheme.sellerPrimary,
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.location_searching,
+                              size: 16,
+                              color: Colors.white,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Get Location',
+                              style: Get.textTheme.bodySmall?.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Obx(() => Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: controller.hasLocationSet
+                    ? AppTheme.sellerPrimary.withValues(alpha: 0.3)
+                    : AppTheme.textHint.withValues(alpha: 0.3),
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      controller.hasLocationSet
+                          ? Icons.location_on
+                          : Icons.location_off,
+                      size: 16,
+                      color: controller.hasLocationSet
+                          ? AppTheme.sellerPrimary
+                          : AppTheme.textHint,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      controller.hasLocationSet
+                          ? 'Location Set'
+                          : 'No location set',
+                      style: Get.textTheme.bodySmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: controller.hasLocationSet
+                            ? AppTheme.sellerPrimary
+                            : AppTheme.textHint,
+                      ),
+                    ),
+                  ],
+                ),
+                if (controller.hasLocationSet) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    controller.currentLocationDisplay,
+                    style: Get.textTheme.bodySmall?.copyWith(
+                      color: AppTheme.textSecondary,
+                      fontFamily: 'monospace',
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          )),
+          const SizedBox(height: 8),
+          Text(
+            'Get your current location to auto-fill address fields and set your position on the map.',
+            style: Get.textTheme.bodySmall?.copyWith(
+              color: AppTheme.textSecondary,
+            ),
+          ),
+        ],
       ),
     );
   }
