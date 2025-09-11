@@ -191,14 +191,44 @@ class SellerOnboardingView extends GetView<SellerOnboardingController> {
             const SizedBox(height: 16),
             
             // Location Selector Section
-            LocationSelector(
-              controller: Get.find<LocationSelectorController>(tag: 'onboarding_location'),
-              title: 'Business Location',
-              subtitle: 'Select your business location to help buyers find you',
-              primaryColor: AppTheme.sellerPrimary,
-              showMapByDefault: false,
-              showAddressForm: true,
-              formKey: controller.contactInfoFormKey,
+            Builder(
+              builder: (context) {
+                try {
+                  final locationController = Get.find<LocationSelectorController>(tag: 'onboarding_location');
+                  return LocationSelector(
+                    controller: locationController,
+                    title: 'Business Location',
+                    subtitle: 'Select your business location to help buyers find you',
+                    primaryColor: AppTheme.sellerPrimary,
+                    showMapByDefault: false,
+                    showAddressForm: true,
+                  );
+                } catch (e) {
+                  return Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+                    ),
+                    child: Column(
+                      children: [
+                        const Icon(Icons.warning, color: Colors.orange),
+                        const SizedBox(height: 8),
+                        const Text('Location selector is loading...'),
+                        const SizedBox(height: 8),
+                        ElevatedButton(
+                          onPressed: () {
+                            // Re-initialize the controller
+                            controller.onInit();
+                          },
+                          child: const Text('Retry'),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+              },
             ),
           ],
         ),

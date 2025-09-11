@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart' as ll;
 import '../../../core/theme/app_theme.dart';
 import 'location_selector_controller.dart';
 
-class LocationSelector extends StatelessWidget {
+class LocationSelector extends StatefulWidget {
   final LocationSelectorController? controller;
   final String title;
   final String subtitle;
@@ -13,7 +14,6 @@ class LocationSelector extends StatelessWidget {
   final bool showMapByDefault;
   final bool showAddressForm;
   final VoidCallback? onLocationSelected;
-  final GlobalKey<FormState>? formKey;
 
   const LocationSelector({
     super.key,
@@ -24,11 +24,33 @@ class LocationSelector extends StatelessWidget {
     this.showMapByDefault = false,
     this.showAddressForm = true,
     this.onLocationSelected,
-    this.formKey,
   });
 
+  @override
+  State<LocationSelector> createState() => _LocationSelectorState();
+}
+
+class _LocationSelectorState extends State<LocationSelector> {
+  LocationSelectorController? _cachedController;
+
   LocationSelectorController get _controller {
-    return controller ?? Get.find<LocationSelectorController>();
+    if (_cachedController != null) return _cachedController!;
+    if (widget.controller != null) {
+      _cachedController = widget.controller!;
+      return _cachedController!;
+    }
+    try {
+      _cachedController = Get.find<LocationSelectorController>();
+    } catch (_) {
+      _cachedController = LocationSelectorController();
+    }
+    return _cachedController!;
+  }
+
+  @override
+  void dispose() {
+    _cachedController = null;
+    super.dispose();
   }
 
   @override
@@ -36,11 +58,9 @@ class LocationSelector extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: primaryColor.withValues(alpha: 0.05),
+        color: widget.primaryColor.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: primaryColor.withValues(alpha: 0.2),
-        ),
+        border: Border.all(color: widget.primaryColor.withValues(alpha: 0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -48,15 +68,10 @@ class LocationSelector extends StatelessWidget {
           _buildHeader(),
           const SizedBox(height: 12),
           _buildCurrentLocationDisplay(),
-          
-          // Map Selection Section
-          Obx(() => _controller.showMapSelection.value || showMapByDefault
+          Obx(() => _controller.showMapSelection.value || widget.showMapByDefault
               ? _buildMapSelectionSection()
-              : const SizedBox()),
-          
-          // Address Form
-          if (showAddressForm)
-            _buildAddressForm(),
+              : const SizedBox.shrink()),
+          if (widget.showAddressForm) _buildAddressFields(),
         ],
       ),
     );
@@ -65,25 +80,21 @@ class LocationSelector extends StatelessWidget {
   Widget _buildHeader() {
     return Row(
       children: [
-        Icon(
-          Icons.location_on,
-          color: primaryColor,
-          size: 24,
-        ),
+        Icon(Icons.location_on, color: widget.primaryColor, size: 24),
         const SizedBox(width: 8),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                title,
+                widget.title,
                 style: Get.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: primaryColor,
+                  color: widget.primaryColor,
                 ),
               ),
               Text(
-                subtitle,
+                widget.subtitle,
                 style: Get.textTheme.bodySmall?.copyWith(
                   color: Colors.grey.shade600,
                 ),
@@ -92,27 +103,26 @@ class LocationSelector extends StatelessWidget {
           ),
         ),
         Obx(() => ElevatedButton.icon(
-          onPressed: _controller.isGettingLocation.value 
-              ? null 
-              : _controller.getCurrentLocation,
-          icon: _controller.isGettingLocation.value
-              ? const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Icon(Icons.my_location, size: 18),
-          label: Text(
-            _controller.isGettingLocation.value 
-                ? 'Getting...' 
-                : 'Current Location',
-          ),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: primaryColor,
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          ),
-        )),
+              onPressed: _controller.isGettingLocation.value
+                  ? null
+                  : _controller.getCurrentLocation,
+              icon: _controller.isGettingLocation.value
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.my_location, size: 18),
+              label: Text(_controller.isGettingLocation.value
+                  ? 'Getting...'
+                  : 'Current Location'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: widget.primaryColor,
+                foregroundColor: Colors.white,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              ),
+            )),
       ],
     );
   }
@@ -156,7 +166,7 @@ class LocationSelector extends StatelessWidget {
               ),
             ),
           ),
-          if (!showMapByDefault)
+          if (!widget.showMapByDefault)
             TextButton.icon(
               onPressed: _controller.toggleMapSelection,
               icon: Icon(_controller.showMapSelection.value 
@@ -166,7 +176,7 @@ class LocationSelector extends StatelessWidget {
                   ? 'Hide Map' 
                   : 'Show Map'),
               style: TextButton.styleFrom(
-                foregroundColor: primaryColor,
+                foregroundColor: widget.primaryColor,
               ),
             ),
         ],
@@ -184,7 +194,7 @@ class LocationSelector extends StatelessWidget {
             color: Colors.white,
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
-              color: primaryColor.withValues(alpha: 0.3),
+              color: widget.primaryColor.withValues(alpha: 0.3),
             ),
           ),
           child: Column(
@@ -268,7 +278,7 @@ class LocationSelector extends StatelessWidget {
           ),
           onTap: () {
             _controller.selectSearchResult(result);
-            onLocationSelected?.call();
+            widget.onLocationSelected?.call();
           },
         );
       },
@@ -291,7 +301,7 @@ class LocationSelector extends StatelessWidget {
               initialZoom: zoom,
               onTap: (tapPosition, point) {
                 _controller.onMapTap(point.latitude, point.longitude);
-                onLocationSelected?.call();
+                widget.onLocationSelected?.call();
               },
             ),
             mapController: _controller.mapController,
@@ -309,7 +319,7 @@ class LocationSelector extends StatelessWidget {
                       point: center,
                       child: Icon(
                         Icons.location_on,
-                        color: primaryColor,
+                        color: widget.primaryColor,
                         size: 40,
                       ),
                     ),
@@ -317,14 +327,6 @@ class LocationSelector extends StatelessWidget {
               ),
             ],
           ),
-
-          // Zoom Controls
-          Positioned(
-            right: 16,
-            bottom: 16,
-            child: _buildZoomControls(),
-          ),
-
           // Location Info
           if (_controller.hasLocationSelected.value)
             Positioned(
@@ -346,6 +348,12 @@ class LocationSelector extends StatelessWidget {
                 ),
               ),
             ),
+          // Zoom controls
+          Positioned(
+            top: 16,
+            right: 16,
+            child: _buildZoomControls(),
+          ),
         ],
       );
     });
@@ -370,7 +378,7 @@ class LocationSelector extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.add),
             onPressed: _controller.zoomIn,
-            color: primaryColor,
+            color: widget.primaryColor,
           ),
           Container(
             width: 32,
@@ -380,112 +388,99 @@ class LocationSelector extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.remove),
             onPressed: _controller.zoomOut,
-            color: primaryColor,
+            color: widget.primaryColor,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildAddressForm() {
+  // Address fields only (no inner Form)
+  Widget _buildAddressFields() {
     return Column(
       children: [
         const SizedBox(height: 16),
-        Form(
-          key: formKey,
-          child: Column(
-            children: [
-              TextFormField(
-                controller: _controller.addressController,
+        TextFormField(
+          controller: _controller.addressController,
+          decoration: const InputDecoration(
+            labelText: 'Address *',
+            hintText: 'Enter complete address',
+            prefixIcon: Icon(Icons.home),
+            border: OutlineInputBorder(),
+          ),
+          validator: (v) => v == null || v.trim().isEmpty ? 'Address is required' : null,
+          maxLines: 2,
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: TextFormField(
+                controller: _controller.areaController,
                 decoration: const InputDecoration(
-                  labelText: 'Address *',
-                  hintText: 'Enter complete address',
-                  prefixIcon: Icon(Icons.home),
+                  labelText: 'Area',
+                  hintText: 'e.g., Ring Road',
+                  prefixIcon: Icon(Icons.location_city),
                   border: OutlineInputBorder(),
                 ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Address is required';
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: TextFormField(
+                controller: _controller.cityController,
+                decoration: const InputDecoration(
+                  labelText: 'City *',
+                  hintText: 'e.g., Surat',
+                  prefixIcon: Icon(Icons.location_city),
+                  border: OutlineInputBorder(),
+                ),
+                validator: (v) => v == null || v.trim().isEmpty ? 'City is required' : null,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: TextFormField(
+                controller: _controller.stateController,
+                decoration: const InputDecoration(
+                  labelText: 'State',
+                  hintText: 'e.g., Gujarat',
+                  prefixIcon: Icon(Icons.map),
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: TextFormField(
+                controller: _controller.pincodeController,
+                decoration: const InputDecoration(
+                  labelText: 'Pincode',
+                  hintText: 'e.g., 395007',
+                  prefixIcon: Icon(Icons.pin_drop),
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.number,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(6),
+                ],
+                validator: (v) {
+                  if (v != null && v.trim().isNotEmpty) {
+                    final value = v.trim();
+                    if (value.length != 6 || !RegExp(r'^\d{6}$').hasMatch(value)) {
+                      return 'Enter valid 6-digit pincode';
+                    }
                   }
                   return null;
                 },
-                maxLines: 2,
               ),
-              const SizedBox(height: 12),
-              
-              Row(
-                children: [
-                  Expanded(
-                    child: TextFormField(
-                      controller: _controller.areaController,
-                      decoration: const InputDecoration(
-                        labelText: 'Area',
-                        hintText: 'e.g., Ring Road',
-                        prefixIcon: Icon(Icons.location_city),
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: TextFormField(
-                      controller: _controller.cityController,
-                      decoration: const InputDecoration(
-                        labelText: 'City *',
-                        hintText: 'e.g., Surat',
-                        prefixIcon: Icon(Icons.location_city),
-                        border: OutlineInputBorder(),
-                      ),
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'City is required';
-                        }
-                        return null;
-                      },
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              
-              Row(
-                children: [
-                  Expanded(
-                    child: TextFormField(
-                      controller: _controller.stateController,
-                      decoration: const InputDecoration(
-                        labelText: 'State',
-                        hintText: 'e.g., Gujarat',
-                        prefixIcon: Icon(Icons.map),
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: TextFormField(
-                      controller: _controller.pincodeController,
-                      decoration: const InputDecoration(
-                        labelText: 'Pincode',
-                        hintText: 'e.g., 395007',
-                        prefixIcon: Icon(Icons.pin_drop),
-                        border: OutlineInputBorder(),
-                      ),
-                      keyboardType: TextInputType.number,
-                      validator: (value) {
-                        if (value != null && value.trim().isNotEmpty) {
-                          if (value.length != 6 || !RegExp(r'^\d{6}$').hasMatch(value)) {
-                            return 'Enter valid 6-digit pincode';
-                          }
-                        }
-                        return null;
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ],
     );

@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:souq/app/services/role_service.dart';
 import '../../../../services/auth_service.dart';
 import '../../../../services/seller_service.dart';
 import '../../../../services/category_service.dart';
 import '../../../../services/analytics_service.dart';
 import '../../../../data/models/api/index.dart';
 import '../../../../shared/widgets/location_selector/index.dart';
+import '../../../../routes/app_pages.dart';
 
 class SellerOnboardingController extends GetxController {
   final AuthService _authService = Get.find<AuthService>();
@@ -47,9 +49,13 @@ class SellerOnboardingController extends GetxController {
   void onInit() {
     super.onInit();
     
-    // Initialize location selector
-    locationSelector = LocationSelectorController();
-    Get.put(locationSelector, tag: 'onboarding_location');
+    // Initialize location selector only if not already registered
+    if (!Get.isRegistered<LocationSelectorController>(tag: 'onboarding_location')) {
+      locationSelector = LocationSelectorController();
+      Get.put(locationSelector, tag: 'onboarding_location');
+    } else {
+      locationSelector = Get.find<LocationSelectorController>(tag: 'onboarding_location');
+    }
     
     _loadCategories();
     _prefillUserData();
@@ -68,15 +74,20 @@ class SellerOnboardingController extends GetxController {
 
   @override
   void onClose() {
+    // Dispose text controllers
     businessNameController.dispose();
     profileNameController.dispose();
     bioController.dispose();
     contactController.dispose();
     establishedYearController.dispose();
     
-    // Dispose location selector
-    if (Get.isRegistered<LocationSelectorController>(tag: 'onboarding_location')) {
-      Get.delete<LocationSelectorController>(tag: 'onboarding_location');
+    // Only delete location selector if it was registered by this controller
+    try {
+      if (Get.isRegistered<LocationSelectorController>(tag: 'onboarding_location')) {
+        Get.delete<LocationSelectorController>(tag: 'onboarding_location');
+      }
+    } catch (e) {
+      // Handle disposal error silently
     }
     
     super.onClose();
@@ -177,6 +188,19 @@ class SellerOnboardingController extends GetxController {
       return;
     }
 
+    // Check if user is authenticated
+    final currentUser = _authService.currentUser;
+    if (currentUser?.userid == null) {
+      Get.snackbar(
+        'Authentication Error',
+        'Please log in again to continue',
+        backgroundColor: Colors.red.withValues(alpha: 0.1),
+        colorText: Colors.red,
+      );
+      Get.offAllNamed(Routes.AUTH);
+      return;
+    }
+
     try {
       isSubmitting.value = true;
 
@@ -184,6 +208,7 @@ class SellerOnboardingController extends GetxController {
       
       // Create SellerDetails object
       final sellerDetails = SellerDetails(
+        userid: _authService.currentUser?.userid,
         businessname: businessNameController.text.trim(),
         profilename: profileNameController.text.trim(),
         bio: bioController.text.trim(),
@@ -208,7 +233,7 @@ class SellerOnboardingController extends GetxController {
         AnalyticsService.to.logEvent('seller_onboarding_complete', parameters: {
           'business_name': businessNameController.text.trim(),
           'categories_count': selectedCategories.length,
-          'has_location': stallLocation != null,
+          'has_location': stallLocation != null ? 1 : 0,
           'established_year': establishedYearController.text.trim(),
         });
 
@@ -220,8 +245,26 @@ class SellerOnboardingController extends GetxController {
           duration: const Duration(seconds: 3),
         );
 
-        // Navigate to seller home
-        Get.offAllNamed('/seller-home');
+        // Debug: Check services state before navigation
+        print('DEBUG: Before navigation - Current user: ${_authService.currentUser?.userid}');
+        print('DEBUG: Seller creation response: ${response.data}');
+
+        try {
+          // Ensure seller data is loaded in AuthService
+          if (Get.isRegistered<RoleService>()) {
+            await Get.find<RoleService>().checkSellerData();
+          }
+          
+          // Small delay to ensure all services are updated
+          await Future.delayed(const Duration(milliseconds: 500));
+          
+          // Navigate to seller home with error handling
+          await _navigateToSellerHome();
+        } catch (navigationError) {
+          print('DEBUG: Navigation error: $navigationError');
+          // Fallback navigation
+          _handleNavigationError(navigationError);
+        }
       } else {
         Get.snackbar(
           'Error',
@@ -293,4 +336,72 @@ class SellerOnboardingController extends GetxController {
   }
 
   bool get isLastStep => currentStep.value == 3;
+
+  // Helper method for safer navigation to seller home
+  Future<void> _navigateToSellerHome() async {
+    try {
+      // Ensure all required services are available
+      final authService = Get.find<AuthService>();
+      
+      if (authService.currentUser?.userid == null) {
+        throw Exception('Auth service: User ID is null after seller creation');
+      }
+
+      // Try to refresh seller data in AuthService
+      if (Get.isRegistered<SellerService>()) {
+        final sellerService = Get.find<SellerService>();
+        final sellerResponse = await sellerService.getSellerByUserId(authService.currentUser!.userid!);
+        
+        if (!sellerResponse.success || sellerResponse.data == null) {
+          print('DEBUG: Warning - Could not load seller data after creation');
+        } else {
+          print('DEBUG: Successfully loaded seller data after creation');
+        }
+      }
+
+      print('DEBUG: Navigation - User ID: ${authService.currentUser?.userid}');
+      print('DEBUG: Navigation - Is Seller: ${authService.isSeller}');
+      print('DEBUG: Navigation - All services OK, navigating to seller dashboard');
+
+      // Navigate to seller dashboard (correct route name)
+      Get.offAllNamed(Routes.SELLER_DASHBOARD);
+      
+    } catch (e) {
+      print('DEBUG: Navigation error in _navigateToSellerHome: $e');
+      rethrow;
+    }
+  }
+
+  // Handle navigation errors with fallback options
+  void _handleNavigationError(dynamic error) {
+    print('DEBUG: Handling navigation error: $error');
+    
+    Get.snackbar(
+      'Navigation Issue',
+      'Redirecting you to the main page...',
+      backgroundColor: Colors.orange.withValues(alpha: 0.1),
+      colorText: Colors.orange,
+      duration: const Duration(seconds: 2),
+    );
+
+    // Try alternative navigation approaches
+    Future.delayed(const Duration(seconds: 2), () {
+      try {
+        // Option 1: Try direct route push to seller dashboard
+        Get.offAllNamed(Routes.SELLER_DASHBOARD);
+      } catch (e1) {
+        try {
+          // Option 2: Navigate to main page and then to seller dashboard
+          Get.offAllNamed('/');
+          Future.delayed(const Duration(milliseconds: 100), () {
+            Get.toNamed(Routes.SELLER_DASHBOARD);
+          });
+        } catch (e2) {
+          // Option 3: Last resort - go to buyer home
+          print('DEBUG: All navigation attempts failed, going to buyer home');
+          Get.offAllNamed(Routes.BUYER_HOME);
+        }
+      }
+    });
+  }
 }
