@@ -37,14 +37,14 @@ class ProfilePublishController extends GetxController {
       'icon': Icons.payment,
       'recommended': true,
     },
-    {
-      'id': 'cashfree',
-      'gateway': PaymentGateway.cashfree,
-      'name': 'Cashfree',
-      'description': 'Secure payments with cards, UPI & wallets',
-      'icon': Icons.account_balance_wallet,
-      'recommended': false,
-    },
+    // {
+    //   'id': 'cashfree',
+    //   'gateway': PaymentGateway.cashfree,
+    //   'name': 'Cashfree',
+    //   'description': 'Secure payments with cards, UPI & wallets',
+    //   'icon': Icons.account_balance_wallet,
+    //   'recommended': false,
+    // },
   ];
   
   // Payment state
