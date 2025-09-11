@@ -98,6 +98,7 @@ class SellerProfileEditController extends GetxController {
     _searchDebounce = debounce<String>(
       locationSearchQuery,
       (q) {
+        if (_isDisposed) return; // Safety check
         final query = q.trim();
         if (query.length >= 2) {
           searchLocation(query);
@@ -112,9 +113,9 @@ class SellerProfileEditController extends GetxController {
   @override
   void onClose() {
     _isDisposed = true;
-    _disposeControllers();
-    searchTextController.dispose();
     _searchDebounce.dispose();
+    searchTextController.dispose();
+    _disposeControllers();
     super.onClose();
   }
 
@@ -608,10 +609,13 @@ class SellerProfileEditController extends GetxController {
   }
 
   void toggleMapSelection() {
+    if (_isDisposed) return;
     showMapSelection.value = !showMapSelection.value;
   }
 
   void onMapTap(double latitude, double longitude) {
+    if (_isDisposed) return;
+    
     selectedLatitude.value = latitude;
     selectedLongitude.value = longitude;
     hasLocationSelected.value = true;
@@ -694,6 +698,7 @@ class SellerProfileEditController extends GetxController {
   }
 
   void zoomIn() {
+    if (_isDisposed) return;
     if (currentZoom.value < AppConstants.maxZoom) {
       currentZoom.value = currentZoom.value + 1;
       _moveMap();
@@ -701,6 +706,7 @@ class SellerProfileEditController extends GetxController {
   }
 
   void zoomOut() {
+    if (_isDisposed) return;
     if (currentZoom.value > AppConstants.minZoom) {
       currentZoom.value = currentZoom.value - 1;
       _moveMap();
@@ -708,6 +714,8 @@ class SellerProfileEditController extends GetxController {
   }
 
   void _moveMap({double? zoom}) {
+    if (_isDisposed) return;
+    
     final target = ll.LatLng(selectedLatitude.value, selectedLongitude.value);
     final z = zoom ?? currentZoom.value;
     try {
@@ -721,7 +729,7 @@ class SellerProfileEditController extends GetxController {
   List<Map<String, dynamic>> get searchResults => _searchResults;
 
   Future<void> searchLocation(String query, {bool showToast = false}) async {
-    if (query.trim().isEmpty) return;
+    if (_isDisposed || query.trim().isEmpty) return;
     locationSearchQuery.value = query;
     
     try {
@@ -759,12 +767,15 @@ class SellerProfileEditController extends GetxController {
   }
 
   void clearSearch() {
+    if (_isDisposed) return;
     searchTextController.clear();
     locationSearchQuery.value = '';
     _searchResults.clear();
   }
 
   void selectSearchResult(Map<String, dynamic> item) {
+    if (_isDisposed) return;
+    
     final lat = double.tryParse(item['lat']?.toString() ?? '');
     final lon = double.tryParse(item['lon']?.toString() ?? '');
     if (lat == null || lon == null) return;
@@ -918,16 +929,19 @@ class SellerProfileEditController extends GetxController {
 
   // Validation Methods
   bool get isProfileValid {
+    if (_isDisposed) return false;
     _validationUpdateTrigger.value; // Make reactive
     return isBusinessNameValid && isBusinessLocationValid && isContactInfoValid;
   }
   
   bool get isBusinessNameValid {
+    if (_isDisposed) return false;
     _validationUpdateTrigger.value; // Make reactive
     return businessNameController.text.trim().isNotEmpty;
   }
   
   bool get isBusinessLocationValid {
+    if (_isDisposed) return false;
     _validationUpdateTrigger.value; // Make reactive
     return addressController.text.trim().isNotEmpty &&
            cityController.text.trim().isNotEmpty &&
@@ -935,6 +949,7 @@ class SellerProfileEditController extends GetxController {
   }
   
   bool get isContactInfoValid {
+    if (_isDisposed) return false;
     _validationUpdateTrigger.value; // Make reactive
     return contactController.text.trim().isNotEmpty &&
            mobileController.text.trim().isNotEmpty &&
@@ -942,6 +957,7 @@ class SellerProfileEditController extends GetxController {
   }
   
   List<String> get validationErrors {
+    if (_isDisposed) return [];
     _validationUpdateTrigger.value; // Make reactive
     List<String> errors = [];
     if (!isBusinessNameValid) errors.add('Business Name is required');
