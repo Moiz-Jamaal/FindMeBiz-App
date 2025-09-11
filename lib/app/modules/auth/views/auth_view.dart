@@ -87,6 +87,60 @@ class AuthView extends GetView<AuthController> {
                 ),
               )),
               
+              const SizedBox(height: 16),
+              
+              // OR Divider
+              Row(
+                children: [
+                  Expanded(child: Divider(color: Colors.grey[300])),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Text(
+                      'OR',
+                      style: TextStyle(
+                        color: Colors.grey[600],
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                  Expanded(child: Divider(color: Colors.grey[300])),
+                ],
+              ),
+              
+              const SizedBox(height: 16),
+              
+              // Google Sign-In Button
+              Obx(() => SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: OutlinedButton.icon(
+                  onPressed: controller.isLoading.value 
+                      ? null 
+                      : controller.signInWithGoogle,
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(color: Colors.grey[300]!),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppConstants.defaultRadius),
+                    ),
+                  ),
+                  icon: Image.asset(
+                    'assets/images/google_logo.png',
+                    height: 24,
+                    width: 24,
+                  ),
+                  label: Text(
+                    controller.isLoginMode.value 
+                        ? 'Continue with Google' 
+                        : 'Sign Up with Google',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.black87,
+                    ),
+                  ),
+                ),
+              )),
+              
               const SizedBox(height: 24),
               
               // Toggle Mode

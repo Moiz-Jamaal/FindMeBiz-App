@@ -1,5 +1,6 @@
 class UsersProfile {
   final int? userid;
+  final String? googleid;
   final String username;
   final String? fullname;
   final String emailid;
@@ -14,6 +15,7 @@ class UsersProfile {
 
   UsersProfile({
     this.userid,
+    this.googleid,
     required this.username,
     this.fullname,
     required this.emailid,
@@ -37,6 +39,7 @@ class UsersProfile {
     }
     return UsersProfile(
       userid: pick<int>('UserId', 'userid'),
+      googleid: pick<String>('GoogleId', 'googleid'),
       username: (pick<String>('Username', 'username'))!,
       fullname: pick<String>('FullName', 'fullname'),
       emailid: (pick<String>('EmailId', 'emailid'))!,
@@ -58,6 +61,7 @@ class UsersProfile {
   Map<String, dynamic> toJson() {
     return {
       if (userid != null) 'UserId': userid,
+      if (googleid != null) 'GoogleId': googleid,
       'Username': username,
       'FullName': fullname,
       'EmailId': emailid,
@@ -74,6 +78,7 @@ class UsersProfile {
 
   UsersProfile copyWith({
     int? userid,
+    String? googleid,
     String? username,
     String? fullname,
     String? emailid,
@@ -88,6 +93,7 @@ class UsersProfile {
   }) {
     return UsersProfile(
       userid: userid ?? this.userid,
+      googleid: googleid ?? this.googleid,
       username: username ?? this.username,
       fullname: fullname ?? this.fullname,
       emailid: emailid ?? this.emailid,

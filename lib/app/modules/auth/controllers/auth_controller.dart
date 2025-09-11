@@ -215,6 +215,43 @@ class AuthController extends GetxController {
       isLoading.value = false;
     }
   }
+
+  // Google Sign-In
+  Future<void> signInWithGoogle() async {
+    isLoading.value = true;
+    
+    try {
+      final response = await _authService.signInWithGoogle();
+      
+      if (response.success && response.data != null) {
+        Get.snackbar(
+          'Success',
+          'Welcome to FindMeBiz!',
+          backgroundColor: Colors.green.withValues(alpha: 0.1),
+          colorText: Colors.green,
+        );
+        
+        // Navigate based on role
+        _navigateAfterAuth();
+      } else {
+        Get.snackbar(
+          'Google Sign-In Failed',
+          response.message ?? 'Failed to sign in with Google',
+          backgroundColor: Colors.red.withValues(alpha: 0.1),
+          colorText: Colors.red,
+        );
+      }
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        'Google Sign-In failed. Please try again.',
+        backgroundColor: Colors.red.withValues(alpha: 0.1),
+        colorText: Colors.red,
+      );
+    } finally {
+      isLoading.value = false;
+    }
+  }
   
   // Navigate after successful authentication
   void _navigateAfterAuth() async {

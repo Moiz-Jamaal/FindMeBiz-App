@@ -1,5 +1,8 @@
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:flutter/foundation.dart';
 import 'dart:convert';
 import 'api/base_api_service.dart';
 import 'api/api_exception.dart';
@@ -14,6 +17,13 @@ class AuthService extends BaseApiService {
   final _box = GetStorage();
   final Rx<UsersProfile?> _currentUser = Rx<UsersProfile?>(null);
   final Rx<SellerDetails?> _currentSeller = Rx<SellerDetails?>(null);
+  
+  // Firebase Auth instance
+  final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
+  // Google Sign-In instance (for mobile only)
+  final GoogleSignIn _googleSignIn = GoogleSignIn(
+    scopes: ['email', 'profile'],
+  );
   
   // Getters
   UsersProfile? get currentUser => _currentUser.value;
@@ -210,6 +220,87 @@ class AuthService extends BaseApiService {
     return response;
   }
 
+  // Google Sign-In with Firebase Auth
+  Future<ApiResponse<UsersProfile>> signInWithGoogle() async {
+    try {
+      UserCredential userCredential;
+      
+      if (kIsWeb) {
+        // For web, use Firebase Auth popup directly
+        GoogleAuthProvider googleProvider = GoogleAuthProvider();
+        googleProvider.addScope('email');
+        googleProvider.addScope('profile');
+        
+        userCredential = await _firebaseAuth.signInWithPopup(googleProvider);
+      } else {
+        // For mobile, use Google Sign-In package
+        final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+        
+        if (googleUser == null) {
+          // User cancelled the sign-in
+          return ApiResponse.error('Google Sign-In was cancelled');
+        }
+
+        // Obtain the auth details from the request
+        final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+
+        // Create a new credential
+        final credential = GoogleAuthProvider.credential(
+          accessToken: googleAuth.accessToken,
+          idToken: googleAuth.idToken,
+        );
+
+        // Sign in to Firebase with the Google user credential
+        userCredential = await _firebaseAuth.signInWithCredential(credential);
+      }
+      
+      final User? firebaseUser = userCredential.user;
+
+      if (firebaseUser == null) {
+        return ApiResponse.error('Firebase authentication failed');
+      }
+
+      // Send Google user data to backend
+      final response = await post<UsersProfile>(
+        '/GoogleAuth',
+        body: {
+          'googleId': firebaseUser.uid, // Use Firebase UID
+          'email': firebaseUser.email!,
+          'name': firebaseUser.displayName ?? firebaseUser.email!.split('@')[0],
+          'pictureUrl': firebaseUser.photoURL,
+        },
+        fromJson: (json) => UsersProfile.fromJson(json),
+      );
+
+      if (response.success && response.data != null) {
+        _saveUser(response.data!);
+        
+        // After successful login, check and load seller data
+        if (Get.isRegistered<RoleService>()) {
+          await Get.find<RoleService>().checkSellerData();
+          await _loadSellerData();
+        }
+      }
+
+      return response;
+    } catch (e) {
+      return ApiResponse.error('Google Sign-In failed: $e');
+    }
+  }
+
+  // Sign out from Google
+  Future<void> signOutGoogle() async {
+    try {
+      await _googleSignIn.signOut();
+    } catch (e) {
+      // Continue with regular logout even if Google sign-out fails
+      print('Google sign-out failed: $e');
+    }
+  }
+
+  // Check if user is signed in with Google
+  bool get isGoogleUser => _currentUser.value?.googleid != null && _currentUser.value!.googleid!.isNotEmpty;
+
   // Load seller data for current user
   Future<void> _loadSellerData() async {
     if (_currentUser.value?.userid == null) return;
@@ -270,6 +361,14 @@ class AuthService extends BaseApiService {
 
   // Logout
   Future<void> logout() async {
+    // Sign out from Firebase Auth
+    await _firebaseAuth.signOut();
+    
+    // Sign out from Google if user is signed in with Google
+    if (isGoogleUser) {
+      await signOutGoogle();
+    }
+    
     // Clear in-memory user and seller
     _clearUserData();
     _currentSeller.value = null;

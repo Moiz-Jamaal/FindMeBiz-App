@@ -12,7 +12,20 @@
           "package_name": "com.application.findmebiz"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "580968294391-k8fqfmffoi1va6b3utji0fd3mtppojpu.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.application.findmebiz",
+            "certificate_hash": "17eb88e341c31d0b918d725db144729a72e092ca"
+          }
+        },
+        {
+          "client_id": "580968294391-iealac41g0d1i0rd35icj55gvp2okcnh.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyDYopoPl_WObN3duEmsxsUhObSyYN5SzPA"
@@ -20,7 +33,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "580968294391-iealac41g0d1i0rd35icj55gvp2okcnh.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "580968294391-k5le15ahbv0liu7qkfh9qob5sm084p4u.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.application.findmebiz"
+              }
+            }
+          ]
         }
       }
     }
