@@ -166,6 +166,26 @@ class _LocationSelectorState extends State<LocationSelector> {
               ),
             ),
           ),
+          // Show loading indicator when fetching address
+          if (_controller.isLoading.value)
+            Container(
+              margin: const EdgeInsets.only(right: 8),
+              child: const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ),
+          // Refresh address button (only when location is selected)
+          if (_controller.hasLocationSelected.value && !_controller.isLoading.value)
+            IconButton(
+              onPressed: _controller.refreshAddressFromCurrentLocation,
+              icon: const Icon(Icons.refresh, size: 18),
+              tooltip: 'Refresh address details',
+              padding: const EdgeInsets.all(4),
+              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+              color: widget.primaryColor,
+            ),
           if (!widget.showMapByDefault)
             TextButton.icon(
               onPressed: _controller.toggleMapSelection,
@@ -397,9 +417,42 @@ class _LocationSelectorState extends State<LocationSelector> {
 
   // Address fields only (no inner Form)
   Widget _buildAddressFields() {
-    return Column(
+    return Obx(() => Column(
       children: [
         const SizedBox(height: 16),
+        
+        // Loading indicator for address fetching
+        if (_controller.isLoading.value)
+          Container(
+            padding: const EdgeInsets.all(12),
+            margin: const EdgeInsets.only(bottom: 16),
+            decoration: BoxDecoration(
+              color: widget.primaryColor.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: widget.primaryColor.withValues(alpha: 0.3)),
+            ),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: widget.primaryColor,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'Fetching address details...',
+                  style: Get.textTheme.bodyMedium?.copyWith(
+                    color: widget.primaryColor,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        
         TextFormField(
           controller: _controller.addressController,
           decoration: const InputDecoration(
@@ -483,6 +536,6 @@ class _LocationSelectorState extends State<LocationSelector> {
           ],
         ),
       ],
-    );
+    ));
   }
 }

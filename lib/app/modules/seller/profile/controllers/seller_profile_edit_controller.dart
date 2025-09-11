@@ -616,22 +616,27 @@ class SellerProfileEditController extends GetxController {
   void onMapTap(double latitude, double longitude) {
     if (_isDisposed) return;
     
+    print('DEBUG Profile Edit: onMapTap called with coordinates: $latitude, $longitude');
+    
     selectedLatitude.value = latitude;
     selectedLongitude.value = longitude;
     hasLocationSelected.value = true;
     
     // Update location coordinates in same format as getCurrentLocation
     currentGeoLocation.value = '$latitude,$longitude';
+    hasChanges.value = true;
+    
+    print('DEBUG Profile Edit: Updated coordinates and geolocation');
     
     // Reverse geocoding and auto-fill
     _updateAddressFromCoordinates(latitude, longitude);
     _moveMap();
-    hasChanges.value = true;
     
     Get.snackbar(
       'Location Selected',
-      'Address fields have been auto-filled from selected location',
-      snackPosition: SnackPosition.BOTTOM,
+      'Fetching address details...',
+      backgroundColor: Colors.blue.withValues(alpha: 0.1),
+      colorText: Colors.blue,
       duration: const Duration(seconds: 2),
     );
     
@@ -642,58 +647,140 @@ class SellerProfileEditController extends GetxController {
   }
 
   Future<void> _updateAddressFromCoordinates(double lat, double lng) async {
+    print('DEBUG Profile Edit: _updateAddressFromCoordinates called with lat: $lat, lng: $lng');
+    
     try {
-      final uri = Uri.parse(
-        'https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=$lat&lon=$lng',
+      // Show loading feedback
+      Get.snackbar(
+        'Getting Address',
+        'Fetching location details...',
+        backgroundColor: Colors.blue.withValues(alpha: 0.1),
+        colorText: Colors.blue,
+        duration: const Duration(seconds: 1),
       );
+      
+      final uri = Uri.parse(
+        'https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=$lat&lon=$lng&addressdetails=1',
+      );
+      
+      print('DEBUG Profile Edit: Making request to: $uri');
+      
       final res = await http.get(
         uri,
         headers: {
           'User-Agent': 'FindMeBiz/1.0 (support@findmebiz.com)'
         },
-      );
+      ).timeout(const Duration(seconds: 10));
+      
+      print('DEBUG Profile Edit: Response status: ${res.statusCode}');
+      
       if (res.statusCode == 200) {
         final data = json.decode(res.body);
+        print('DEBUG Profile Edit: Response data: $data');
+        
         final display = (data['display_name'] ?? '').toString();
-        if (display.isNotEmpty && addressController.text.isEmpty) {
+        
+        // Always update address fields (don't check if empty)
+        if (display.isNotEmpty) {
           addressController.text = display;
+          print('DEBUG Profile Edit: Set address to: $display');
         }
         
         // Extract structured address components
         final address = data['address'] as Map<String, dynamic>?;
         if (address != null) {
+          print('DEBUG Profile Edit: Address components: $address');
+          
           // Extract area (suburb, neighbourhood, or village)
           final area = address['suburb'] ?? 
                       address['neighbourhood'] ?? 
                       address['village'] ?? 
-                      address['hamlet'] ?? '';
-          if (area.isNotEmpty && areaController.text.isEmpty) {
+                      address['hamlet'] ?? 
+                      address['quarter'] ?? '';
+          if (area.isNotEmpty) {
             areaController.text = area.toString();
+            print('DEBUG Profile Edit: Set area to: $area');
           }
           
           // Extract city
           final city = address['city'] ?? 
                       address['town'] ?? 
-                      address['municipality'] ?? '';
-          if (city.isNotEmpty && cityController.text.isEmpty) {
+                      address['municipality'] ?? 
+                      address['county'] ?? '';
+          if (city.isNotEmpty) {
             cityController.text = city.toString();
+            print('DEBUG Profile Edit: Set city to: $city');
           }
           
           // Extract state
-          final state = address['state'] ?? '';
-          if (state.isNotEmpty && stateController.text.isEmpty) {
+          final state = address['state'] ?? 
+                       address['province'] ?? 
+                       address['region'] ?? '';
+          if (state.isNotEmpty) {
             stateController.text = state.toString();
+            print('DEBUG Profile Edit: Set state to: $state');
           }
           
           // Extract pincode
-          final pincode = address['postcode'] ?? '';
-          if (pincode.isNotEmpty && pincodeController.text.isEmpty) {
+          final pincode = address['postcode'] ?? 
+                         address['postal_code'] ?? '';
+          if (pincode.isNotEmpty) {
             pincodeController.text = pincode.toString();
+            print('DEBUG Profile Edit: Set pincode to: $pincode');
           }
+          
+          // Force UI update
+          update();
+          
+          Get.snackbar(
+            'Address Updated',
+            'Location details fetched successfully',
+            backgroundColor: Colors.green.withValues(alpha: 0.1),
+            colorText: Colors.green,
+            duration: const Duration(seconds: 2),
+          );
+          
+          print('DEBUG Profile Edit: Successfully updated all address fields');
+        } else {
+          print('DEBUG Profile Edit: No address details in response');
+          
+          Get.snackbar(
+            'Address Not Found',
+            'Could not get detailed address information',
+            backgroundColor: Colors.orange.withValues(alpha: 0.1),
+            colorText: Colors.orange,
+            duration: const Duration(seconds: 2),
+          );
         }
+      } else {
+        print('DEBUG Profile Edit: HTTP request failed with status: ${res.statusCode}');
+        print('DEBUG Profile Edit: Error body: ${res.body}');
+        
+        // Fallback: set coordinates as address
+        addressController.text = 'Lat: ${lat.toStringAsFixed(6)}, Lng: ${lng.toStringAsFixed(6)}';
+        
+        Get.snackbar(
+          'Address Error',
+          'Could not fetch address details (Status: ${res.statusCode})',
+          backgroundColor: Colors.red.withValues(alpha: 0.1),
+          colorText: Colors.red,
+          duration: const Duration(seconds: 3),
+        );
       }
-    } catch (_) {
-      // Keep silent on reverse geocode errors
+    } catch (e) {
+      print('DEBUG Profile Edit: Exception in _updateAddressFromCoordinates: $e');
+      print('DEBUG Profile Edit: Exception stack trace: ${StackTrace.current}');
+      
+      // Fallback: set coordinates as address  
+      addressController.text = 'Lat: ${lat.toStringAsFixed(6)}, Lng: ${lng.toStringAsFixed(6)}';
+      
+      Get.snackbar(
+        'Address Error',
+        'Network error: ${e.toString()}',
+        backgroundColor: Colors.red.withValues(alpha: 0.1),
+        colorText: Colors.red,
+        duration: const Duration(seconds: 3),
+      );
     }
   }
 
@@ -773,15 +860,144 @@ class SellerProfileEditController extends GetxController {
     _searchResults.clear();
   }
 
+  // DEBUG: Test method to check location functionality
+  Future<void> testLocationService() async {
+    if (_isDisposed) return;
+    
+    print('DEBUG Profile Edit: Testing location functionality...');
+    
+    // Test with coordinates for Mumbai, India
+    const testLat = 19.0760;
+    const testLng = 72.8777;
+    
+    print('DEBUG Profile Edit: Testing with Mumbai coordinates: $testLat, $testLng');
+    
+    try {
+      // Test reverse geocoding
+      await _updateAddressFromCoordinates(testLat, testLng);
+      
+      // Test coordinate update
+      selectedLatitude.value = testLat;
+      selectedLongitude.value = testLng;
+      hasLocationSelected.value = true;
+      currentGeoLocation.value = '$testLat,$testLng';
+      
+      _moveMap();
+      
+      Get.snackbar(
+        'Test Complete',
+        'Check console logs and address fields',
+        backgroundColor: Colors.green.withValues(alpha: 0.1),
+        colorText: Colors.green,
+        duration: const Duration(seconds: 3),
+      );
+      
+      print('DEBUG Profile Edit: Test completed');
+    } catch (e) {
+      print('DEBUG Profile Edit: Test failed with error: $e');
+      
+      Get.snackbar(
+        'Test Error',
+        'Test failed: ${e.toString()}',
+        backgroundColor: Colors.red.withValues(alpha: 0.1),
+        colorText: Colors.red,
+        duration: const Duration(seconds: 3),
+      );
+    }
+  }
+
   void selectSearchResult(Map<String, dynamic> item) {
     if (_isDisposed) return;
     
+    print('DEBUG Profile Edit: selectSearchResult called with item: $item');
+    
     final lat = double.tryParse(item['lat']?.toString() ?? '');
     final lon = double.tryParse(item['lon']?.toString() ?? '');
-    if (lat == null || lon == null) return;
     
-    onMapTap(lat, lon); // This will handle all the coordinate setting and auto-fill
+    if (lat == null || lon == null) {
+      print('DEBUG Profile Edit: Invalid coordinates in search result');
+      return;
+    }
+    
+    print('DEBUG Profile Edit: Parsed coordinates - lat: $lat, lon: $lon');
+    
+    // Update coordinates first
+    selectedLatitude.value = lat;
+    selectedLongitude.value = lon;
+    hasLocationSelected.value = true;
+    currentGeoLocation.value = '$lat,$lon';
+    hasChanges.value = true;
+    
+    // Update address from search result if available
+    final displayName = item['display_name']?.toString() ?? '';
+    if (displayName.isNotEmpty) {
+      addressController.text = displayName;
+      print('DEBUG Profile Edit: Set address from search result: $displayName');
+    }
+    
+    // Try to extract structured address from search result
+    final address = item['address'] as Map<String, dynamic>?;
+    if (address != null) {
+      print('DEBUG Profile Edit: Found address data in search result: $address');
+      
+      // Extract area
+      final area = address['suburb']?.toString() ?? 
+                   address['neighbourhood']?.toString() ?? 
+                   address['village']?.toString() ?? 
+                   address['hamlet']?.toString() ?? 
+                   address['quarter']?.toString() ?? '';
+      if (area.isNotEmpty) {
+        areaController.text = area;
+        print('DEBUG Profile Edit: Set area from search: $area');
+      }
+      
+      // Extract city
+      final city = address['city']?.toString() ?? 
+                   address['town']?.toString() ?? 
+                   address['municipality']?.toString() ?? 
+                   address['county']?.toString() ?? '';
+      if (city.isNotEmpty) {
+        cityController.text = city;
+        print('DEBUG Profile Edit: Set city from search: $city');
+      }
+      
+      // Extract state
+      final state = address['state']?.toString() ?? 
+                    address['province']?.toString() ?? 
+                    address['region']?.toString() ?? '';
+      if (state.isNotEmpty) {
+        stateController.text = state;
+        print('DEBUG Profile Edit: Set state from search: $state');
+      }
+      
+      // Extract pincode
+      final pincode = address['postcode']?.toString() ?? 
+                      address['postal_code']?.toString() ?? '';
+      if (pincode.isNotEmpty) {
+        pincodeController.text = pincode;
+        print('DEBUG Profile Edit: Set pincode from search: $pincode');
+      }
+      
+      // Force UI update
+      update();
+      
+      Get.snackbar(
+        'Location Selected',
+        'Address updated from search result',
+        backgroundColor: Colors.green.withValues(alpha: 0.1),
+        colorText: Colors.green,
+        duration: const Duration(seconds: 2),
+      );
+    } else {
+      print('DEBUG Profile Edit: No address data in search result, trying reverse geocoding...');
+      // Fallback to reverse geocoding if no address data in search result
+      _updateAddressFromCoordinates(lat, lon);
+    }
+    
     _searchResults.clear();
+    _moveMap();
+    
+    print('DEBUG Profile Edit: Search result selection completed');
   }
 
   Future<void> saveProfile() async {

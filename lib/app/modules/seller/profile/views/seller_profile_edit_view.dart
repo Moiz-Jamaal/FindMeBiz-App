@@ -472,6 +472,32 @@ class SellerProfileEditView extends GetView<SellerProfileEditController> {
                           ),
                         ),
                         const SizedBox(width: 8),
+                        // DEBUG: Test button (only visible in debug mode)
+                        if (Get.isLogEnable)
+                          Container(
+                            margin: const EdgeInsets.only(right: 8),
+                            child: GestureDetector(
+                              onTap: controller.testLocationService,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.orange,
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                child: Text(
+                                  'TEST',
+                                  style: Get.textTheme.bodySmall?.copyWith(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 10,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
                         GestureDetector(
                           onTap: controller.getCurrentLocation,
                           child: Container(
