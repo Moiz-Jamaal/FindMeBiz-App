@@ -664,8 +664,9 @@ class SellerProfileEditView extends GetView<SellerProfileEditController> {
             TextFormField(
               controller: controller.bioController,
               decoration: const InputDecoration(
-                labelText: 'Business Description',
-                hintText: 'Tell buyers about your business...',
+              labelText: 'Product Catalog (Optional)',
+              hintText: 'List your product names, key items, or descriptions to improve visibility in buyer search results...',
+
                 alignLabelWithHint: true,
                 prefixIcon: Padding(
                   padding: EdgeInsets.only(bottom: 60),

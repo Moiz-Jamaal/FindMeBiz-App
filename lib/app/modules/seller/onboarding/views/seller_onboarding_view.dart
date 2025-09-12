@@ -288,10 +288,10 @@ class SellerOnboardingView extends GetView<SellerOnboardingController> {
             TextFormField(
               controller: controller.bioController,
               decoration: const InputDecoration(
-                labelText: 'Business Description (Optional)',
-                hintText: 'Describe your products, story, what makes you unique...',
-                alignLabelWithHint: true,
-                prefixIcon: Icon(Icons.description),
+              labelText: 'Product Catalog (Optional)',
+              hintText: 'List your product names, key items, or descriptions to improve visibility in buyer search results...',
+              alignLabelWithHint: true,
+              prefixIcon: Icon(Icons.description),
               ),
               maxLines: 4,
               maxLength: 500,

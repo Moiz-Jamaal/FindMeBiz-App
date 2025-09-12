@@ -761,7 +761,7 @@ class ProfilePublishController extends GetxController {
     
     if (profile.businessname?.isEmpty != false) missing.add('Business Name');
     if (profile.profilename?.isEmpty != false) missing.add('Profile Name');
-    if (profile.bio?.isEmpty != false) missing.add('Business Description');
+    if (profile.bio?.isEmpty != false) missing.add('Product Catalog');
     if (profile.logo?.isEmpty != false) missing.add('Business Logo');
     if (profile.contactno?.isEmpty != false) missing.add('Contact Number');
     if (profile.mobileno?.isEmpty != false) missing.add('Mobile Number');
