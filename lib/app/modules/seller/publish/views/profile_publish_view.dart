@@ -324,14 +324,24 @@ class ProfilePublishView extends GetView<ProfilePublishController> {
               'Buyers can find you through search and categories',
             ),
             _buildBenefitItem(
-              Icons.location_on,
-              'Map Presence',
-              'Your stall appears on the interactive event map',
-            ),
-            _buildBenefitItem(
               Icons.chat,
               'Direct Contact',
               'Buyers can contact you directly via WhatsApp',
+            ),
+            _buildBenefitItem(
+              Icons.inventory_2,
+              'List your physical products',
+              'Showcase your products with detailed descriptions and images',
+            ),
+            _buildBenefitItem(
+              Icons.people,
+              'Connect with local buyers',
+              'Build relationships with buyers in your area',
+            ),
+            _buildBenefitItem(
+              Icons.handshake,
+              'Facilitate in-person sales',
+              'Meet customers face-to-face for secure transactions',
             ),
           ],
         ),
