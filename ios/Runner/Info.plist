@@ -37,8 +37,19 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	
+	<!-- LOCATION PERMISSIONS -->
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>This app uses your location to set your stall coordinates so buyers can find you.</string>
+	
+	<!-- CAMERA & PHOTO LIBRARY PERMISSIONS - THIS FIXES THE CRASH -->
+	<key>NSCameraUsageDescription</key>
+	<string>This app needs camera access to take photos for your business profile and product listings.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>This app needs photo library access to select images for your business profile and product listings.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>This app needs permission to save photos to your photo library.</string>
+	
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UIBackgroundModes</key>
