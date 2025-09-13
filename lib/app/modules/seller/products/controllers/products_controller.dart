@@ -5,6 +5,7 @@ import '../../../../services/product_service.dart';
 import '../../../../services/auth_service.dart';
 import '../../../../services/category_service.dart';
 import '../../../../services/seller_service.dart';
+import '../../dashboard/controllers/seller_dashboard_controller.dart';
 
 class ProductsController extends GetxController {
   final ProductService _productService = ProductService.instance;
@@ -83,10 +84,7 @@ class ProductsController extends GetxController {
       );
 
       if (response.isSuccess && response.data != null) {
-if (response.data!.products.isNotEmpty) {
-          final firstProduct = response.data!.products.first;
-}
-final searchResponse = response.data!;
+        final searchResponse = response.data!;
         
         if (refresh) {
           products.assignAll(searchResponse.products);
@@ -144,19 +142,44 @@ final searchResponse = response.data!;
 
   Future<bool> _checkSellerSubscription() async {
     try {
-      final sellerId = _authService.currentSeller?.sellerId;
+      // 1) Prefer dashboard's cached value to keep UX consistent
+      if (Get.isRegistered<SellerDashboardController>()) {
+        final dash = Get.find<SellerDashboardController>();
+        if (dash.hasActiveSubscription) return true;
+      }
+
+      // 2) Fallback to live check using the same endpoint as dashboard
+      final sellerId = _authService.currentSeller?.sellerid 
+        ?? (Get.isRegistered<SellerDashboardController>() 
+            ? Get.find<SellerDashboardController>().sellerProfile.value?.sellerid 
+            : null);
       if (sellerId == null) return false;
 
-      final response = await _sellerService.getSellerBySellerId(sellerId);
+      final response = await _sellerService.checkSubscription(sellerId);
       if (response.success && response.data != null) {
-        final seller = response.data!;
-        
-        // Check if seller is published and has active subscription
-        if (seller.ispublished == true && seller.settings?.isNotEmpty == true) {
-          final settings = seller.settings!.first;
-          final subscriptionPlan = settings.subscriptionPlan;
-          return subscriptionPlan != null && subscriptionPlan.isNotEmpty;
+        final data = response.data!;
+        final active = (data['hasActiveSubscription'] == true) && (data['isExpired'] != true);
+
+        // Update dashboard cache if available to keep both sections in sync
+        if (Get.isRegistered<SellerDashboardController>()) {
+          final dash = Get.find<SellerDashboardController>();
+          if (active) {
+            dash.currentSubscription.value = {
+              'planId': data['subscriptionPlan'],
+              'name': data['subscriptionPlan'] ?? 'Basic',
+              'hasActiveSubscription': true,
+              'startDate': data['startDate'],
+              'endDate': data['endDate'],
+              'isExpired': data['isExpired'] ?? false,
+              'amount': data['amount'],
+              'currency': data['currency'],
+            };
+          } else {
+            dash.currentSubscription.value = null;
+          }
         }
+
+        return active;
       }
       return false;
     } catch (e) {
@@ -177,9 +200,14 @@ final searchResponse = response.data!;
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               Get.back();
-              Get.toNamed('/seller-publish');
+              // Navigate to subscribe, then refresh both dashboard and products on return
+              await Get.toNamed('/seller-publish');
+              if (Get.isRegistered<SellerDashboardController>()) {
+                await Get.find<SellerDashboardController>().refreshData();
+              }
+              await refreshProducts();
             },
             child: const Text('Subscribe Now'),
           ),

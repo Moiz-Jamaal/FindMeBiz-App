@@ -4,6 +4,7 @@ import '../../../../services/auth_service.dart';
 import '../../../../services/seller_service.dart';
 import '../../../../services/product_service.dart';
 import '../../../../data/models/api/index.dart';
+import '../../products/controllers/products_controller.dart';
 
 class SellerDashboardController extends GetxController {
   final AuthService _authService = Get.find<AuthService>();
@@ -101,12 +102,9 @@ class SellerDashboardController extends GetxController {
 
       final results = await Future.wait(futures);
 
-      // Process products response
+  // Process products response
       final productsResponse = results[0] as dynamic; // Adjust type based on actual response type
       if (productsResponse.isSuccess && productsResponse.data != null) {
-if (productsResponse.data!.products.isNotEmpty) {
-          final firstProduct = productsResponse.data!.products.first;
-}
 totalProducts.value = productsResponse.data!.totalCount;
       }
 
@@ -242,7 +240,7 @@ totalProducts.value = productsResponse.data!.totalCount;
   }
 
   void addProduct() {
-  _checkSubscriptionBeforeAddProduct();
+    _checkSubscriptionBeforeAddProduct();
   }
 
   Future<void> _checkSubscriptionBeforeAddProduct() async {
@@ -255,7 +253,10 @@ totalProducts.value = productsResponse.data!.totalCount;
     // Navigate and refresh when a product was actually created
     final result = await Get.toNamed('/seller-add-product');
     if (result != null) {
-      refreshData();
+      await refreshData();
+      if (Get.isRegistered<ProductsController>()) {
+        await Get.find<ProductsController>().refreshProducts();
+      }
     }
   }
 
@@ -346,11 +347,11 @@ totalProducts.value = productsResponse.data!.totalCount;
     Get.toNamed('/seller-profile-edit');
   }
 
-  
-
-
-  void refreshData() {
-    _loadDashboardData();
+  Future<void> refreshData() async {
+    await _loadDashboardData();
+    if (Get.isRegistered<ProductsController>()) {
+      await Get.find<ProductsController>().refreshProducts();
+    }
   }
 
   // Subscription helper methods
