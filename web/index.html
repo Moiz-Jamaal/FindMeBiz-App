@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   
   <style>
@@ -93,7 +93,26 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="FindMeBiz helps you discover and connect with local businesses, services, and deals near you. Search, compare, and contact businesses fast.">
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+  <link rel="canonical" href="https://findmebiz.com/">
+  <meta name="theme-color" content="#0EA5A4">
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:title" content="FindMeBiz — Discover Local Businesses Near You">
+  <meta property="og:description" content="FindMeBiz helps you discover and connect with local businesses, services, and deals near you.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://findmebiz.com/">
+  <meta property="og:image" content="/icons/Icon-512.png">
+  <meta property="og:site_name" content="FindMeBiz">
+  <meta property="og:locale" content="en_US">
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="FindMeBiz — Discover Local Businesses Near You">
+  <meta name="twitter:description" content="FindMeBiz helps you discover and connect with local businesses, services, and deals near you.">
+  <meta name="twitter:image" content="/icons/Icon-512.png">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
@@ -104,8 +123,33 @@
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>FindMeBiz</title>
+  <title>FindMeBiz — Discover Local Businesses Near You</title>
   <link rel="manifest" href="manifest.json">
+  <meta name="application-name" content="FindMeBiz">
+  
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "FindMeBiz",
+    "url": "https://findmebiz.com/",
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": "https://findmebiz.com/search?q={search_term_string}",
+      "query-input": "required name=search_term_string"
+    }
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "FindMeBiz",
+    "url": "https://findmebiz.com/",
+    "logo": "https://findmebiz.com/icons/Icon-512.png"
+  }
+  </script>
   
   <!-- Razorpay SDK for Web -->
   <script id="rzp-jssdk" src="https://checkout.razorpay.com/v1/checkout.js" defer></script>
@@ -118,6 +162,9 @@
   </script>
 </head>
 <body>
+  <noscript>
+    <p>FindMeBiz is a local business discovery app. Enable JavaScript to use the application, or visit <a href="https://findmebiz.com/">findmebiz.com</a> for more info.</p>
+  </noscript>
   <div id="splash" role="status" aria-live="polite" aria-label="Loading application">
     <div class="splash__content">
       <img class="splash__logo" src="icons/Icon-192.png" alt="FindMeBiz logo">

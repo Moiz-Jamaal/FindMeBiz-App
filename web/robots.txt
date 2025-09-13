@@ -1,0 +1,9 @@
+# robots.txt for FindMeBiz
+User-agent: *
+Allow: /
+
+# Block common non-HTML artifacts
+Disallow: /*.map$
+Disallow: /flutter_service_worker.js
+
+Sitemap: https://findmebiz.com/sitemap.xml
