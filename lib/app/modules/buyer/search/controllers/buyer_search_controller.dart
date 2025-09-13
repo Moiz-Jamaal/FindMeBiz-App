@@ -65,6 +65,10 @@ class BuyerSearchController extends GetxController {
   final RxBool showFilters = false.obs;
   final RxInt totalResultsCount = 0.obs;
   
+  // Debounce and request tracking
+  Timer? _debounceTimer;
+  int _searchToken = 0; // monotonically increasing token to ignore stale searches
+  
   // Location methods
   Future<void> getCurrentLocation() async {
     try {
@@ -272,6 +276,8 @@ Get.snackbar(
 
   @override
   void onClose() {
+  // Clean up controllers and timers
+  _debounceTimer?.cancel();
     searchTextController.dispose();
     super.onClose();
   }
@@ -329,31 +335,34 @@ Get.snackbar(
   }
 
   void _setupSearchListener() {
-    // Debounced search as user types
+    // Debounced search as user types (cancellable)
     searchTextController.addListener(() {
-      if (searchTextController.text != searchQuery.value) {
-        searchQuery.value = searchTextController.text;
-        
-        if (searchQuery.value.length >= 2) {
-          _debounceSearch();
-        } else if (searchQuery.value.isEmpty) {
+      final text = searchTextController.text;
+      if (text != searchQuery.value) {
+        searchQuery.value = text;
+        // Cancel any pending debounce
+        _debounceTimer?.cancel();
+        if (text.length >= 2) {
+          _debounceTimer = Timer(const Duration(milliseconds: 600), () {
+            // Ensure the text hasn't changed during the debounce period
+            if (searchQuery.value == searchTextController.text) {
+              performSearch();
+            }
+          });
+        } else if (text.isEmpty) {
           _clearResults();
         }
       }
     });
   }
 
-  void _debounceSearch() {
-    // Simple debounce simulation
-    Future.delayed(const Duration(milliseconds: 800), () {
-      if (searchQuery.value == searchTextController.text && searchQuery.value.length >= 2) {
-        performSearch();
-      }
-    });
-  }
+  // Removed legacy _debounceSearch in favor of Timer-based listener
   Future<void> performSearch({String? query, bool resetPage = true}) async {
     final searchTerm = query ?? searchQuery.value;
     if (searchTerm.trim().isEmpty && selectedCategoryIds.isEmpty) return;
+
+    // Increment token to invalidate any in-flight older searches
+    final int token = ++_searchToken;
 
     isSearching.value = true;
     errorMessage.value = '';
@@ -376,22 +385,27 @@ Get.snackbar(
 
     try {
       if (searchType.value == 'All' || searchType.value == 'Sellers') {
-        await _searchSellers(searchTerm);
+        await _searchSellers(searchTerm, token: token);
       }
       
       if (searchType.value == 'All' || searchType.value == 'Products') {
-        await _searchProducts(searchTerm);
+        await _searchProducts(searchTerm, token: token);
       }
-      
-      _updateResultsCount();
+      // Only update counts if this is still the latest search
+      if (token == _searchToken) {
+        _updateResultsCount();
+      }
     } catch (e) {
       errorMessage.value = 'Search failed: ${e.toString()}';
     } finally {
-      isSearching.value = false;
+      // Avoid toggling off loading for stale searches
+      if (token == _searchToken) {
+        isSearching.value = false;
+      }
     }
   }
 
-  Future<void> _searchSellers(String query) async {
+  Future<void> _searchSellers(String query, {int? token}) async {
     try {
       final response = await _buyerService.searchSellers(
         businessName: query.isNotEmpty ? query : null,
@@ -404,6 +418,9 @@ Get.snackbar(
         radiusKm: useLocation.value ? radiusKm.value : null,
       );
       
+      // Ignore stale responses
+      if (token != null && token != _searchToken) return;
+
       if (response.isSuccess && response.data != null) {
         if (currentPage.value == 1) {
           sellerResults.assignAll(response.data!);
@@ -415,7 +432,7 @@ Get.snackbar(
 }
   }
 
-  Future<void> _searchProducts(String query) async {
+  Future<void> _searchProducts(String query, {int? token}) async {
  
       final response = await _productService.searchProducts(
         productName: query.isNotEmpty ? query : null,
@@ -430,6 +447,9 @@ Get.snackbar(
         sortOrder: sortOrder.value,
       );
       
+      // Ignore stale responses
+      if (token != null && token != _searchToken) return;
+
       if (response.isSuccess && response.data != null) {
         productSearchResponse.value = response.data!;
         
