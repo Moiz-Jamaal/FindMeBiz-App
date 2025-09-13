@@ -16,6 +16,7 @@ import 'services/campaign_service.dart';
 import 'services/fallback_content_service.dart';
 import 'services/app_links_service.dart';
 import 'services/url_handler_service.dart';
+import 'services/image_upload_service.dart';
 
 class AppBinding extends Bindings {
   @override
@@ -46,6 +47,7 @@ class AppBinding extends Bindings {
     Get.put<FallbackContentService>(FallbackContentService(), permanent: true);
     Get.put<AdService>(AdService(), permanent: true);
     Get.put<UrlHandlerService>(UrlHandlerService(), permanent: true);
+  Get.put<ImageUploadService>(ImageUploadService(), permanent: true);
   }
 }
 

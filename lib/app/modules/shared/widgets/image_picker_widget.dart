@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import '../../../core/theme/app_theme.dart';
+import '../../../services/image_upload_service.dart';
 
 class ImagePickerWidget extends StatelessWidget {
   final List<String> images;
@@ -306,17 +307,19 @@ class ImagePickerWidget extends StatelessWidget {
 
   void _pickImage(String source) async {
     Get.back(); // Close bottom sheet
-    
-    final picker = ImagePicker();
+
+    // Use centralized service for camera/gallery access to ensure
+    // correct iOS permission flow (OS prompt first, Settings only after denial)
+    final imageService = Get.find<ImageUploadService>();
     XFile? pickedFile;
-    
+
     try {
       if (source == 'camera') {
-        pickedFile = await picker.pickImage(source: ImageSource.camera);
+        pickedFile = await imageService.pickImageFromCamera();
       } else {
-        pickedFile = await picker.pickImage(source: ImageSource.gallery);
+        pickedFile = await imageService.pickImageFromGallery();
       }
-      
+
       if (pickedFile != null) {
         onImageAdded(pickedFile.path);
         Get.snackbar(

@@ -6,6 +6,7 @@ import '../../../../services/viewed_history_service.dart';
 import '../../../../services/user_settings_service.dart';
 import '../../../../data/models/api/index.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../services/image_upload_service.dart';
 
 class BuyerProfileController extends GetxController {
   // Services
@@ -35,6 +36,7 @@ class BuyerProfileController extends GetxController {
   
   // Profile image
   final RxString profileImagePath = ''.obs;
+  final ImageUploadService _imageUploadService = Get.find<ImageUploadService>();
   
   // Form controllers
   final nameController = TextEditingController();
@@ -235,23 +237,29 @@ class BuyerProfileController extends GetxController {
   }
   
   void _pickImageFromCamera() {
-    // TODO: Implement camera image selection with image_picker
-    profileImagePath.value = 'camera_image_path';
-    Get.snackbar(
-      'Photo Captured',
-      'Profile photo updated from camera',
-      snackPosition: SnackPosition.BOTTOM,
-    );
+    _imageUploadService.pickImageFromCamera().then((file) async {
+      if (file != null) {
+        profileImagePath.value = file.path;
+        Get.snackbar(
+          'Photo Captured',
+          'Profile photo updated from camera',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      }
+    });
   }
   
   void _pickImageFromGallery() {
-    // TODO: Implement gallery image selection with image_picker
-    profileImagePath.value = 'gallery_image_path';
-    Get.snackbar(
-      'Photo Selected',
-      'Profile photo updated from gallery',
-      snackPosition: SnackPosition.BOTTOM,
-    );
+    _imageUploadService.pickImageFromGallery().then((file) async {
+      if (file != null) {
+        profileImagePath.value = file.path;
+        Get.snackbar(
+          'Photo Selected',
+          'Profile photo updated from gallery',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      }
+    });
   }
   
   void _removeProfileImage() {
