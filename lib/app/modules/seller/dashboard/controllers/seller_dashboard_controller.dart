@@ -349,6 +349,10 @@ totalProducts.value = productsResponse.data!.totalCount;
 
   Future<void> refreshData() async {
     await _loadDashboardData();
+    // Force subscription check after refresh
+    if (sellerProfile.value?.sellerid != null) {
+      await _loadSubscriptionDetails(sellerProfile.value!.sellerid!);
+    }
     if (Get.isRegistered<ProductsController>()) {
       await Get.find<ProductsController>().refreshProducts();
     }
