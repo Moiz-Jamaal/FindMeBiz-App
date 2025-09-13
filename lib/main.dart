@@ -31,13 +31,13 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'firebase_options.dart';
-import 'package:flutter_web_plugins/url_strategy.dart';
 import 'app/services/analytics_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // Use clean URLs on the Web (no #)
-  usePathUrlStrategy();
+  // NOTE: Using default hash-based URLs on web to avoid S3/CloudFront refresh 404s.
+  // To enable clean paths again, configure your CDN to rewrite all routes to /index.html
+  // and then call usePathUrlStrategy() here.
   await GetStorage.init();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   // Crashlytics: capture Flutter errors
