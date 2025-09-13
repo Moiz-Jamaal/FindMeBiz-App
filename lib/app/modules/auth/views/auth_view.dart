@@ -226,25 +226,25 @@ class AuthView extends GetView<AuthController> {
           
           const SizedBox(height: 8),
           
-          // Forgot password
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton(
-              onPressed: () {
-                // TODO: Implement forgot password
-                Get.snackbar(
-                  'Coming Soon',
-                  'Forgot password feature will be available soon',
-                  backgroundColor: Colors.blue.withValues(alpha: 0.1),
-                  colorText: Colors.blue,
-                );
-              },
-              child: const Text(
-                'Forgot Password?',
-                style: TextStyle(color: Color(0xFF0EA5A4)),
-              ),
-            ),
-          ),
+          // // Forgot password
+          // Align(
+          //   alignment: Alignment.centerRight,
+          //   child: TextButton(
+          //     onPressed: () {
+          //       // TODO: Implement forgot password
+          //       Get.snackbar(
+          //         'Coming Soon',
+          //         'Forgot password feature will be available soon',
+          //         backgroundColor: Colors.blue.withValues(alpha: 0.1),
+          //         colorText: Colors.blue,
+          //       );
+          //     },
+          //     child: const Text(
+          //       'Forgot Password?',
+          //       style: TextStyle(color: Color(0xFF0EA5A4)),
+          //     ),
+          //   ),
+          // ),
         ],
       ),
     );
