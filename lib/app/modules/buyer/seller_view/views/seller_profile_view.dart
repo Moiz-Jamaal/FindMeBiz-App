@@ -144,40 +144,40 @@ class SellerProfileView extends GetView<SellerProfileViewController> {
           ),
           onPressed: controller.toggleFavorite,
         )),
-        PopupMenuButton<String>(
-          onSelected: (value) {
-            switch (value) {
-              case 'share':
-                controller.shareProfile();
-                break;
-              case 'report':
-                controller.reportProfile();
-                break;
-            }
-          },
-          itemBuilder: (context) => [
-            const PopupMenuItem(
-              value: 'share',
-              child: Row(
-                children: [
-                  Icon(Icons.share, size: 20),
-                  SizedBox(width: 8),
-                  Text('Share Profile'),
-                ],
-              ),
-            ),
-            const PopupMenuItem(
-              value: 'report',
-              child: Row(
-                children: [
-                  Icon(Icons.report, size: 20),
-                  SizedBox(width: 8),
-                  Text('Report'),
-                ],
-              ),
-            ),
-          ],
-        ),
+        // PopupMenuButton<String>(
+        //   onSelected: (value) {
+        //     switch (value) {
+        //       case 'share':
+        //         controller.shareProfile();
+        //         break;
+        //       case 'report':
+        //         controller.reportProfile();
+        //         break;
+        //     }
+        //   },
+        //   itemBuilder: (context) => [
+        //     const PopupMenuItem(
+        //       value: 'share',
+        //       child: Row(
+        //         children: [
+        //           Icon(Icons.share, size: 20),
+        //           SizedBox(width: 8),
+        //           Text('Share Profile'),
+        //         ],
+        //       ),
+        //     ),
+        //     const PopupMenuItem(
+        //       value: 'report',
+        //       child: Row(
+        //         children: [
+        //           Icon(Icons.report, size: 20),
+        //           SizedBox(width: 8),
+        //           Text('Report'),
+        //         ],
+        //       ),
+        //     ),
+        //   ],
+        // ),
       ],
     );
   }
