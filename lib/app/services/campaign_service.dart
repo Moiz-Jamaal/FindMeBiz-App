@@ -112,6 +112,8 @@ return [];
         imageUrl: campaign.campaign.displayUrl, // Null => UI can use fallback with text
         ctaLabel: suppressOverlay ? null : 'View Details',
         deeplinkRoute: _parseNavigateUrl(navigateUrl),
+  suppressOverlay: suppressOverlay,
+  hideSponsoredTag: suppressOverlay,
         payload: {
           'sellerId': campaign.campaign.sellerId,
           'campaignId': campaign.campaign.campId,

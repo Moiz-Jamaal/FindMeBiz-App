@@ -23,6 +23,9 @@ class SponsoredContent {
   final String? ctaLabel;
   final String? deeplinkRoute;
   final Map<String, dynamic>? payload;
+  // Rendering hints
+  final bool suppressOverlay; // Hide gradient/grey overlays when true
+  final bool hideSponsoredTag; // Do not show 'Sponsored' badge when true
 
   const SponsoredContent({
     required this.id,
@@ -33,6 +36,8 @@ class SponsoredContent {
     this.ctaLabel,
     this.deeplinkRoute,
     this.payload,
+    this.suppressOverlay = false,
+    this.hideSponsoredTag = false,
   });
 }
 
