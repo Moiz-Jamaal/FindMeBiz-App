@@ -28,7 +28,7 @@ jobs:
       continue-on-error: true
       
     - name: Build web
-      run: flutter build web --pwa-strategy=none
+      run: flutter build web --pwa-strategy=none --web-renderer html
       
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v4
