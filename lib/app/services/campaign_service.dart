@@ -95,14 +95,22 @@ return [];
   ) {
     return campaigns.map((campaign) {
       final navigateUrl = campaign.campaign.navigateUrl ?? '';
-      
+      final type = _determineSponsoredType(navigateUrl);
+      final hasDbImage = (campaign.campaign.displayUrl != null &&
+          campaign.campaign.displayUrl!.trim().isNotEmpty);
+
+      // If this is a banner with an image from DB, do not overlay any text.
+      final suppressOverlay = type == SponsoredType.banner && hasDbImage;
+
       return SponsoredContent(
         id: campaign.campaign.campId.toString(),
-        type: _determineSponsoredType(navigateUrl),
-        title: campaign.sellerName ?? 'Featured Item',
-        subtitle: campaign.categoryName ?? 'Featured',
-        imageUrl: campaign.campaign.displayUrl, // Can be null for fallback
-        ctaLabel: 'View Details',
+        type: type,
+        title: suppressOverlay
+            ? ''
+            : (campaign.sellerName ?? 'Featured Item'),
+        subtitle: suppressOverlay ? null : (campaign.categoryName ?? 'Featured'),
+        imageUrl: campaign.campaign.displayUrl, // Null => UI can use fallback with text
+        ctaLabel: suppressOverlay ? null : 'View Details',
         deeplinkRoute: _parseNavigateUrl(navigateUrl),
         payload: {
           'sellerId': campaign.campaign.sellerId,
@@ -110,6 +118,8 @@ return [];
           'categoryId': campaign.campaign.catId,
           'type': 'campaign',
           'externalUrl': navigateUrl,
+          // Hint for UI renderers
+          'suppressOverlay': suppressOverlay,
         },
       );
     }).toList();
@@ -128,7 +138,8 @@ return [];
   /// Parse navigate URL to extract deep link route or external URL
   String? _parseNavigateUrl(String navigateUrl) {
     try {
-      final uri = Uri.parse(navigateUrl);
+  // Validate URL format; any parsing errors will be caught below
+  Uri.parse(navigateUrl);
       
       // Handle findmebiz.com URLs with deep linking
       if (navigateUrl.startsWith('https://findmebiz.com')) {
