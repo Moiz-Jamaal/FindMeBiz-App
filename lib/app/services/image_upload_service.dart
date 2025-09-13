@@ -5,18 +5,20 @@ import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'dart:io';
 import 'api/api_client.dart';
 
 class ImageUploadService extends GetxService {
   final ApiClient _apiClient = Get.find<ApiClient>();
   final ImagePicker _picker = ImagePicker();
   
+  // Web-safe iOS platform check (avoids dart:io Platform usage)
+  bool get _isIOS => !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
+  
   /// iOS-safe image picker from gallery with permission handling
   Future<XFile?> pickImageFromGallery() async {
     try {
-      // Check and request photo library permission on iOS
-      if (Platform.isIOS) {
+  // Check and request photo library permission on iOS
+  if (_isIOS) {
         final permission = await Permission.photos.status;
         if (permission.isDenied || permission.isPermanentlyDenied) {
           final result = await Permission.photos.request();
@@ -51,7 +53,7 @@ class ImageUploadService extends GetxService {
   Future<XFile?> pickImageFromCamera() async {
     try {
       // iOS-specific permission checks
-      if (Platform.isIOS) {
+  if (_isIOS) {
         // Check camera permission
         final cameraPermission = await Permission.camera.status;
         if (cameraPermission.isDenied || cameraPermission.isPermanentlyDenied) {
@@ -231,7 +233,7 @@ class ImageUploadService extends GetxService {
   /// Check if camera is available and has permissions
   Future<bool> _isCameraAvailable() async {
     try {
-      if (Platform.isIOS) {
+  if (_isIOS) {
         final permission = await Permission.camera.status;
         return !permission.isPermanentlyDenied;
       }
@@ -244,7 +246,7 @@ class ImageUploadService extends GetxService {
   /// Check if gallery/photos is available and has permissions
   Future<bool> _isGalleryAvailable() async {
     try {
-      if (Platform.isIOS) {
+  if (_isIOS) {
         final permission = await Permission.photos.status;
         return !permission.isPermanentlyDenied;
       }
