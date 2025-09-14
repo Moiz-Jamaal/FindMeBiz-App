@@ -9,6 +9,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:latlong2/latlong.dart' as ll;
 import 'package:souq/app/core/constants/app_constants.dart';
 import 'package:souq/app/services/location_service.dart';
+import 'package:uuid/uuid.dart';
 import '../../../../services/auth_service.dart';
 import '../../../../services/seller_service.dart';
 import '../../../../services/image_upload_service.dart';
@@ -16,7 +17,7 @@ import '../../../../services/category_service.dart';
 import '../../../../services/analytics_service.dart';
 import '../../../../data/models/api/index.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../../../shared/widgets/location_selector/index.dart';
+// Removed unused import
 
 class SellerProfileEditController extends GetxController {
   final AuthService _authService = Get.find<AuthService>();
@@ -70,6 +71,8 @@ class SellerProfileEditController extends GetxController {
   final searchTextController = TextEditingController();
   final RxString locationSearchQuery = ''.obs;
   final RxList<Map<String, dynamic>> _searchResults = <Map<String, dynamic>>[].obs;
+  // Session token for Places Autocomplete/Details pairing
+  String? _placesSessionToken;
   late Worker _searchDebounce;
   
   // Validation state - reactive
@@ -296,6 +299,11 @@ class SellerProfileEditController extends GetxController {
     stateController.addListener(_onFieldChanged);
     pincodeController.addListener(_onFieldChanged);
     establishedYearController.addListener(_onFieldChanged);
+    // Connect the search text field to the debounced query stream
+    searchTextController.addListener(() {
+      if (_isDisposed) return;
+      locationSearchQuery.value = searchTextController.text;
+    });
   }
 
   void _disposeControllers() {
@@ -791,40 +799,90 @@ Get.snackbar(
     if (_isDisposed || query.trim().isEmpty) return;
     locationSearchQuery.value = query;
     
-    try {
-      final uri = Uri.parse(
-        'https://nominatim.openstreetmap.org/search?format=jsonv2&q=${Uri.encodeQueryComponent(query)}&limit=5',
-      );
-      final res = await http.get(
-        uri,
-        headers: {
-          'User-Agent': 'FindMeBiz/1.0 (support@findmebiz.com)'
-        },
-      );
-      if (res.statusCode == 200) {
-        final List<dynamic> data = json.decode(res.body);
-        _searchResults.assignAll(data.map((e) => e as Map<String, dynamic>));
-        if (_searchResults.isEmpty && showToast) {
-          Get.snackbar(
-            'No results',
-            'Could not find any location for "$query"',
-            snackPosition: SnackPosition.BOTTOM,
-          );
+  // Use Google Places (v1) Text Search
+    final apiKey = AppConstants.googlePlacesApiKey;
+    if (apiKey.isEmpty) {
+      if (showToast) {
+        Get.snackbar(
+          'Google Places disabled',
+          'API key missing. Set --dart-define=GOOGLE_PLACES_API_KEY=YOUR_KEY',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      }
+      _searchResults.clear();
+      return;
+    }
+
+    // Build Text Search request (v1)
+    // Session token kept for parity, though v1 doesn't require it the same way
+    _placesSessionToken ??= const Uuid().v4();
+    final biasLat = hasLocationSelected.value ? selectedLatitude.value : AppConstants.googlePlacesBiasLatitude;
+    final biasLng = hasLocationSelected.value ? selectedLongitude.value : AppConstants.googlePlacesBiasLongitude;
+    final body = <String, dynamic>{
+      'textQuery': query,
+      'pageSize': 8,
+      'languageCode': 'en',
+      if (AppConstants.googlePlacesCountryBias.isNotEmpty) 'regionCode': AppConstants.googlePlacesCountryBias.toUpperCase(),
+      'locationBias': {
+        'circle': {
+          'center': { 'latitude': biasLat, 'longitude': biasLng },
+          'radius': AppConstants.googlePlacesBiasRadiusMeters
         }
+      }
+    };
+    final uri = Uri.parse('https://places.googleapis.com/v1/places:searchText');
+    final headers = {
+      'Content-Type': 'application/json',
+      'X-Goog-Api-Key': apiKey,
+      // Return only what we need to avoid payload bloat
+      'X-Goog-FieldMask': 'places.name,places.displayName,places.formattedAddress,places.location,places.addressComponents',
+    };
+    debugPrint('[Places v1 TextSearch] Request body: ${jsonEncode(body)}');
+    try {
+      final res = await http.post(uri, headers: headers, body: jsonEncode(body)).timeout(const Duration(seconds: 12));
+      if (res.statusCode == 200) {
+        final data = json.decode(res.body) as Map<String, dynamic>;
+        final List places = (data['places'] as List?) ?? const [];
+        _searchResults.assignAll(places.map<Map<String, dynamic>>((p) {
+          final name = p['name']?.toString() ?? '';// e.g., places/ChIJ...
+          final displayName = (p['displayName']?['text']?.toString() ?? '').trim();
+          final formatted = p['formattedAddress']?.toString() ?? '';
+          final loc = p['location'] as Map<String, dynamic>?;
+          final lat = loc != null ? (loc['latitude'] as num?)?.toDouble() : null;
+          final lng = loc != null ? (loc['longitude'] as num?)?.toDouble() : null;
+          return {
+            'place_id': name,
+            'display_name': displayName.isNotEmpty ? displayName : formatted,
+            'formatted_address': formatted,
+            if (lat != null) 'lat': lat,
+            if (lng != null) 'lng': lng,
+            'address_components': p['addressComponents'],
+          };
+        }).toList());
+        debugPrint('[Places v1 TextSearch] OK - results: ${_searchResults.length}');
+        if (_searchResults.isEmpty && showToast) {
+          Get.snackbar('No results', 'No places found for "$query"', snackPosition: SnackPosition.BOTTOM);
+        }
+      } else {
+        if (showToast) {
+          Get.snackbar('Google Places HTTP Error', 'Status code: ${res.statusCode}', snackPosition: SnackPosition.BOTTOM);
+        }
+        debugPrint('[Places v1 TextSearch] HTTP ${res.statusCode} body=${res.body}');
+        _searchResults.clear();
       }
     } catch (e) {
       if (showToast) {
-        Get.snackbar(
-          'Error',
-          'Unable to search address',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
-        );
+        Get.snackbar('Google Places Network/Error', e.toString(), snackPosition: SnackPosition.BOTTOM);
       }
+      debugPrint('[Places v1 TextSearch] EXCEPTION $e');
+      _searchResults.clear();
     }
+    
   }
 
+  // Note: OSM fallback removed to ensure only Google Places powers search
+
+  
   void clearSearch() {
     if (_isDisposed) return;
     searchTextController.clear();
@@ -868,80 +926,109 @@ Get.snackbar(
     }
   }
 
-  void selectSearchResult(Map<String, dynamic> item) {
+  Future<void> selectSearchResult(Map<String, dynamic> item) async {
     if (_isDisposed) return;
-final lat = double.tryParse(item['lat']?.toString() ?? '');
-    final lon = double.tryParse(item['lon']?.toString() ?? '');
-    
-    if (lat == null || lon == null) {
-return;
-    }
-// Update coordinates first
-    selectedLatitude.value = lat;
-    selectedLongitude.value = lon;
-    hasLocationSelected.value = true;
-    currentGeoLocation.value = '$lat,$lon';
-    hasChanges.value = true;
-    
-    // Update address from search result if available
-    final displayName = item['display_name']?.toString() ?? '';
-    if (displayName.isNotEmpty) {
-      addressController.text = displayName;
-}
-    
-    // Try to extract structured address from search result
-    final address = item['address'] as Map<String, dynamic>?;
-    if (address != null) {
-// Extract area
-      final area = address['suburb']?.toString() ?? 
-                   address['neighbourhood']?.toString() ?? 
-                   address['village']?.toString() ?? 
-                   address['hamlet']?.toString() ?? 
-                   address['quarter']?.toString() ?? '';
-      if (area.isNotEmpty) {
-        areaController.text = area;
-}
-      
-      // Extract city
-      final city = address['city']?.toString() ?? 
-                   address['town']?.toString() ?? 
-                   address['municipality']?.toString() ?? 
-                   address['county']?.toString() ?? '';
-      if (city.isNotEmpty) {
-        cityController.text = city;
-}
-      
-      // Extract state
-      final state = address['state']?.toString() ?? 
-                    address['province']?.toString() ?? 
-                    address['region']?.toString() ?? '';
-      if (state.isNotEmpty) {
-        stateController.text = state;
-}
-      
-      // Extract pincode
-      final pincode = address['postcode']?.toString() ?? 
-                      address['postal_code']?.toString() ?? '';
-      if (pincode.isNotEmpty) {
-        pincodeController.text = pincode;
-}
-      
-      // Force UI update
+    // Prefer using data already present from v1 search
+    final lat = (item['lat'] as num?)?.toDouble();
+    final lon = (item['lng'] as num?)?.toDouble();
+    if (lat != null && lon != null) {
+      selectedLatitude.value = lat;
+      selectedLongitude.value = lon;
+      hasLocationSelected.value = true;
+      currentGeoLocation.value = '$lat,$lon';
+      hasChanges.value = true;
+
+      final formatted = item['formatted_address']?.toString() ?? item['display_name']?.toString() ?? '';
+      if (formatted.isNotEmpty) {
+        addressController.text = formatted;
+      }
+
+      // Parse v1 addressComponents
+      final List comps = (item['address_components'] as List?) ?? const [];
+      String city = '';
+      String state = '';
+      String postal = '';
+      String area = '';
+      for (final c in comps) {
+        final Map comp = c as Map;
+        final List types = (comp['types'] as List?) ?? const [];
+        final longText = comp['longText']?.toString() ?? comp['shortText']?.toString() ?? '';
+        if (types.contains('sublocality') || types.contains('neighborhood')) area = longText;
+        if (types.contains('locality') || types.contains('postal_town')) city = longText;
+        if (types.contains('administrative_area_level_1')) state = longText;
+        if (types.contains('postal_code')) postal = longText;
+      }
+      if (area.isNotEmpty) areaController.text = area;
+      if (city.isNotEmpty) cityController.text = city;
+      if (state.isNotEmpty) stateController.text = state;
+      if (postal.isNotEmpty) pincodeController.text = postal;
+
       update();
-      
       Get.snackbar(
         'Location Selected',
-        'Address updated from search result',
+        'Address updated from Google Places',
         backgroundColor: Colors.green.withValues(alpha: 0.1),
         colorText: Colors.green,
         duration: const Duration(seconds: 2),
       );
     } else {
-// Fallback to reverse geocoding if no address data in search result
-      _updateAddressFromCoordinates(lat, lon);
+      // As a fallback, attempt v1 details to get coordinates
+      final placeId = item['place_id']?.toString();
+      if (placeId == null || placeId.isEmpty) {
+        Get.snackbar('Selection Error', 'Missing place id for details', snackPosition: SnackPosition.BOTTOM);
+      } else {
+        try {
+          final detailsUri = Uri.parse('https://places.googleapis.com/v1/$placeId');
+          final headers = {
+            'X-Goog-Api-Key': AppConstants.googlePlacesApiKey,
+            'X-Goog-FieldMask': 'displayName,formattedAddress,location,addressComponents',
+          };
+          debugPrint('[Place Details v1] Request: ${detailsUri.toString()}');
+          final res = await http.get(detailsUri, headers: headers).timeout(const Duration(seconds: 10));
+          if (res.statusCode == 200) {
+            final p = json.decode(res.body) as Map<String, dynamic>;
+            final loc = p['location'] as Map<String, dynamic>?;
+            final dLat = (loc?['latitude'] as num?)?.toDouble();
+            final dLng = (loc?['longitude'] as num?)?.toDouble();
+            if (dLat != null && dLng != null) {
+              selectedLatitude.value = dLat;
+              selectedLongitude.value = dLng;
+              hasLocationSelected.value = true;
+              currentGeoLocation.value = '$dLat,$dLng';
+              hasChanges.value = true;
+            }
+            final formatted = p['formattedAddress']?.toString() ?? '';
+            if (formatted.isNotEmpty) addressController.text = formatted;
+            final comps = (p['addressComponents'] as List?) ?? const [];
+            String city = '', state = '', postal = '', area = '';
+            for (final c in comps) {
+              final Map comp = c as Map;
+              final List types = (comp['types'] as List?) ?? const [];
+              final longText = comp['longText']?.toString() ?? comp['shortText']?.toString() ?? '';
+              if (types.contains('sublocality') || types.contains('neighborhood')) area = longText;
+              if (types.contains('locality') || types.contains('postal_town')) city = longText;
+              if (types.contains('administrative_area_level_1')) state = longText;
+              if (types.contains('postal_code')) postal = longText;
+            }
+            if (area.isNotEmpty) areaController.text = area;
+            if (city.isNotEmpty) cityController.text = city;
+            if (state.isNotEmpty) stateController.text = state;
+            if (postal.isNotEmpty) pincodeController.text = postal;
+            update();
+            Get.snackbar('Location Selected', 'Address updated from Google Places', backgroundColor: Colors.green.withValues(alpha: 0.1), colorText: Colors.green, duration: const Duration(seconds: 2));
+          } else {
+            Get.snackbar('Google Place Details HTTP Error', 'Status code: ${res.statusCode}', snackPosition: SnackPosition.BOTTOM);
+            debugPrint('[Place Details v1] HTTP ${res.statusCode} body=${res.body}');
+          }
+        } catch (e) {
+          Get.snackbar('Google Place Details Error', e.toString(), snackPosition: SnackPosition.BOTTOM);
+          debugPrint('[Place Details v1] EXCEPTION $e');
+        }
+      }
     }
-    
     _searchResults.clear();
+  // Reset session token after a selection is made
+  _placesSessionToken = null;
     _moveMap();
 }
 

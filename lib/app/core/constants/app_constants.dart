@@ -89,6 +89,20 @@ class AppConstants {
     '.jpg', '.jpeg', '.png', '.webp'
   ];
   
+  // Google Places API
+  // Provide your key at build time using:
+  // flutter run --dart-define=GOOGLE_PLACES_API_KEY=YOUR_KEY
+  static const String googlePlacesApiKey = 'AIzaSyARkcflc7555oG33PkeveARH6mDENlpDFM';
+  // Optional: country bias for autocomplete (ISO 3166-1 alpha-2), e.g., 'in' for India
+  static const String googlePlacesCountryBias = 'in';
+  // City bias: Surat, Gujarat, India (used for Places Autocomplete bias)
+  static const double googlePlacesBiasLatitude = 21.1702; // Surat
+  static const double googlePlacesBiasLongitude = 72.8311; // Surat
+  // Optional: search radius (in meters) for location biasing when coordinates are available
+  static const int googlePlacesBiasRadiusMeters = 50000; // 50km
+  // Web CORS proxy (optional). Example: 'https://cors.isomorphic-git.org/'
+  static const String webCorsProxyUrl = '';
+  
   // Validation Patterns
   static const String emailPattern = 
     r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$';

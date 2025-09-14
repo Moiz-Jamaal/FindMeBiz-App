@@ -278,21 +278,79 @@ Get.snackbar(
 
   Future<void> searchLocation(String query, {bool showToast = false}) async {
     if (query.trim().isEmpty) return;
-    
     isLoading.value = true;
     try {
-      final url = 'https://nominatim.openstreetmap.org/search?format=json&q=$query&limit=5&countrycodes=IN&addressdetails=1';
-      final response = await http.get(
-        Uri.parse(url),
-        headers: {
-          'User-Agent': 'SouqApp/1.0',
-        },
-      );
+      final apiKey = AppConstants.googlePlacesApiKey;
+      if (apiKey.isEmpty) {
+        if (showToast) {
+          Get.snackbar(
+            'Google Places disabled',
+            'API key missing. Set --dart-define=GOOGLE_PLACES_API_KEY=YOUR_KEY',
+            snackPosition: SnackPosition.BOTTOM,
+          );
+        }
+        _searchResults.clear();
+        return;
+      }
 
-      if (response.statusCode == 200) {
-        final List<dynamic> data = json.decode(response.body);
-        _searchResults.assignAll(data.cast<Map<String, dynamic>>());
-        
+      // Bias around current selection or Surat
+      final biasLat = hasLocationSelected.value
+          ? selectedLatitude.value
+          : AppConstants.googlePlacesBiasLatitude;
+      final biasLng = hasLocationSelected.value
+          ? selectedLongitude.value
+          : AppConstants.googlePlacesBiasLongitude;
+
+      final body = <String, dynamic>{
+        'textQuery': query,
+        'pageSize': 8,
+        'languageCode': 'en',
+        if (AppConstants.googlePlacesCountryBias.isNotEmpty)
+          'regionCode': AppConstants.googlePlacesCountryBias.toUpperCase(),
+        'locationBias': {
+          'circle': {
+            'center': {
+              'latitude': biasLat,
+              'longitude': biasLng,
+            },
+            'radius': AppConstants.googlePlacesBiasRadiusMeters,
+          }
+        }
+      };
+
+      final uri = Uri.parse('https://places.googleapis.com/v1/places:searchText');
+      final headers = {
+        'Content-Type': 'application/json',
+        'X-Goog-Api-Key': apiKey,
+        'X-Goog-FieldMask':
+            'places.name,places.displayName,places.formattedAddress,places.location,places.addressComponents',
+      };
+      debugPrint('[LocationSelector][Places v1 TextSearch] body=${jsonEncode(body)}');
+
+      final res = await http
+          .post(uri, headers: headers, body: jsonEncode(body))
+          .timeout(const Duration(seconds: 12));
+
+      if (res.statusCode == 200) {
+        final data = json.decode(res.body) as Map<String, dynamic>;
+        final List places = (data['places'] as List?) ?? const [];
+        _searchResults.assignAll(places.map<Map<String, dynamic>>((p) {
+          final name = p['name']?.toString() ?? '';
+          final displayName = (p['displayName']?['text']?.toString() ?? '').trim();
+          final formatted = p['formattedAddress']?.toString() ?? '';
+          final loc = p['location'] as Map<String, dynamic>?;
+          final lat = loc != null ? (loc['latitude'] as num?)?.toDouble() : null;
+          final lng = loc != null ? (loc['longitude'] as num?)?.toDouble() : null;
+          return {
+            'place_id': name,
+            'display_name': displayName.isNotEmpty ? displayName : formatted,
+            'formatted_address': formatted,
+            if (lat != null) 'lat': lat,
+            if (lng != null) 'lng': lng,
+            'address_components': p['addressComponents'],
+          };
+        }).toList());
+
         if (showToast && _searchResults.isNotEmpty) {
           Get.snackbar(
             'Search Results',
@@ -303,22 +361,26 @@ Get.snackbar(
       } else {
         if (showToast) {
           Get.snackbar(
-            'Search Error',
-            'Failed to search locations',
+            'Google Places HTTP Error',
+            'Status code: ${res.statusCode}',
             backgroundColor: Colors.red.withValues(alpha: 0.1),
             colorText: Colors.red,
           );
         }
+        debugPrint('[LocationSelector][Places v1] HTTP ${res.statusCode} body=${res.body}');
+        _searchResults.clear();
       }
     } catch (e) {
       if (showToast) {
         Get.snackbar(
           'Search Error',
-          'Error searching locations: ${e.toString()}',
+          'Google Places: ${e.toString()}',
           backgroundColor: Colors.red.withValues(alpha: 0.1),
           colorText: Colors.red,
         );
       }
+      debugPrint('[LocationSelector][Places v1] EXCEPTION $e');
+      _searchResults.clear();
     } finally {
       isLoading.value = false;
     }
@@ -330,67 +392,112 @@ Get.snackbar(
     _searchResults.clear();
   }
 
-  void selectSearchResult(Map<String, dynamic> item) {
-    final lat = double.tryParse(item['lat']?.toString() ?? '');
-    final lon = double.tryParse(item['lon']?.toString() ?? '');
-    if (lat == null || lon == null) return;
+  Future<void> selectSearchResult(Map<String, dynamic> item) async {
+    // Prefer ready coordinates from v1 search
+    final lat = (item['lat'] as num?)?.toDouble();
+    final lng = (item['lng'] as num?)?.toDouble();
 
-    selectedLatitude.value = lat;
-    selectedLongitude.value = lon;
-    hasLocationSelected.value = true;
-    currentGeoLocation.value = '$lat,$lon';
-    
-    // Update address from search result with comprehensive field mapping
-    final address = item['address'] as Map<String, dynamic>?;
-    
-    if (address != null) {
-      // Set main address
-      addressController.text = item['display_name'] ?? '';
+    if (lat != null && lng != null) {
+      selectedLatitude.value = lat;
+      selectedLongitude.value = lng;
+      hasLocationSelected.value = true;
+      currentGeoLocation.value = '$lat,$lng';
+
+      final formatted = item['formatted_address']?.toString() ?? item['display_name']?.toString() ?? '';
+      if (formatted.isNotEmpty) {
+        addressController.text = formatted;
+      }
+
+      // Parse v1 addressComponents
+      final List comps = (item['address_components'] as List?) ?? const [];
+      String city = '';
+      String state = '';
+      String postal = '';
+      String area = '';
+      for (final c in comps) {
+        final Map comp = c as Map;
+        final List types = (comp['types'] as List?) ?? const [];
+        final longText = comp['longText']?.toString() ?? comp['shortText']?.toString() ?? '';
+        if (types.contains('sublocality') || types.contains('neighborhood')) area = longText;
+        if (types.contains('locality') || types.contains('postal_town')) city = longText;
+        if (types.contains('administrative_area_level_1')) state = longText;
+        if (types.contains('postal_code')) postal = longText;
+      }
+      if (area.isNotEmpty) areaController.text = area;
+      if (city.isNotEmpty) cityController.text = city;
+      if (state.isNotEmpty) stateController.text = state;
+      if (postal.isNotEmpty) pincodeController.text = postal;
+
+      _searchResults.clear();
+      searchTextController.clear();
+      locationSearchQuery.value = '';
+      _moveMap();
       
-      // Extract area (try multiple possible field names)
-      final area = address['suburb'] ?? 
-                   address['neighbourhood'] ?? 
-                   address['quarter'] ?? 
-                   address['residential'] ??
-                   address['commercial'] ??
-                   address['hamlet'] ?? '';
-      areaController.text = area;
-      
-      // Extract city (try multiple possible field names)
-      final city = address['city'] ?? 
-                   address['town'] ?? 
-                   address['village'] ?? 
-                   address['municipality'] ??
-                   address['county'] ?? '';
-      cityController.text = city;
-      
-      // Extract state (try multiple possible field names)
-      final state = address['state'] ?? 
-                    address['province'] ?? 
-                    address['region'] ?? '';
-      stateController.text = state;
-      
-      // Extract pincode (try multiple possible field names)
-      final pincode = address['postcode'] ?? 
-                      address['postal_code'] ?? '';
-      pincodeController.text = pincode;
-} else {
-      // If no address details in search result, try reverse geocoding
-_updateAddressFromCoordinates(lat, lon);
+      Get.snackbar(
+        'Location Selected',
+        'Address updated from Google Places',
+        backgroundColor: Colors.green.withValues(alpha: 0.1),
+        colorText: Colors.green,
+        duration: const Duration(seconds: 2),
+      );
+      return;
     }
-    
-    _searchResults.clear();
-    searchTextController.clear();
-    locationSearchQuery.value = '';
-    _moveMap();
-    
-    Get.snackbar(
-      'Location Selected',
-      'Location and address updated from search',
-      backgroundColor: Colors.green.withValues(alpha: 0.1),
-      colorText: Colors.green,
-      duration: const Duration(seconds: 2),
-    );
+
+    // Fallback: fetch details to get coordinates
+    final placeId = item['place_id']?.toString();
+    if (placeId == null || placeId.isEmpty) {
+      Get.snackbar('Selection Error', 'Missing place id for details', snackPosition: SnackPosition.BOTTOM);
+      return;
+    }
+    try {
+      final detailsUri = Uri.parse('https://places.googleapis.com/v1/$placeId');
+      final headers = {
+        'X-Goog-Api-Key': AppConstants.googlePlacesApiKey,
+        'X-Goog-FieldMask': 'displayName,formattedAddress,location,addressComponents',
+      };
+      debugPrint('[LocationSelector][Place Details v1] ${detailsUri.toString()}');
+      final res = await http.get(detailsUri, headers: headers).timeout(const Duration(seconds: 10));
+      if (res.statusCode == 200) {
+        final p = json.decode(res.body) as Map<String, dynamic>;
+        final loc = p['location'] as Map<String, dynamic>?;
+        final dLat = (loc?['latitude'] as num?)?.toDouble();
+        final dLng = (loc?['longitude'] as num?)?.toDouble();
+        if (dLat != null && dLng != null) {
+          selectedLatitude.value = dLat;
+          selectedLongitude.value = dLng;
+          hasLocationSelected.value = true;
+          currentGeoLocation.value = '$dLat,$dLng';
+        }
+        final formatted = p['formattedAddress']?.toString() ?? '';
+        if (formatted.isNotEmpty) addressController.text = formatted;
+        final comps = (p['addressComponents'] as List?) ?? const [];
+        String city = '', state = '', postal = '', area = '';
+        for (final c in comps) {
+          final Map comp = c as Map;
+          final List types = (comp['types'] as List?) ?? const [];
+          final longText = comp['longText']?.toString() ?? comp['shortText']?.toString() ?? '';
+          if (types.contains('sublocality') || types.contains('neighborhood')) area = longText;
+          if (types.contains('locality') || types.contains('postal_town')) city = longText;
+          if (types.contains('administrative_area_level_1')) state = longText;
+          if (types.contains('postal_code')) postal = longText;
+        }
+        if (area.isNotEmpty) areaController.text = area;
+        if (city.isNotEmpty) cityController.text = city;
+        if (state.isNotEmpty) stateController.text = state;
+        if (postal.isNotEmpty) pincodeController.text = postal;
+        _searchResults.clear();
+        searchTextController.clear();
+        locationSearchQuery.value = '';
+        _moveMap();
+        Get.snackbar('Location Selected', 'Address updated from Google Places', backgroundColor: Colors.green.withValues(alpha: 0.1), colorText: Colors.green, duration: const Duration(seconds: 2));
+      } else {
+        Get.snackbar('Google Place Details HTTP Error', 'Status code: ${res.statusCode}', snackPosition: SnackPosition.BOTTOM);
+        debugPrint('[LocationSelector][Place Details v1] HTTP ${res.statusCode} body=${res.body}');
+      }
+    } catch (e) {
+      Get.snackbar('Google Place Details Error', e.toString(), snackPosition: SnackPosition.BOTTOM);
+      debugPrint('[LocationSelector][Place Details v1] EXCEPTION $e');
+    }
   }
 
   // Manual refresh of address details from current coordinates
