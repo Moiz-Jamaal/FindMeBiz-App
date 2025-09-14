@@ -87,6 +87,11 @@ class SellerProfileEditController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    
+    // Reset upload states
+    isUploadingLogo.value = false;
+    tempLogoPath.value = '';
+    
     _loadCurrentProfile();
     // Social media platforms will be loaded after URLs are loaded
     _setupListeners();
@@ -945,10 +950,21 @@ return;
       return;
     }
 
+    // Check if profile is published and business logo is being removed
+    final seller = currentSeller.value;
+    if (seller?.ispublished == true && businessLogoUrl.value.isEmpty) {
+      Get.snackbar(
+        'Business Logo Required', 
+        'Business logo cannot be removed from a published profile.',
+        backgroundColor: AppTheme.errorColor.withValues(alpha: 0.1),
+        colorText: AppTheme.errorColor,
+      );
+      return;
+    }
+
     try {
       isSaving.value = true;
 
-      final seller = currentSeller.value;
       if (seller?.sellerid == null) {
         Get.snackbar('Error', 'No seller profile found');
         return;

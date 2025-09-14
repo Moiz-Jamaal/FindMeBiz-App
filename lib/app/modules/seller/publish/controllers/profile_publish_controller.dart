@@ -610,12 +610,17 @@ class ProfilePublishController extends GetxController {
     final profile = sellerProfile.value;
     if (profile == null) return false;
     
-    return isBusinessNameValid && isBusinessLocationValid && isContactInfoValid;
+    return isBusinessNameValid && isBusinessLocationValid && isContactInfoValid && isBusinessLogoValid;
   }
   
   bool get isBusinessNameValid {
     final profile = sellerProfile.value;
     return profile?.businessname?.trim().isNotEmpty == true;
+  }
+  
+  bool get isBusinessLogoValid {
+    final profile = sellerProfile.value;
+    return profile?.logo?.trim().isNotEmpty == true;
   }
   
   bool get isBusinessLocationValid {
@@ -635,6 +640,7 @@ class ProfilePublishController extends GetxController {
   List<String> get validationErrors {
     List<String> errors = [];
     if (!isBusinessNameValid) errors.add('Business Name is required');
+    if (!isBusinessLogoValid) errors.add('Business Logo is required');
     if (!isBusinessLocationValid) {
       if (sellerProfile.value?.address?.trim().isEmpty != false) errors.add('Business Address is required');
       if (sellerProfile.value?.city?.trim().isEmpty != false) errors.add('Business City is required');

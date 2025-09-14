@@ -646,14 +646,11 @@ class SellerProfileEditView extends GetView<SellerProfileEditController> {
               decoration: const InputDecoration(
                 labelText: 'Profile Name *',
                 prefixIcon: Icon(Icons.person),
-                helperText: 'This will be your display name (no spaces)',
+                helperText: 'This will be your display name',
               ),
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
                   return 'Profile name is required';
-                }
-                if (value.trim().contains(' ')) {
-                  return 'Profile name cannot contain spaces';
                 }
                 return null;
               },
