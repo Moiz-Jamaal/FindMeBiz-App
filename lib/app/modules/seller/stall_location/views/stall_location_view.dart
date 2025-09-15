@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../../../../core/theme/app_theme.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart' as ll;
+import 'package:flutter_map_cancellable_tile_provider/flutter_map_cancellable_tile_provider.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../controllers/stall_location_controller.dart';
 
@@ -184,6 +185,7 @@ class StallLocationView extends GetView<StallLocationController> {
                 urlTemplate: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
                 subdomains: const ['a','b','c'],
                 userAgentPackageName: 'com.findmebiz.app',
+                tileProvider: CancellableNetworkTileProvider(),
               ),
               MarkerLayer(
                 markers: [
