@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter_map/flutter_map.dart';
@@ -91,7 +90,7 @@ class StallLocationController extends GetxController {
     selectedLongitude.value = longitude;
     hasLocationSelected.value = true;
     
-  // Reverse geocoding via OSM Nominatim
+  // Reverse geocoding via Google Geocoding API
   _updateAddressFromCoordinates(latitude, longitude);
 
   // Move map to tapped location
@@ -112,55 +111,45 @@ class StallLocationController extends GetxController {
 
   Future<void> _updateAddressFromCoordinates(double lat, double lng) async {
     try {
-      final uri = Uri.parse(
-        'https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=$lat&lon=$lng',
-      );
-      final res = await http.get(
-        uri,
-        headers: {
-          'User-Agent': 'FindMeBiz/1.0 (support@findmebiz.com)'
-        },
-      );
+      final apiKey = AppConstants.googlePlacesApiKey;
+      if (apiKey.isEmpty) return;
+
+      final uri = Uri.parse('https://maps.googleapis.com/maps/api/geocode/json?latlng=$lat,$lng&key=$apiKey');
+      final res = await http.get(uri).timeout(const Duration(seconds: 12));
       if (res.statusCode == 200) {
-        final data = json.decode(res.body);
-        final display = (data['display_name'] ?? '').toString();
-        if (display.isNotEmpty) {
-          addressController.text = display;
+        final data = json.decode(res.body) as Map<String, dynamic>;
+        final results = (data['results'] as List?) ?? const [];
+        if (results.isNotEmpty) {
+          final first = results.first as Map<String, dynamic>;
+          final display = (first['formatted_address'] ?? '').toString();
+          if (display.isNotEmpty) {
+            addressController.text = display;
+          }
+
+          final comps = (first['address_components'] as List?)?.cast<Map<String, dynamic>>() ?? const [];
+          String _getByTypes(List<String> wanted) {
+            for (final c in comps) {
+              final types = (c['types'] as List?)?.map((e) => e.toString()).toList() ?? const [];
+              if (types.any((t) => wanted.contains(t))) {
+                return (c['long_name'] ?? c['short_name'] ?? '').toString();
+              }
+            }
+            return '';
+          }
+
+          final area = _getByTypes(['sublocality_level_1', 'sublocality', 'neighborhood']);
+          if (area.isNotEmpty && areaController.text.isEmpty) areaController.text = area;
+
+          final city = _getByTypes(['locality', 'administrative_area_level_2']);
+          if (city.isNotEmpty && cityController.text.isEmpty) cityController.text = city;
+
+          final state = _getByTypes(['administrative_area_level_1']);
+          if (state.isNotEmpty && stateController.text.isEmpty) stateController.text = state;
+
+          final pincode = _getByTypes(['postal_code']);
+          if (pincode.isNotEmpty && pincodeController.text.isEmpty) pincodeController.text = pincode;
         }
-        
-        // Extract structured address components
-        final address = data['address'] as Map<String, dynamic>?;
-        if (address != null) {
-          // Extract area (suburb, neighbourhood, or village)
-          final area = address['suburb'] ?? 
-                      address['neighbourhood'] ?? 
-                      address['village'] ?? 
-                      address['hamlet'] ?? '';
-          if (area.isNotEmpty && areaController.text.isEmpty) {
-            areaController.text = area.toString();
-          }
-          
-          // Extract city
-          final city = address['city'] ?? 
-                      address['town'] ?? 
-                      address['municipality'] ?? '';
-          if (city.isNotEmpty && cityController.text.isEmpty) {
-            cityController.text = city.toString();
-          }
-          
-          // Extract state
-          final state = address['state'] ?? '';
-          if (state.isNotEmpty && stateController.text.isEmpty) {
-            stateController.text = state.toString();
-          }
-          
-          // Extract pincode
-          final pincode = address['postcode'] ?? '';
-          if (pincode.isNotEmpty && pincodeController.text.isEmpty) {
-            pincodeController.text = pincode.toString();
-          }
-        }
-        
+
         // Update geolocation coordinates
         currentGeoLocation.value = '$lat,$lng';
       }
@@ -282,42 +271,70 @@ class StallLocationController extends GetxController {
     locationSearchQuery.value = query;
     isLoading.value = true;
     try {
-      final uri = Uri.parse(
-        'https://nominatim.openstreetmap.org/search?format=jsonv2&q=${Uri.encodeQueryComponent(query)}&limit=5',
-      );
-      final res = await http.get(
-        uri,
-        headers: {
-          'User-Agent': 'FindMeBiz/1.0 (support@findmebiz.com)'
-        },
-      );
+      final apiKey = AppConstants.googlePlacesApiKey;
+      if (apiKey.isEmpty) {
+        _searchResults.clear();
+        if (showToast) {
+          Get.snackbar('Google Places disabled', 'API key missing', snackPosition: SnackPosition.BOTTOM);
+        }
+        return;
+      }
+
+      final biasLat = hasLocationSelected.value ? selectedLatitude.value : AppConstants.googlePlacesBiasLatitude;
+      final biasLng = hasLocationSelected.value ? selectedLongitude.value : AppConstants.googlePlacesBiasLongitude;
+      final body = <String, dynamic>{
+        'textQuery': query,
+        'pageSize': 8,
+        'languageCode': 'en',
+        if (AppConstants.googlePlacesCountryBias.isNotEmpty) 'regionCode': AppConstants.googlePlacesCountryBias.toUpperCase(),
+        'locationBias': {
+          'circle': {
+            'center': { 'latitude': biasLat, 'longitude': biasLng },
+            'radius': AppConstants.googlePlacesBiasRadiusMeters
+          }
+        }
+      };
+      final uri = Uri.parse('https://places.googleapis.com/v1/places:searchText');
+      final headers = {
+        'Content-Type': 'application/json',
+        'X-Goog-Api-Key': apiKey,
+        'X-Goog-FieldMask': 'places.name,places.displayName,places.formattedAddress,places.location,places.addressComponents',
+      };
+
+      final res = await http.post(uri, headers: headers, body: jsonEncode(body)).timeout(const Duration(seconds: 12));
       if (res.statusCode == 200) {
-        final List<dynamic> data = json.decode(res.body);
-        _searchResults.assignAll(data.map((e) => e as Map<String, dynamic>));
+        final data = json.decode(res.body) as Map<String, dynamic>;
+        final List places = (data['places'] as List?) ?? const [];
+        _searchResults.assignAll(places.map<Map<String, dynamic>>((p) {
+          final name = p['name']?.toString() ?? '';
+          final displayName = (p['displayName']?['text']?.toString() ?? '').trim();
+          final formatted = p['formattedAddress']?.toString() ?? '';
+          final loc = p['location'] as Map<String, dynamic>?;
+          final lat = loc != null ? (loc['latitude'] as num?)?.toDouble() : null;
+          final lng = loc != null ? (loc['longitude'] as num?)?.toDouble() : null;
+          return {
+            'place_id': name,
+            'display_name': displayName.isNotEmpty ? displayName : formatted,
+            'formatted_address': formatted,
+            if (lat != null) 'lat': lat,
+            if (lng != null) 'lng': lng,
+            'address_components': p['addressComponents'],
+          };
+        }).toList());
         if (_searchResults.isEmpty && showToast) {
-          Get.snackbar(
-            'No results',
-            'Could not find any location for "$query"',
-            snackPosition: SnackPosition.BOTTOM,
-          );
+          Get.snackbar('No results', 'Could not find any location for "$query"', snackPosition: SnackPosition.BOTTOM);
         }
       } else {
-        Get.snackbar(
-          'Error',
-          'Unable to search address',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
-        );
+        if (showToast) {
+          Get.snackbar('Google Places HTTP Error', 'Status code: ${res.statusCode}', snackPosition: SnackPosition.BOTTOM);
+        }
+        _searchResults.clear();
       }
     } catch (e) {
-      Get.snackbar(
-        'Error',
-        'Unable to search address',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
+      if (showToast) {
+        Get.snackbar('Google Places Network/Error', e.toString(), snackPosition: SnackPosition.BOTTOM);
+      }
+      _searchResults.clear();
     } finally {
       isLoading.value = false;
     }

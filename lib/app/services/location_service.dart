@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:souq/app/core/constants/app_constants.dart';
 
 class LocationService extends GetxService {
   
@@ -77,20 +78,12 @@ class LocationService extends GetxService {
   /// Reverse geocoding to get address from coordinates
   Future<LocationDetails?> getAddressFromCoordinates(double latitude, double longitude) async {
 try {
-      // Try primary service (Nominatim)
-      final primaryResult = await _tryNominatimGeocoding(latitude, longitude);
-      if (primaryResult != null) {
-return primaryResult;
-      }
-      
-      // Fallback: Try alternative service
-final fallbackResult = await _tryFallbackGeocoding(latitude, longitude);
-      if (fallbackResult != null) {
-return fallbackResult;
-      }
-      
+      // Use Google Geocoding
+      final result = await _tryGoogleGeocoding(latitude, longitude);
+      if (result != null) return result;
+
       // Last resort: return basic location details
-return LocationDetails(
+      return LocationDetails(
         latitude: latitude,
         longitude: longitude,
         formattedAddress: 'Lat: ${latitude.toStringAsFixed(6)}, Lng: ${longitude.toStringAsFixed(6)}',
@@ -101,7 +94,7 @@ return LocationDetails(
         country: '',
       );
     } catch (e) {
-return LocationDetails(
+      return LocationDetails(
         latitude: latitude,
         longitude: longitude,
         formattedAddress: 'Error: ${e.toString()}',
@@ -114,69 +107,48 @@ return LocationDetails(
     }
   }
 
-  /// Primary geocoding service (Nominatim)
-  Future<LocationDetails?> _tryNominatimGeocoding(double latitude, double longitude) async {
+  /// Primary geocoding service (Google Geocoding)
+  Future<LocationDetails?> _tryGoogleGeocoding(double latitude, double longitude) async {
     try {
-      final url = 'https://nominatim.openstreetmap.org/reverse?format=json&lat=$latitude&lon=$longitude&zoom=18&addressdetails=1';
-final response = await http.get(
-        Uri.parse(url),
-        headers: {
-          'User-Agent': 'SouqApp/1.0',
-        },
-      ).timeout(const Duration(seconds: 10));
-if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-if (data != null && data['address'] != null) {
-          final address = data['address'];
-          
+      final apiKey = AppConstants.googlePlacesApiKey;
+      if (apiKey.isEmpty) return null;
+      final url = 'https://maps.googleapis.com/maps/api/geocode/json?latlng=$latitude,$longitude&key=$apiKey';
+      final response = await http.get(Uri.parse(url)).timeout(const Duration(seconds: 12));
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body) as Map<String, dynamic>;
+        final results = (data['results'] as List?) ?? const [];
+        if (results.isNotEmpty) {
+          final first = results.first as Map<String, dynamic>;
+          final comps = (first['address_components'] as List?)?.cast<Map<String, dynamic>>() ?? const [];
+
+          String _getByTypes(List<String> wanted) {
+            for (final c in comps) {
+              final types = (c['types'] as List?)?.map((e) => e.toString()).toList() ?? const [];
+              if (types.any((t) => wanted.contains(t))) {
+                return (c['long_name'] ?? c['short_name'] ?? '').toString();
+              }
+            }
+            return '';
+          }
+
           return LocationDetails(
             latitude: latitude,
             longitude: longitude,
-            formattedAddress: data['display_name'] ?? '',
-            area: address['suburb'] ?? address['neighbourhood'] ?? address['quarter'] ?? '',
-            city: address['city'] ?? address['town'] ?? address['village'] ?? '',
-            state: address['state'] ?? '',
-            pincode: address['postcode'] ?? '',
-            country: address['country'] ?? '',
+            formattedAddress: (first['formatted_address'] ?? '').toString(),
+            area: _getByTypes(['sublocality_level_1', 'sublocality', 'neighborhood']),
+            city: _getByTypes(['locality', 'administrative_area_level_2']),
+            state: _getByTypes(['administrative_area_level_1']),
+            pincode: _getByTypes(['postal_code']),
+            country: _getByTypes(['country']),
           );
         }
       }
-      
       return null;
     } catch (e) {
-return null;
+      return null;
     }
   }
 
-  /// Fallback geocoding service
-  Future<LocationDetails?> _tryFallbackGeocoding(double latitude, double longitude) async {
-    try {
-      // Using a different free service as fallback
-      final url = 'https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=$latitude&longitude=$longitude&localityLanguage=en';
-final response = await http.get(
-        Uri.parse(url),
-      ).timeout(const Duration(seconds: 10));
-if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-if (data != null) {
-          return LocationDetails(
-            latitude: latitude,
-            longitude: longitude,
-            formattedAddress: data['display_name'] ?? '${data['locality'] ?? ''}, ${data['city'] ?? ''}, ${data['principalSubdivision'] ?? ''}',
-            area: data['locality'] ?? '',
-            city: data['city'] ?? '',
-            state: data['principalSubdivision'] ?? '',
-            pincode: data['postcode'] ?? '',
-            country: data['countryName'] ?? '',
-          );
-        }
-      }
-      
-      return null;
-    } catch (e) {
-return null;
-    }
-  }
 
   /// Get current location with address details
   Future<LocationDetails?> getCurrentLocationWithAddress() async {
@@ -192,10 +164,7 @@ return null;
         duration: const Duration(seconds: 2),
       );
 
-      final locationDetails = await getAddressFromCoordinates(
-        position.latitude,
-        position.longitude,
-      );
+      final locationDetails = await getAddressFromCoordinates(position.latitude, position.longitude);
 
       return locationDetails;
     } catch (e) {

@@ -746,7 +746,7 @@ selectedLatitude.value = latitude;
   }
 
   Future<void> _updateAddressFromCoordinates(double lat, double lng) async {
-try {
+    try {
       // Show loading feedback
       Get.snackbar(
         'Getting Address',
@@ -755,65 +755,65 @@ try {
         colorText: Colors.blue,
         duration: const Duration(seconds: 1),
       );
-      
+
+      // Use Google Geocoding API instead of Nominatim
+      final apiKey = AppConstants.googlePlacesApiKey;
+      if (apiKey.isEmpty) {
+        // Fallback: set coordinates as address
+        addressController.text = 'Lat: ${lat.toStringAsFixed(6)}, Lng: ${lng.toStringAsFixed(6)}';
+        Get.snackbar(
+          'Google Geocoding disabled',
+          'API key missing. Set --dart-define=GOOGLE_PLACES_API_KEY=YOUR_KEY',
+          backgroundColor: Colors.orange.withValues(alpha: 0.1),
+          colorText: Colors.orange,
+          duration: const Duration(seconds: 2),
+        );
+        return;
+      }
+
       final uri = Uri.parse(
-        'https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=$lat&lon=$lng&addressdetails=1',
+        'https://maps.googleapis.com/maps/api/geocode/json?latlng=$lat,$lng&key=$apiKey',
       );
-final res = await http.get(
-        uri,
-        headers: {
-          'User-Agent': 'FindMeBiz/1.0 (support@findmebiz.com)'
-        },
-      ).timeout(const Duration(seconds: 10));
-if (res.statusCode == 200) {
-        final data = json.decode(res.body);
-final display = (data['display_name'] ?? '').toString();
-        
-        // Always update address fields (don't check if empty)
-        if (display.isNotEmpty) {
-          addressController.text = display;
-}
-        
-        // Extract structured address components
-        final address = data['address'] as Map<String, dynamic>?;
-        if (address != null) {
-// Extract area (suburb, neighbourhood, or village)
-          final area = address['suburb'] ?? 
-                      address['neighbourhood'] ?? 
-                      address['village'] ?? 
-                      address['hamlet'] ?? 
-                      address['quarter'] ?? '';
-          if (area.isNotEmpty) {
-            areaController.text = area.toString();
-}
-          
-          // Extract city
-          final city = address['city'] ?? 
-                      address['town'] ?? 
-                      address['municipality'] ?? 
-                      address['county'] ?? '';
-          if (city.isNotEmpty) {
-            cityController.text = city.toString();
-}
-          
-          // Extract state
-          final state = address['state'] ?? 
-                       address['province'] ?? 
-                       address['region'] ?? '';
-          if (state.isNotEmpty) {
-            stateController.text = state.toString();
-}
-          
-          // Extract pincode
-          final pincode = address['postcode'] ?? 
-                         address['postal_code'] ?? '';
-          if (pincode.isNotEmpty) {
-            pincodeController.text = pincode.toString();
-}
-          
+      final res = await http.get(uri).timeout(const Duration(seconds: 12));
+
+      if (res.statusCode == 200) {
+        final data = json.decode(res.body) as Map<String, dynamic>;
+        final results = (data['results'] as List?) ?? const [];
+        if (results.isNotEmpty) {
+          final first = results.first as Map<String, dynamic>;
+          final display = (first['formatted_address'] ?? '').toString();
+          if (display.isNotEmpty) {
+            addressController.text = display;
+          }
+
+          // Extract structured address components
+          final comps = (first['address_components'] as List?)?.cast<Map<String, dynamic>>() ?? const [];
+
+          String _getByTypes(List<String> wanted) {
+            for (final c in comps) {
+              final types = (c['types'] as List?)?.map((e) => e.toString()).toList() ?? const [];
+              if (types.any((t) => wanted.contains(t))) {
+                return (c['long_name'] ?? c['short_name'] ?? '').toString();
+              }
+            }
+            return '';
+          }
+
+          final area = _getByTypes(['sublocality_level_1', 'sublocality', 'neighborhood']);
+          if (area.isNotEmpty) areaController.text = area;
+
+          final city = _getByTypes(['locality', 'administrative_area_level_2']);
+          if (city.isNotEmpty) cityController.text = city;
+
+          final state = _getByTypes(['administrative_area_level_1']);
+          if (state.isNotEmpty) stateController.text = state;
+
+          final pincode = _getByTypes(['postal_code']);
+          if (pincode.isNotEmpty) pincodeController.text = pincode;
+
           // Force UI update
           update();
-          
+
           Get.snackbar(
             'Address Updated',
             'Location details fetched successfully',
@@ -821,8 +821,10 @@ final display = (data['display_name'] ?? '').toString();
             colorText: Colors.green,
             duration: const Duration(seconds: 2),
           );
-} else {
-Get.snackbar(
+        } else {
+          // Fallback when no results
+          addressController.text = 'Lat: ${lat.toStringAsFixed(6)}, Lng: ${lng.toStringAsFixed(6)}';
+          Get.snackbar(
             'Address Not Found',
             'Could not get detailed address information',
             backgroundColor: Colors.orange.withValues(alpha: 0.1),
@@ -831,9 +833,8 @@ Get.snackbar(
           );
         }
       } else {
-// Fallback: set coordinates as address
+        // Fallback: set coordinates as address
         addressController.text = 'Lat: ${lat.toStringAsFixed(6)}, Lng: ${lng.toStringAsFixed(6)}';
-        
         Get.snackbar(
           'Address Error',
           'Could not fetch address details (Status: ${res.statusCode})',
@@ -843,9 +844,8 @@ Get.snackbar(
         );
       }
     } catch (e) {
-// Fallback: set coordinates as address  
+      // Fallback: set coordinates as address
       addressController.text = 'Lat: ${lat.toStringAsFixed(6)}, Lng: ${lng.toStringAsFixed(6)}';
-      
       Get.snackbar(
         'Address Error',
         'Network error: ${e.toString()}',
