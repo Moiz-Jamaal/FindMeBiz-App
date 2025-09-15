@@ -1,3 +1,4 @@
+import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import '../services/auth_service.dart';
 import '../services/role_service.dart';
@@ -16,12 +17,8 @@ class StartupController extends GetxController {
 
   Future<void> _initializeApp() async {
     try {
-      
-      
-      // Services should be ready now, but give a small delay for UI
-      await Future.delayed(const Duration(milliseconds: 300));
-      
-      // Check authentication and role status
+      // Services should be ready now - no artificial delay needed
+      // Check authentication and role status immediately
       final authService = Get.find<AuthService>();
       final roleService = Get.find<RoleService>();
       
@@ -54,16 +51,27 @@ class StartupController extends GetxController {
       }
       
       isInitialized.value = true;
-      
-      // Navigate to the determined route
-      Get.offAllNamed(initialRoute.value);
+      // Navigate to the determined route after the first frame
+      _navigateAfterInit();
       
     } catch (e) {
       
       // Fallback to welcome
       initialRoute.value = Routes.WELCOME;
       isInitialized.value = true;
-      Get.offAllNamed(Routes.WELCOME);
+      _navigateAfterInit();
     }
+  }
+
+  void _navigateAfterInit() {
+    if (isClosed) return;
+    // Schedule navigation to avoid performing it during build/layout when Navigator is locked
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (isClosed) return;
+      // Avoid redundant navigation if already on target route
+      if (Get.currentRoute != initialRoute.value) {
+        Get.offAllNamed(initialRoute.value);
+      }
+    });
   }
 }

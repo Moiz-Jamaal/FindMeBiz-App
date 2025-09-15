@@ -151,7 +151,7 @@ final headers = {
         'customerPhone': customerPhone,
       };
 // Add a small delay to ensure request is properly formed
-      await Future.delayed(const Duration(milliseconds: 100));
+
 
       final response = await http.post(
         Uri.parse('${ApiConfig.baseUrl}/FMB/CreateCashfreeOrder'),

@@ -30,6 +30,10 @@ class SellerOnboardingController extends GetxController {
   // Reactive mirrors of text fields for UI enable/disable states
   final RxString businessName = ''.obs;
   final RxString profileName = ''.obs;
+  final RxBool isProfileNameAvailable = false.obs;
+  final RxBool isCheckingProfileName = false.obs;
+  final RxString profileNameError = ''.obs;
+  Worker? _profileDebounce;
   
   // Form keys
   final basicInfoFormKey = GlobalKey<FormState>();
@@ -40,6 +44,10 @@ class SellerOnboardingController extends GetxController {
   final RxList<CategoryMaster> availableCategories = <CategoryMaster>[].obs;
   final RxList<CategoryMaster> selectedCategories = <CategoryMaster>[].obs;
   final RxString logoPath = ''.obs;
+  
+  // Category search
+  final TextEditingController categorySearchController = TextEditingController();
+  final RxString categorySearchQuery = ''.obs;
   
   // UI state
   final RxBool isLoading = false.obs;
@@ -65,11 +73,32 @@ class SellerOnboardingController extends GetxController {
       businessName.value = businessNameController.text;
     });
     profileNameController.addListener(() {
+      // Enforce lowercase and no spaces
+      final raw = profileNameController.text;
+      final transformed = raw.replaceAll(' ', '').toLowerCase();
+      if (raw != transformed) {
+        final selectionIndex = profileNameController.selection.baseOffset;
+        profileNameController.value = TextEditingValue(
+          text: transformed,
+          selection: TextSelection.collapsed(
+            offset: selectionIndex.clamp(0, transformed.length),
+          ),
+        );
+      }
       profileName.value = profileNameController.text;
+
+      // Debounced availability check
+      _profileDebounce?.dispose();
+      _profileDebounce = debounce(profileName, (_) => _checkProfileNameAvailability(), time: const Duration(milliseconds: 400));
     });
     // Initialize with current text (if any)
     businessName.value = businessNameController.text;
     profileName.value = profileNameController.text;
+
+    // Category search listener
+    categorySearchController.addListener(() {
+      categorySearchQuery.value = categorySearchController.text;
+    });
   }
 
   @override
@@ -80,6 +109,7 @@ class SellerOnboardingController extends GetxController {
     bioController.dispose();
     contactController.dispose();
     establishedYearController.dispose();
+  categorySearchController.dispose();
     
     // Only delete location selector if it was registered by this controller
     try {
@@ -90,7 +120,36 @@ class SellerOnboardingController extends GetxController {
       // Handle disposal error silently
     }
     
+    try { _profileDebounce?.dispose(); } catch (_) {}
     super.onClose();
+  }
+
+  // Check profile name availability via API
+  Future<void> _checkProfileNameAvailability() async {
+    final name = profileName.value.trim();
+    profileNameError.value = '';
+    isProfileNameAvailable.value = false;
+    if (name.isEmpty) return;
+    if (name.length < 2) {
+      profileNameError.value = 'Must be at least 2 characters';
+      return;
+    }
+    isCheckingProfileName.value = true;
+    try {
+      final res = await _authService.isProfileNameAvailable(name);
+      if (res.success) {
+        isProfileNameAvailable.value = res.data ?? false;
+        if (!isProfileNameAvailable.value) {
+          profileNameError.value = 'This profile name is already taken';
+        }
+      } else {
+        profileNameError.value = res.message ?? 'Could not verify availability';
+      }
+    } catch (e) {
+      profileNameError.value = 'Could not verify availability';
+    } finally {
+      isCheckingProfileName.value = false;
+    }
   }
 
   // Load categories from API
@@ -252,9 +311,7 @@ try {
             await Get.find<RoleService>().checkSellerData();
           }
           
-          // Small delay to ensure all services are updated
-          await Future.delayed(const Duration(milliseconds: 500));
-          
+
           // Navigate to seller home with error handling
           await _navigateToSellerHome();
         } catch (navigationError) {
@@ -299,6 +356,16 @@ try {
     if (value.trim().length < 2) {
       return 'Profile name must be at least 2 characters';
     }
+    if (value.contains(' ')) {
+      return 'No spaces allowed';
+    }
+    if (value.toLowerCase() != value) {
+      return 'Must be lowercase';
+    }
+    if (!isProfileNameAvailable.value) {
+      // If we checked and found unavailable, show message; if not checked yet, allow UI indicator to guide
+      if (profileNameError.value.isNotEmpty) return profileNameError.value;
+    }
     return null;
   }
 
@@ -327,8 +394,11 @@ try {
   }
 
   bool get canProceed {
-    return businessName.value.trim().isNotEmpty && 
-           profileName.value.trim().isNotEmpty;
+  return businessName.value.trim().isNotEmpty && 
+       profileName.value.trim().isNotEmpty &&
+       !profileName.value.contains(' ') &&
+       profileName.value.toLowerCase() == profileName.value &&
+       isProfileNameAvailable.value;
   }
 
   bool get isLastStep => currentStep.value == 3;
@@ -371,7 +441,7 @@ Get.snackbar(
     );
 
     // Try alternative navigation approaches
-    Future.delayed(const Duration(seconds: 2), () {
+   
       try {
         // Option 1: Try direct route push to seller dashboard
         Get.offAllNamed(Routes.SELLER_DASHBOARD);
@@ -379,14 +449,14 @@ Get.snackbar(
         try {
           // Option 2: Navigate to main page and then to seller dashboard
           Get.offAllNamed('/');
-          Future.delayed(const Duration(milliseconds: 100), () {
+      
             Get.toNamed(Routes.SELLER_DASHBOARD);
-          });
+         
         } catch (e2) {
           // Option 3: Last resort - go to buyer home
 Get.offAllNamed(Routes.BUYER_HOME);
         }
       }
-    });
+    }
   }
-}
+

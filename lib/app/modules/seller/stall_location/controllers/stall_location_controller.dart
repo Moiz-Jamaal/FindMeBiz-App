@@ -389,7 +389,7 @@ class StallLocationController extends GetxController {
     );
 
     // Simulate API call to save location
-    Future.delayed(const Duration(seconds: 2), () {
+
       isLoading.value = false;
       
       Get.snackbar(
@@ -406,7 +406,7 @@ class StallLocationController extends GetxController {
       
       // Return location data to previous screen
       Get.back(result: stallLocation);
-    });
+    
   }
 
   bool get canSave {

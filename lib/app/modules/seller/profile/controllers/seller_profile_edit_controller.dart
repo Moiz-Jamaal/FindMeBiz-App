@@ -84,6 +84,13 @@ class SellerProfileEditController extends GetxController {
   final RxBool isUploadingLogo = false.obs;
   final RxBool hasChanges = false.obs;
   
+  // Profile name availability state
+  final RxString profileName = ''.obs;
+  final RxBool isCheckingProfileName = false.obs;
+  final RxBool isProfileNameAvailable = false.obs;
+  final RxString profileNameError = ''.obs;
+  Worker? _profileDebounce;
+  
   // Form key
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
 
@@ -122,6 +129,7 @@ class SellerProfileEditController extends GetxController {
   void onClose() {
     _isDisposed = true;
     _searchDebounce.dispose();
+  try { _profileDebounce?.dispose(); } catch (_) {}
     searchTextController.dispose();
     _disposeControllers();
     super.onClose();
@@ -143,6 +151,12 @@ class SellerProfileEditController extends GetxController {
       if (response.success && response.data != null) {
         currentSeller.value = response.data;
         _populateFields(response.data!);
+        // Initialize reactive profileName and run initial availability check excluding current seller
+        final initialName = profileNameController.text.trim();
+        if (initialName.isNotEmpty) {
+          profileName.value = initialName;
+          await _checkProfileNameAvailability();
+        }
         await _loadSocialUrls(response.data!.sellerid!);
         
         // Load social media platforms after loading URLs
@@ -191,6 +205,15 @@ class SellerProfileEditController extends GetxController {
         selectedLongitude.value = coords['longitude']!;
         hasLocationSelected.value = true;
       }
+    }
+
+    // If profilename exists, reflect it in observables so Obx UI shows correct state
+    final pn = profileNameController.text.trim();
+    if (pn.isNotEmpty) {
+      profileName.value = pn;
+      // Treat own name as available until remote check completes
+      isProfileNameAvailable.value = true;
+      profileNameError.value = '';
     }
   }
 
@@ -289,6 +312,24 @@ class SellerProfileEditController extends GetxController {
     // Add listeners to detect changes
     businessNameController.addListener(_onFieldChanged);
     profileNameController.addListener(_onFieldChanged);
+    // Enforce lowercase + no spaces and debounce availability check
+    profileNameController.addListener(() {
+      if (_isDisposed) return;
+      final raw = profileNameController.text;
+      final transformed = raw.replaceAll(' ', '').toLowerCase();
+      if (raw != transformed) {
+        final selectionIndex = profileNameController.selection.baseOffset;
+        profileNameController.value = TextEditingValue(
+          text: transformed,
+          selection: TextSelection.collapsed(
+            offset: selectionIndex.clamp(0, transformed.length),
+          ),
+        );
+      }
+      profileName.value = profileNameController.text;
+      _profileDebounce?.dispose();
+      _profileDebounce = debounce(profileName, (_) => _checkProfileNameAvailability(), time: const Duration(milliseconds: 400));
+    });
     bioController.addListener(_onFieldChanged);
     contactController.addListener(_onFieldChanged);
     mobileController.addListener(_onFieldChanged);
@@ -304,6 +345,57 @@ class SellerProfileEditController extends GetxController {
       if (_isDisposed) return;
       locationSearchQuery.value = searchTextController.text;
     });
+  }
+
+  // Profile name availability check
+  Future<void> _checkProfileNameAvailability() async {
+    if (_isDisposed) return;
+    final name = profileName.value.trim();
+    profileNameError.value = '';
+    isProfileNameAvailable.value = false;
+    if (name.isEmpty) return;
+    if (name.length < 2) {
+      profileNameError.value = 'Must be at least 2 characters';
+      return;
+    }
+    // If name equals current seller's profilename, it's implicitly available
+    final ownName = currentSeller.value?.profilename?.trim().toLowerCase();
+    if (ownName != null && ownName.isNotEmpty && ownName == name.toLowerCase()) {
+      isProfileNameAvailable.value = true;
+      return;
+    }
+    isCheckingProfileName.value = true;
+    try {
+      final current = currentSeller.value;
+      final res = await _authService.isProfileNameAvailable(
+        name,
+        sellerId: current?.sellerid,
+      );
+      if (res.success) {
+        isProfileNameAvailable.value = res.data ?? false;
+        if (!isProfileNameAvailable.value) {
+          profileNameError.value = 'This profile name is already taken';
+        }
+      } else {
+        profileNameError.value = res.message ?? 'Could not verify availability';
+      }
+    } catch (e) {
+      profileNameError.value = 'Could not verify availability';
+    } finally {
+      isCheckingProfileName.value = false;
+    }
+  }
+
+  String? profileNameValidator(String? value) {
+    if (value == null || value.trim().isEmpty) return 'Profile name is required';
+    final v = value.trim();
+    if (v.length < 2) return 'Profile name must be at least 2 characters';
+    if (v.contains(' ')) return 'No spaces allowed';
+    if (v.toLowerCase() != v) return 'Must be lowercase';
+    if (!isProfileNameAvailable.value) {
+      if (profileNameError.value.isNotEmpty) return profileNameError.value;
+    }
+    return null;
   }
 
   void _disposeControllers() {
@@ -1190,7 +1282,7 @@ Get.snackbar(
   bool get isProfileValid {
     if (_isDisposed) return false;
     _validationUpdateTrigger.value; // Make reactive
-    return isBusinessNameValid && isBusinessLocationValid && isContactInfoValid;
+  return isBusinessNameValid && isProfileNameValid && isBusinessLocationValid && isContactInfoValid;
   }
   
   bool get isBusinessNameValid {
@@ -1215,22 +1307,24 @@ Get.snackbar(
            whatsappController.text.trim().isNotEmpty;
   }
   
+  bool get isProfileNameValid {
+    if (_isDisposed) return false;
+    _validationUpdateTrigger.value; // Make reactive
+    final v = profileNameController.text.trim();
+    if (v.isEmpty) return false;
+    if (v.contains(' ')) return false;
+    if (v.toLowerCase() != v) return false;
+    if (!isProfileNameAvailable.value) return false;
+    return true;
+  }
+  
   List<String> get validationErrors {
     if (_isDisposed) return [];
     _validationUpdateTrigger.value; // Make reactive
     List<String> errors = [];
-    if (!isBusinessNameValid) errors.add('Business Name is required');
-    if (!isBusinessLocationValid) {
-      if (addressController.text.trim().isEmpty) errors.add('Business Address is required');
-      if (cityController.text.trim().isEmpty) errors.add('Business City is required');
-      if (currentGeoLocation.value.trim().isEmpty) errors.add('Business Location coordinates are required');
+    if (!isProfileNameValid) {
+      errors.add(profileNameError.value.isNotEmpty ? profileNameError.value : 'Profile Name must be lowercase, no spaces, and unique');
     }
-    if (!isContactInfoValid) {
-      if (contactController.text.trim().isEmpty) errors.add('Contact Number is required');
-      if (mobileController.text.trim().isEmpty) errors.add('Mobile Number is required');
-      if (whatsappController.text.trim().isEmpty) errors.add('WhatsApp Number is required');
-    }
-   
     if (!isBusinessNameValid) errors.add('Business Name is required');
     if (!isBusinessLocationValid) {
       if (addressController.text.trim().isEmpty) errors.add('Business Address is required');

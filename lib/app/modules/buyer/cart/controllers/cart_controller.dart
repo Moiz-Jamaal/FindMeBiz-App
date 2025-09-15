@@ -174,12 +174,7 @@ class CartController extends GetxController {
   // Load cart from storage (mock)
   void _loadCart() {
     // In real app, load from local storage or API
-    isLoading.value = true;
-    
-    Future.delayed(const Duration(milliseconds: 500), () {
-      // Mock loaded cart items
-      isLoading.value = false;
-    });
+ 
   }
 
   // Save cart to storage (mock)

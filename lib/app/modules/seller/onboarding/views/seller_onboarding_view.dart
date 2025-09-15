@@ -140,10 +140,28 @@ class SellerOnboardingView extends GetView<SellerOnboardingController> {
             
             TextFormField(
               controller: controller.profileNameController,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Profile Name *',
-                hintText: 'Your name as it appears to customers',
-                prefixIcon: Icon(Icons.person),
+                hintText: 'lowercase, no spaces (e.g., myshop)',
+                prefixIcon: const Icon(Icons.person),
+                helperText: 'This will be part of your public profile URL',
+                suffixIcon: Obx(() {
+                  if (controller.profileName.value.trim().isEmpty) return const SizedBox.shrink();
+                  if (controller.isCheckingProfileName.value) {
+                    return const Padding(
+                      padding: EdgeInsets.all(12.0),
+                      child: SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    );
+                  }
+                  return Icon(
+                    controller.isProfileNameAvailable.value ? Icons.check_circle : Icons.error_outline,
+                    color: controller.isProfileNameAvailable.value ? Colors.green : Colors.red,
+                  );
+                }),
               ),
               validator: controller.profileNameValidator,
             ),
@@ -276,12 +294,56 @@ class SellerOnboardingView extends GetView<SellerOnboardingController> {
               ),
             ),
             const SizedBox(height: 16),
+
+            // Category search
+            TextField(
+              controller: controller.categorySearchController,
+              decoration: InputDecoration(
+                hintText: 'Search categories',
+                prefixIcon: const Icon(Icons.search),
+                filled: true,
+                fillColor: Colors.grey.shade100,
+                contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 12),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: AppTheme.sellerPrimary),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
             
-            isLoading 
-                ? const Center(child: CircularProgressIndicator())
-                : availableCategories.isEmpty
-                    ? const Text('No categories available')
-                    : _buildCategoriesGrid(availableCategories, selectedCategories),
+            Obx(() {
+              final query = controller.categorySearchQuery.value.trim().toLowerCase();
+              final filtered = query.isEmpty
+                  ? availableCategories
+                  : availableCategories.where((c) => c.catname.toLowerCase().contains(query)).toList();
+
+              return isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : filtered.isEmpty
+                      ? Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade100,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.grey.shade300),
+                          ),
+                          child: Text(
+                            'No categories match your search',
+                            style: Get.textTheme.bodyMedium?.copyWith(color: AppTheme.textSecondary),
+                          ),
+                        )
+                      : _buildCategoriesGrid(filtered, selectedCategories);
+            }),
             
             const SizedBox(height: 24),
             
@@ -397,12 +459,11 @@ class SellerOnboardingView extends GetView<SellerOnboardingController> {
             final currentStep = controller.currentStep.value;
             final isSubmitting = controller.isSubmitting.value;
             
-            // Compute canProceed for each step
-            bool canProceed;
+      // Compute canProceed for each step
+      bool canProceed;
             switch (currentStep) {
               case 0:
-                canProceed = controller.businessName.value.trim().isNotEmpty && 
-                           controller.profileName.value.trim().isNotEmpty;
+        canProceed = controller.canProceed;
                 break;
               case 1:
                 canProceed = controller.locationSelector.isValid;

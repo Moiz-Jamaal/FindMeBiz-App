@@ -399,7 +399,7 @@ class CommunicationService extends GetxService {
       duration: const Duration(seconds: 2),
     );
     
-    await Future.delayed(const Duration(milliseconds: 500));
+
     
     return await launchSMS(
       phoneNumber: phoneNumber,

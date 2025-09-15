@@ -20,10 +20,8 @@ class AuthService extends BaseApiService {
   
   // Firebase Auth instance
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
-  // Google Sign-In instance (for mobile only)
-  final GoogleSignIn _googleSignIn = GoogleSignIn(
-    scopes: ['email', 'profile'],
-  );
+  // Google Sign-In instance (mobile only). Lazily created to avoid web plugin init.
+  GoogleSignIn? _googleSignIn;
   
   // Getters
   UsersProfile? get currentUser => _currentUser.value;
@@ -43,8 +41,7 @@ class AuthService extends BaseApiService {
   // Initialize service and load saved user data
   Future<AuthService> init() async {
     await _loadSavedUser();
-    // Give it a moment to load
-    await Future.delayed(const Duration(milliseconds: 100));
+    // No artificial delay needed
     return this;
   }
 
@@ -181,6 +178,25 @@ class AuthService extends BaseApiService {
     return ApiResponse.error(response.message ?? 'Failed to check username availability');
   }
 
+  // Check if seller profile name is available; optionally exclude current seller by sellerId
+  Future<ApiResponse<bool>> isProfileNameAvailable(String profileName, {int? sellerId}) async {
+    final qp = {'profileName': profileName};
+    if (sellerId != null) {
+      qp['sellerId'] = sellerId.toString();
+    }
+    final response = await get<Map<String, dynamic>>(
+      '/ProfileAvailable',
+      queryParams: qp,
+    );
+
+    if (response.success && response.data != null) {
+      final available = response.data!['available'] as bool? ?? false;
+      return ApiResponse.success(available);
+    }
+
+    return ApiResponse.error(response.message ?? 'Failed to check profile name availability');
+  }
+
   // Register new user
   Future<ApiResponse<UsersProfile>> register(UsersProfile user) async {
     final response = await post<UsersProfile>(
@@ -234,7 +250,8 @@ class AuthService extends BaseApiService {
         userCredential = await _firebaseAuth.signInWithPopup(googleProvider);
       } else {
         // For mobile, use Google Sign-In package
-        final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+  _googleSignIn ??= GoogleSignIn(scopes: ['email', 'profile']);
+  final GoogleSignInAccount? googleUser = await _googleSignIn!.signIn();
         
         if (googleUser == null) {
           // User cancelled the sign-in
@@ -291,7 +308,7 @@ class AuthService extends BaseApiService {
   // Sign out from Google
   Future<void> signOutGoogle() async {
     try {
-      await _googleSignIn.signOut();
+  await _googleSignIn?.signOut();
     } catch (e) {
       // Continue with regular logout even if Google sign-out fails
       print('Google sign-out failed: $e');

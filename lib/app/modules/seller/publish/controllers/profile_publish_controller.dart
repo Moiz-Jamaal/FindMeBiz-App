@@ -336,8 +336,7 @@ class ProfilePublishController extends GetxController {
   Future<void> _handleCashfreeSuccess(PaymentResult result) async {
     try {
       // Verify payment on backend (implement backend verification)
-      // For now, simulating successful verification
-      await Future.delayed(const Duration(milliseconds: 500));
+    
       
       paymentCompleted.value = true;
       paymentId.value = result.paymentId ?? '';
@@ -352,7 +351,7 @@ class ProfilePublishController extends GetxController {
       );
       
       // Wait a moment for user to see the success message
-      await Future.delayed(const Duration(seconds: 1));
+
       
       // Navigate to dashboard and clear all previous routes
       _navigateToDashboardAndRefresh();
@@ -449,7 +448,7 @@ class ProfilePublishController extends GetxController {
         );
         
         // Wait a moment for user to see the success message
-        await Future.delayed(const Duration(seconds: 1));
+
         
         // Navigate to dashboard and clear all previous routes
         _navigateToDashboardAndRefresh();
@@ -479,14 +478,14 @@ class ProfilePublishController extends GetxController {
     Get.offAllNamed('/seller-dashboard');
     
     // Refresh dashboard data after navigation
-    Future.delayed(const Duration(milliseconds: 500), () {
+
       try {
         final dashboardController = Get.find<SellerDashboardController>();
         dashboardController.refreshData();
       } catch (e) {
 }
-    });
-  }
+    }
+  
 
   void _handlePaymentError(PaymentFailureResponse response) {
     isProcessingPayment.value = false;

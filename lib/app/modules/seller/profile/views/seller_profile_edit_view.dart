@@ -643,18 +643,41 @@ class SellerProfileEditView extends GetView<SellerProfileEditController> {
             
             TextFormField(
               controller: controller.profileNameController,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Profile Name *',
-                prefixIcon: Icon(Icons.person),
-                helperText: 'This will be your display name',
+                prefixIcon: const Icon(Icons.person),
+                hintText: 'lowercase, no spaces (e.g., myshop)',
+                helperText: 'This will be part of your public profile URL',
+                suffixIcon: Obx(() {
+                  if (controller.profileName.value.trim().isEmpty) return const SizedBox.shrink();
+                  if (controller.isCheckingProfileName.value) {
+                    return const Padding(
+                      padding: EdgeInsets.all(12.0),
+                      child: SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    );
+                  }
+                  return Icon(
+                    controller.isProfileNameAvailable.value ? Icons.check_circle : Icons.error_outline,
+                    color: controller.isProfileNameAvailable.value ? Colors.green : Colors.red,
+                  );
+                }),
               ),
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return 'Profile name is required';
-                }
-                return null;
-              },
+              validator: controller.profileNameValidator,
             ),
+            Obx(() {
+              if (controller.profileNameError.value.isEmpty) return const SizedBox.shrink();
+              return Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  controller.profileNameError.value,
+                  style: Get.textTheme.bodySmall?.copyWith(color: Colors.red),
+                ),
+              );
+            }),
             
             const SizedBox(height: 16),
             
@@ -1179,7 +1202,10 @@ class SellerProfileEditView extends GetView<SellerProfileEditController> {
                 hintText: 'Search for location...',
                 prefixIcon: const Icon(Icons.search, size: 20),
                 suffixIcon: Obx(() {
-                  if (controller.searchResults.isNotEmpty || controller.searchTextController.text.isNotEmpty) {
+                  // Always read an Rx here to keep Obx subscriptions valid
+                  final hasQuery = controller.locationSearchQuery.value.isNotEmpty;
+                  final hasResults = controller.searchResults.isNotEmpty; // derived from RxList in controller
+                  if (hasResults || hasQuery) {
                     return IconButton(
                       icon: const Icon(Icons.close, size: 20),
                       onPressed: controller.clearSearch,

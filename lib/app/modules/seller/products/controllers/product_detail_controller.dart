@@ -41,11 +41,8 @@ class ProductDetailController extends GetxController {
       product.value = productData;
   currentImageIndex.value = 0;
       
-      // Simulate loading analytics
-      isLoading.value = true;
-      Future.delayed(const Duration(milliseconds: 500), () {
-        isLoading.value = false;
-      });
+
+   
     } else {
       Get.back();
       Get.snackbar('Error', 'Product not found');
@@ -108,11 +105,6 @@ class ProductDetailController extends GetxController {
   }
 
   void _performDelete() {
-    isLoading.value = true;
-
-    // Simulate API call
-    Future.delayed(const Duration(seconds: 1), () {
-      isLoading.value = false;
 
       Get.snackbar(
         'Success',
@@ -124,7 +116,7 @@ class ProductDetailController extends GetxController {
 
       // Return delete result to previous screen
       Get.back(result: {'deleted': true, 'product': product.value});
-    });
+    
   }
 
   void duplicateProduct() {

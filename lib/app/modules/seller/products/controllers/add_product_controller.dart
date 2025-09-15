@@ -440,8 +440,6 @@ class AddProductController extends GetxController {
     if (Get.isBottomSheetOpen ?? false) {
       Navigator.of(Get.context!).pop();
     }
-    // Add a small delay to ensure bottom sheet is fully closed
-    await Future.delayed(const Duration(milliseconds: 300));
     // Then call the image function
     imageFunction();
   }
@@ -499,7 +497,7 @@ class AddProductController extends GetxController {
       
       if (sellerId == null) {
         
-        _showErrorMessage('Seller not found. Please login again.');
+        // _showErrorMessage('Seller not found. Please login again.');
         _closeSavingDialogIfOpen();
         return;
       }
@@ -547,13 +545,12 @@ class AddProductController extends GetxController {
 
         // Close dialog first and wait
         _closeSavingDialogIfOpen();
-        await Future.delayed(const Duration(milliseconds: 500));
+
         
         // Navigate back immediately without snackbar to avoid interference
         Get.back(result: created);
         
         // Show success message after navigation
-        await Future.delayed(const Duration(milliseconds: 200));
         _showSuccessMessage('Product created successfully!');
 
         // Upload images in background (do not block UI)

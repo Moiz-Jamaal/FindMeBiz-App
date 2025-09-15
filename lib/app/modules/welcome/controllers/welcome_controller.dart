@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:get/get.dart';
 import '../../../data/models/user_role.dart';
 import '../../../services/role_service.dart';
@@ -18,9 +19,9 @@ class WelcomeController extends GetxController {
     super.onInit();
     _checkUserStatus();
     // Trigger animation after a delay
-    Future.delayed(const Duration(milliseconds: 500), () {
+
       showRoleSelection.value = true;
-    });
+    
   }
 
   void _checkUserStatus() {
@@ -46,6 +47,7 @@ class WelcomeController extends GetxController {
   void proceedWithRole() async {
     if (selectedRole.value == null) return;
     
+  if (isLoading.value) return; // prevent double taps
     isLoading.value = true;
     
     final authService = Get.find<AuthService>();
@@ -64,20 +66,22 @@ class WelcomeController extends GetxController {
       }
     } else {
       // User not logged in, proceed to auth screen
-      // Simulate navigation delay for smooth UX
-      Future.delayed(const Duration(milliseconds: 800), () {
-        isLoading.value = false;
-        // Set the role temporarily but don't persist yet (will persist after auth)
-        roleService.setRoleTemporary(selectedRole.value!);
-        
-        // If picking seller first time, ensure we mark sellerOnboarded=false
-        if (selectedRole.value == UserRole.seller) {
-          roleService.sellerOnboarded = false;
+      isLoading.value = false;
+      // Set the role temporarily but don't persist yet (will persist after auth)
+      roleService.setRoleTemporary(selectedRole.value!);
+      
+      // If picking seller first time, ensure we mark sellerOnboarded=false
+      if (selectedRole.value == UserRole.seller) {
+        roleService.sellerOnboarded = false;
+      }
+      
+      // Schedule navigation to avoid pushing while navigator is locked
+      SchedulerBinding.instance.addPostFrameCallback((_) {
+        if (Get.currentRoute != '/auth') {
+          Get.toNamed('/auth');
         }
-        
-        // Navigate to auth screen
-        Get.toNamed('/auth');
       });
+      
     }
   }
 

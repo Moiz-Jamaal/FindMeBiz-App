@@ -71,7 +71,7 @@ class ProductsController extends GetxController {
       final sellerId = _authService.currentSeller?.sellerid;
       
       if (sellerId == null) {
-        Get.snackbar('Error', 'Seller not found. Please login again.');
+        // Get.snackbar('Error', 'Seller not found. Please login again.');
         return;
       }
 

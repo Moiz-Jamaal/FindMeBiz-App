@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:souq/app/data/models/sponsored_content.dart';
+import 'package:souq/app/services/campaign_service.dart';
+import 'package:souq/app/services/category_service.dart';
 
 class PerformanceService extends GetxService {
   static PerformanceService get to => Get.find();
@@ -215,30 +218,36 @@ class PerformanceService extends GetxService {
 
   /// App startup optimization
   Future<void> preloadCriticalData() async {
-  
+    // Load data in parallel without artificial delays
+    final futures = <Future>[
       // Preload categories
-      await optimizedApiCall(
+      optimizedApiCall(
         apiCall: () async {
-          // Simulate loading categories
-          await Future.delayed(const Duration(milliseconds: 500));
-          return ['Apparel', 'Jewelry', 'Food', 'Crafts', 'Electronics'];
+          // Load real categories from CategoryService
+          final categoryService = Get.find<CategoryService>();
+          return await categoryService.getCategories();
         },
         cacheKey: 'categories',
         cacheExpiry: const Duration(hours: 24),
-      );
+      ),
       
       // Preload featured sellers
-      await optimizedApiCall(
+      optimizedApiCall(
         apiCall: () async {
-          // Simulate loading featured sellers
-          await Future.delayed(const Duration(milliseconds: 800));
-          return ['seller1', 'seller2', 'seller3'];
+          // Load real featured sellers
+          final campaignService = Get.find<CampaignService>();
+          return await campaignService.getCampaignsForSlot(
+            AdSlot.homeFeatured,
+            limit: 5,
+          );
         },
         cacheKey: 'featured_sellers',
         cacheExpiry: const Duration(hours: 1),
-      );
-      
-   
+      ),
+    ];
+    
+    // Execute all preload operations in parallel
+    await Future.wait(futures);
   }
 
   /// UI performance helpers
