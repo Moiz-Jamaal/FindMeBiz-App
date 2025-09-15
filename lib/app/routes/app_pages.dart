@@ -43,14 +43,9 @@ import '../modules/buyer/home/bindings/buyer_home_binding.dart';
 import '../modules/buyer/home/views/buyer_home_view.dart';
 import '../modules/buyer/search/bindings/search_binding.dart';
 import '../modules/buyer/search/views/search_view.dart';
-import '../modules/buyer/enquiry/bindings/enquiry_binding.dart';
-import '../modules/buyer/enquiry/views/enquiry_view.dart';
-import '../modules/buyer/enquiry/views/create_enquiry_view.dart';
-import '../modules/buyer/enquiry/views/enquiry_details_view.dart';
+
 import '../modules/buyer/seller_view/bindings/seller_profile_view_binding.dart';
 import '../modules/buyer/seller_view/views/seller_profile_view.dart';
-import '../modules/buyer/map/bindings/buyer_map_binding.dart';
-import '../modules/buyer/map/views/buyer_map_view.dart';
 import '../modules/buyer/profile/bindings/buyer_profile_binding.dart';
 import '../modules/buyer/profile/views/buyer_profile_view.dart';
 import '../modules/buyer/favorites/bindings/buyer_favorites_binding.dart';
@@ -151,31 +146,13 @@ class AppPages {
       page: () => const SearchView(),
       binding: SearchBinding(),
     ),
-    GetPage(
-      name: _Paths.BUYER_ENQUIRY,
-      page: () => const EnquiryView(),
-      binding: EnquiryBinding(),
-    ),
-    GetPage(
-      name: _Paths.BUYER_CREATE_ENQUIRY,
-      page: () => const CreateEnquiryView(),
-      binding: EnquiryBinding(),
-    ),
-    GetPage(
-      name: _Paths.BUYER_ENQUIRY_DETAILS,
-      page: () => const EnquiryDetailsView(),
-      binding: EnquiryBinding(),
-    ),
+
     GetPage(
       name: _Paths.BUYER_SELLER_VIEW,
       page: () => const SellerProfileView(),
       binding: SellerProfileViewBinding(),
     ),
-    GetPage(
-      name: _Paths.BUYER_MAP,
-      page: () => const BuyerMapView(),
-      binding: BuyerMapBinding(),
-    ),
+  
     GetPage(
       name: _Paths.BUYER_PROFILE,
       page: () => const BuyerProfileView(),
