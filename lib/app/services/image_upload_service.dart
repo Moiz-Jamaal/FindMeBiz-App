@@ -14,10 +14,11 @@ class ImageUploadService extends GetxService {
   // Web-safe iOS platform check (avoids dart:io Platform usage)
   bool get _isIOS => !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
   
-  /// iOS-safe image picker from gallery with permission handling
+  /// iOS/web-safe image picker from gallery with permission handling
   Future<XFile?> pickImageFromGallery() async {
     try {
-  // Check and request photo library permission on iOS
+  // On web, browser file picker handles permissions; do not call permission_handler
+      // Check and request photo library permission on iOS only
   if (_isIOS) {
         final permission = await Permission.photos.status;
         if (permission.isDenied || permission.isPermanentlyDenied) {
@@ -49,11 +50,12 @@ class ImageUploadService extends GetxService {
     }
   }
 
-  /// iOS-safe image picker from camera with comprehensive permission handling
+  /// iOS/web-safe image picker from camera with comprehensive permission handling
   Future<XFile?> pickImageFromCamera() async {
     try {
+  // On web, permission is granted by the browser prompt when opening camera; skip permission_handler
       // iOS-specific permission checks
-  if (_isIOS) {
+      if (_isIOS) {
         // Check camera permission
         final cameraPermission = await Permission.camera.status;
         if (cameraPermission.isDenied || cameraPermission.isPermanentlyDenied) {
@@ -98,6 +100,9 @@ class ImageUploadService extends GetxService {
       
       // Specific error handling for iOS
       String errorMessage = 'Unable to access camera. Please try again.';
+      if (kIsWeb) {
+        errorMessage = 'Camera access was blocked by your browser. Click the lock icon near the address bar, allow Camera, then retry.';
+      }
       if (e.toString().contains('camera_access_denied')) {
         errorMessage = 'Camera access denied. Please enable camera permissions in Settings.';
       } else if (e.toString().contains('not_available')) {
@@ -233,7 +238,11 @@ class ImageUploadService extends GetxService {
   /// Check if camera is available and has permissions
   Future<bool> _isCameraAvailable() async {
     try {
-  if (_isIOS) {
+      if (kIsWeb) {
+        // On web we assume camera is available; actual permission is handled by the browser at use time
+        return true;
+      }
+      if (_isIOS) {
         final permission = await Permission.camera.status;
         return !permission.isPermanentlyDenied;
       }
@@ -246,7 +255,11 @@ class ImageUploadService extends GetxService {
   /// Check if gallery/photos is available and has permissions
   Future<bool> _isGalleryAvailable() async {
     try {
-  if (_isIOS) {
+      if (kIsWeb) {
+        // Always available on web via file input
+        return true;
+      }
+      if (_isIOS) {
         final permission = await Permission.photos.status;
         return !permission.isPermanentlyDenied;
       }

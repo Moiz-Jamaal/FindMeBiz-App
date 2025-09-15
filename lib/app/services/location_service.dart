@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
@@ -12,7 +13,12 @@ class LocationService extends GetxService {
     bool serviceEnabled;
     LocationPermission permission;
 
-    // Test if location services are enabled.
+    // On web, don't explicitly request permissions; let the browser prompt during the API call
+    if (kIsWeb) {
+      return true;
+    }
+
+    // Test if location services are enabled (mobile)
     serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
       Get.snackbar(
@@ -29,19 +35,24 @@ class LocationService extends GetxService {
       permission = await Geolocator.requestPermission();
       if (permission == LocationPermission.denied) {
         Get.snackbar(
-          'Permission Denied',
-          'Location permissions are required to get your current location.',
+          'Location Permission Needed',
+          kIsWeb
+              ? 'Please allow location in your browser when prompted (or via the site permissions icon near the address bar).'
+              : 'Location permissions are required to get your current location.',
           backgroundColor: Colors.red.withValues(alpha: 0.1),
           colorText: Colors.red,
         );
         return false;
       }
     }
-    
+
+    // On web "deniedForever" means the browser has blocked the site. Provide actionable guidance instead of hard error.
     if (permission == LocationPermission.deniedForever) {
       Get.snackbar(
-        'Permission Permanently Denied',
-        'Location permissions are permanently denied. Please enable them in app settings.',
+        kIsWeb ? 'Location Blocked in Browser' : 'Permission Permanently Denied',
+        kIsWeb
+            ? 'Location access is blocked for this site. Click the lock icon in the address bar, allow Location, then refresh the page.'
+            : 'Location permissions are permanently denied. Please enable them in app settings.',
         backgroundColor: Colors.red.withValues(alpha: 0.1),
         colorText: Colors.red,
       );
@@ -54,9 +65,16 @@ class LocationService extends GetxService {
   /// Get current position
   Future<Position?> getCurrentPosition() async {
     try {
-      if (!await checkAndRequestPermissions()) {
-        return null;
+      // On web, call directly to trigger browser prompt automatically
+      if (kIsWeb) {
+        final position = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.high,
+          timeLimit: const Duration(seconds: 10),
+        );
+        return position;
       }
+
+      if (!await checkAndRequestPermissions()) return null;
 
       final position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
@@ -67,7 +85,9 @@ class LocationService extends GetxService {
     } catch (e) {
       Get.snackbar(
         'Location Error',
-        'Failed to get current location: ${e.toString()}',
+        kIsWeb
+            ? 'Failed to get location. Allow Location in your browser (lock icon near address bar) and try again.'
+            : 'Failed to get current location: ${e.toString()}',
         backgroundColor: Colors.red.withValues(alpha: 0.1),
         colorText: Colors.red,
       );
