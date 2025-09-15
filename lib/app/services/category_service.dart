@@ -14,6 +14,15 @@ class CategoryService extends BaseApiService {
     return response;
   }
 
+  // Get only categories that have sellers or products (buyer-facing)
+  Future<ApiResponse<List<CategoryMaster>>> getAvailableCategories() async {
+    final response = await getList<CategoryMaster>(
+      '/AvailableCategories',
+      fromJson: (json) => CategoryMaster.fromJson(json),
+    );
+    return response;
+  }
+
   // Create new category
   Future<ApiResponse<CategoryMaster>> createCategory(CategoryMaster category) async {
     final response = await post<CategoryMaster>(

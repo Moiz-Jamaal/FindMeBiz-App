@@ -87,7 +87,7 @@ featuredProducts.assignAll(products);
 
   Future<void> _loadCategories() async {
    
-      final response = await _categoryService.getCategories();
+  final response = await _categoryService.getAvailableCategories();
       if (response.isSuccess && response.data != null) {
         categories.assignAll(response.data!);
       }
