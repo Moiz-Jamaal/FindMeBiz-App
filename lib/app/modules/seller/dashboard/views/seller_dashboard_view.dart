@@ -830,7 +830,7 @@ class SellerDashboardView extends GetView<SellerDashboardController> {
                         ],
                       ),
                       const SizedBox(height: 12),
-                      if (!Platform.isIOS)
+                      if (kIsWeb || Platform.isAndroid )
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton(
