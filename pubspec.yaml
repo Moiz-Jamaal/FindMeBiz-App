@@ -60,6 +60,9 @@ dependencies:
   
   # Google Sign-In (Firebase handles this now)
   google_sign_in: ^6.2.1
+  # Apple Sign-In (iOS)
+  sign_in_with_apple: ^6.1.0
+  crypto: ^3.0.3
 
 dev_dependencies:
   flutter_test:

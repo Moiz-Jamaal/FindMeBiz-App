@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import '../controllers/auth_controller.dart';
 import '../../../core/constants/app_constants.dart';
@@ -141,6 +142,38 @@ class AuthView extends GetView<AuthController> {
                 ),
               )),
               
+              const SizedBox(height: 12),
+
+              // Apple Sign-In Button (iOS only)
+              if (defaultTargetPlatform == TargetPlatform.iOS)
+                Obx(() => SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: OutlinedButton.icon(
+                    onPressed: controller.isLoading.value
+                        ? null
+                        : controller.signInWithApple,
+                    style: OutlinedButton.styleFrom(
+                      backgroundColor: Colors.black,
+                      side: BorderSide(color: Colors.black),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppConstants.defaultRadius),
+                      ),
+                    ),
+                    icon: const Icon(Icons.apple, color: Colors.white, size: 24),
+                    label: Text(
+                      controller.isLoginMode.value
+                          ? 'Continue with Apple'
+                          : 'Sign Up with Apple',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                )),
+
               const SizedBox(height: 24),
               
               // Toggle Mode

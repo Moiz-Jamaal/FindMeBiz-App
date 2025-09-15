@@ -3,6 +3,9 @@ import 'package:get_storage/get_storage.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter/foundation.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
+import 'package:crypto/crypto.dart';
+import 'dart:math';
 import 'dart:convert';
 import 'api/base_api_service.dart';
 import 'api/api_exception.dart';
@@ -22,6 +25,7 @@ class AuthService extends BaseApiService {
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
   // Google Sign-In instance (mobile only). Lazily created to avoid web plugin init.
   GoogleSignIn? _googleSignIn;
+  // Apple Sign-In: no persistent instance needed
   
   // Getters
   UsersProfile? get currentUser => _currentUser.value;
@@ -318,6 +322,9 @@ class AuthService extends BaseApiService {
   // Check if user is signed in with Google
   bool get isGoogleUser => _currentUser.value?.googleid != null && _currentUser.value!.googleid!.isNotEmpty;
 
+  // Check if user is signed in with Apple
+  bool get isAppleUser => _currentUser.value?.appleid != null && _currentUser.value!.appleid!.isNotEmpty;
+
   // Load seller data for current user
   Future<void> _loadSellerData() async {
     if (_currentUser.value?.userid == null) return;
@@ -374,6 +381,76 @@ class AuthService extends BaseApiService {
     );
     
     return response;
+  }
+
+  // Apple Sign-In with Firebase Auth (iOS/macOS)
+  Future<ApiResponse<UsersProfile>> signInWithApple() async {
+    try {
+      // Create a cryptographically secure random nonce, to include in the ID token.
+      String _generateNonce([int length = 32]) {
+        const charset = '0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._';
+        final random = Random.secure();
+        return List.generate(length, (_) => charset[random.nextInt(charset.length)]).join();
+      }
+
+      String _sha256ofString(String input) {
+        final bytes = utf8.encode(input);
+        final digest = sha256.convert(bytes);
+        return digest.toString();
+      }
+
+      final rawNonce = _generateNonce();
+      final nonce = _sha256ofString(rawNonce);
+
+      // Request Apple credentials
+      final appleCredential = await SignInWithApple.getAppleIDCredential(
+        scopes: [
+          AppleIDAuthorizationScopes.email,
+          AppleIDAuthorizationScopes.fullName,
+        ],
+        nonce: nonce,
+      );
+
+      final oauth = OAuthProvider('apple.com').credential(
+        idToken: appleCredential.identityToken,
+        rawNonce: rawNonce,
+      );
+
+      final userCredential = await _firebaseAuth.signInWithCredential(oauth);
+      final firebaseUser = userCredential.user;
+      if (firebaseUser == null) {
+        return ApiResponse.error('Firebase authentication failed');
+      }
+
+      final displayName = firebaseUser.displayName ??
+          [appleCredential.givenName, appleCredential.familyName]
+              .where((e) => e != null && e.isNotEmpty)
+              .join(' ');
+
+      // Send Apple user data to backend
+      final response = await post<UsersProfile>(
+        '/AppleAuth',
+        body: {
+          'appleId': firebaseUser.uid, // Firebase UID
+          'email': firebaseUser.email ?? appleCredential.email ?? '',
+          'name': displayName.isNotEmpty ? displayName : (firebaseUser.email?.split('@').first ?? 'User'),
+          'pictureUrl': firebaseUser.photoURL,
+        },
+        fromJson: (json) => UsersProfile.fromJson(json),
+      );
+
+      if (response.success && response.data != null) {
+        _saveUser(response.data!);
+        if (Get.isRegistered<RoleService>()) {
+          await Get.find<RoleService>().checkSellerData();
+          await _loadSellerData();
+        }
+      }
+
+      return response;
+    } catch (e) {
+      return ApiResponse.error('Apple Sign-In failed: $e');
+    }
   }
 
   // Logout

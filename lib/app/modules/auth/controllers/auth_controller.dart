@@ -252,6 +252,39 @@ class AuthController extends GetxController {
       isLoading.value = false;
     }
   }
+
+  // Apple Sign-In (iOS)
+  Future<void> signInWithApple() async {
+    isLoading.value = true;
+    try {
+      final response = await _authService.signInWithApple();
+      if (response.success && response.data != null) {
+        Get.snackbar(
+          'Success',
+          'Signed in with Apple',
+          backgroundColor: Colors.green.withValues(alpha: 0.1),
+          colorText: Colors.green,
+        );
+        _navigateAfterAuth();
+      } else {
+        Get.snackbar(
+          'Apple Sign-In Failed',
+          response.message ?? 'Failed to sign in with Apple',
+          backgroundColor: Colors.red.withValues(alpha: 0.1),
+          colorText: Colors.red,
+        );
+      }
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        'Apple Sign-In failed. Please try again.',
+        backgroundColor: Colors.red.withValues(alpha: 0.1),
+        colorText: Colors.red,
+      );
+    } finally {
+      isLoading.value = false;
+    }
+  }
   
   // Navigate after successful authentication
   void _navigateAfterAuth() async {
