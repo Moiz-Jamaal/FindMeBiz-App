@@ -325,9 +325,7 @@ Get.snackbar(
         'X-Goog-FieldMask':
             'places.name,places.displayName,places.formattedAddress,places.location,places.addressComponents',
       };
-      debugPrint('[LocationSelector][Places v1 TextSearch] body=${jsonEncode(body)}');
-
-      final res = await http
+final res = await http
           .post(uri, headers: headers, body: jsonEncode(body))
           .timeout(const Duration(seconds: 12));
 
@@ -367,8 +365,7 @@ Get.snackbar(
             colorText: Colors.red,
           );
         }
-        debugPrint('[LocationSelector][Places v1] HTTP ${res.statusCode} body=${res.body}');
-        _searchResults.clear();
+_searchResults.clear();
       }
     } catch (e) {
       if (showToast) {
@@ -379,8 +376,7 @@ Get.snackbar(
           colorText: Colors.red,
         );
       }
-      debugPrint('[LocationSelector][Places v1] EXCEPTION $e');
-      _searchResults.clear();
+_searchResults.clear();
     } finally {
       isLoading.value = false;
     }
@@ -455,8 +451,7 @@ Get.snackbar(
         'X-Goog-Api-Key': AppConstants.googlePlacesApiKey,
         'X-Goog-FieldMask': 'displayName,formattedAddress,location,addressComponents',
       };
-      debugPrint('[LocationSelector][Place Details v1] ${detailsUri.toString()}');
-      final res = await http.get(detailsUri, headers: headers).timeout(const Duration(seconds: 10));
+final res = await http.get(detailsUri, headers: headers).timeout(const Duration(seconds: 10));
       if (res.statusCode == 200) {
         final p = json.decode(res.body) as Map<String, dynamic>;
         final loc = p['location'] as Map<String, dynamic>?;
@@ -492,12 +487,10 @@ Get.snackbar(
         Get.snackbar('Location Selected', 'Address updated from Google Places', backgroundColor: Colors.green.withValues(alpha: 0.1), colorText: Colors.green, duration: const Duration(seconds: 2));
       } else {
         Get.snackbar('Google Place Details HTTP Error', 'Status code: ${res.statusCode}', snackPosition: SnackPosition.BOTTOM);
-        debugPrint('[LocationSelector][Place Details v1] HTTP ${res.statusCode} body=${res.body}');
-      }
+}
     } catch (e) {
       Get.snackbar('Google Place Details Error', e.toString(), snackPosition: SnackPosition.BOTTOM);
-      debugPrint('[LocationSelector][Place Details v1] EXCEPTION $e');
-    }
+}
   }
 
   // Manual refresh of address details from current coordinates

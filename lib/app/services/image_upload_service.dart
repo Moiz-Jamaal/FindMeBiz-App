@@ -39,12 +39,10 @@ class ImageUploadService extends GetxService {
       );
       
       if (image != null) {
-        debugPrint('✅ Image picked from gallery: ${image.name}');
-      }
+}
       return image;
     } catch (e) {
-      debugPrint('❌ Gallery picker error: $e');
-      _showUserFriendlyError('Gallery Error', 
+_showUserFriendlyError('Gallery Error', 
         'Unable to access photo gallery. Please try again or check app permissions.');
       return null;
     }
@@ -81,8 +79,7 @@ class ImageUploadService extends GetxService {
       );
       
       if (image != null) {
-        debugPrint('✅ Image captured from camera: ${image.name}');
-        // Immediate success feedback
+// Immediate success feedback
         Get.snackbar(
           'Photo Captured',
           'Successfully captured photo',
@@ -92,13 +89,10 @@ class ImageUploadService extends GetxService {
           snackPosition: SnackPosition.TOP,
         );
       } else {
-        debugPrint('⚠️ Camera picker cancelled by user');
-      }
+}
       return image;
     } catch (e) {
-      debugPrint('❌ Camera picker error: $e');
-      
-      // Specific error handling for iOS
+// Specific error handling for iOS
       String errorMessage = 'Unable to access camera. Please try again.';
       if (kIsWeb) {
         errorMessage = 'Camera access was blocked by your browser. Click the lock icon near the address bar, allow Camera, then retry.';
@@ -272,9 +266,7 @@ class ImageUploadService extends GetxService {
   /// Upload image with enhanced error handling
   Future<String?> uploadImage(XFile imageFile, {String? folder}) async {
     try {
-      debugPrint('📤 Starting image upload: ${imageFile.name}');
-      
-      // Validate image first
+// Validate image first
       if (!await validateImageForUpload(imageFile)) {
         return null;
       }
@@ -312,19 +304,16 @@ class ImageUploadService extends GetxService {
           if (fileKey != null) {
             final presignedUrl = await getPresignedUrl(fileKey);
             if (presignedUrl != null) {
-              debugPrint('✅ Image uploaded successfully: $presignedUrl');
-              return presignedUrl;
+return presignedUrl;
             } else if (bucketName != null) {
               final fallbackUrl = 'https://$bucketName.s3.amazonaws.com/$fileKey';
-              debugPrint('⚠️ Using fallback URL: $fallbackUrl');
-              return fallbackUrl;
+return fallbackUrl;
             }
           }
           
           final directUrl = jsonResponse['fileUrl'] as String?;
           if (directUrl != null) {
-            debugPrint('✅ Got direct URL: $directUrl');
-            return directUrl;
+return directUrl;
           }
         }
       }
@@ -333,8 +322,7 @@ class ImageUploadService extends GetxService {
         'Failed to upload image. Please check your internet connection and try again.');
       return null;
     } catch (e) {
-      debugPrint('❌ Upload error: $e');
-      _showUserFriendlyError('Upload Error', 
+_showUserFriendlyError('Upload Error', 
         'Network error occurred. Please check your connection and try again.');
       return null;
     }
@@ -383,8 +371,7 @@ class ImageUploadService extends GetxService {
       }
       return false;
     } catch (e) {
-      debugPrint('❌ Delete image error: $e');
-      return false;
+return false;
     }
   }
 
@@ -471,8 +458,7 @@ class ImageUploadService extends GetxService {
       
       return null;
     } catch (e) {
-      debugPrint('❌ Presigned URL error: $e');
-      return null;
+return null;
     }
   }
 }

@@ -95,24 +95,19 @@ class ApiClient extends GetxService {
   void _logRequest(String method, String url, String? body, http.Response response) {
     if (ApiConfig.enableLogging && kDebugMode) {
       // Lightweight debug log to console
-      debugPrint('[API] $method $url');
-      if (body != null && body.isNotEmpty) {
-        debugPrint('[API] Body: $body');
-      }
-      debugPrint('[API] Status: ${response.statusCode}');
-      // Print small preview of response
+if (body != null && body.isNotEmpty) {
+}
+// Print small preview of response
       final preview = response.body.length > 300
           ? response.body.substring(0, 300) + '...'
           : response.body;
-      debugPrint('[API] Response: $preview');
-    }
+}
   }
 
   // Error logging
   void _logError(String method, String url, dynamic error) {
     if (ApiConfig.enableLogging && kDebugMode) {
-  debugPrint('[API][ERROR] $method $url');
-  debugPrint('[API][ERROR] $error');
+debugPrint('[API][ERROR] $error');
     }
   }
 

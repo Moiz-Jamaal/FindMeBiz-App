@@ -315,8 +315,7 @@ class AuthService extends BaseApiService {
   await _googleSignIn?.signOut();
     } catch (e) {
       // Continue with regular logout even if Google sign-out fails
-      print('Google sign-out failed: $e');
-    }
+}
   }
 
   // Check if user is signed in with Google
