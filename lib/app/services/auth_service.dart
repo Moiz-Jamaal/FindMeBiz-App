@@ -463,6 +463,50 @@ class AuthService extends BaseApiService {
         );
       }
 
+  // Debug-only: decode JWT payload to validate nonce and audience
+      if (kDebugMode) {
+        Map<String, dynamic>? _decodeJwtPayload(String token) {
+          try {
+            final parts = token.split('.');
+            if (parts.length != 3) return null;
+            String _normalize(String input) {
+              var out = input.replaceAll('-', '+').replaceAll('_', '/');
+              switch (out.length % 4) {
+                case 2:
+                  out += '==';
+                  break;
+                case 3:
+                  out += '=';
+                  break;
+              }
+              return out;
+            }
+            final payload = utf8.decode(base64.decode(_normalize(parts[1])));
+            return jsonDecode(payload) as Map<String, dynamic>;
+          } catch (_) {
+            return null;
+          }
+        }
+
+        final claims = _decodeJwtPayload(appleCredential.identityToken!);
+        if (claims != null) {
+          // Compare token.nonce (SHA256 of rawNonce) with our computed hash
+          final expectedNonce = _sha256ofString(rawNonce);
+          debugPrint('[Apple Sign-In] JWT aud=${claims['aud']}, email=${claims['email']}, ' 
+              'nonce=${claims['nonce']}, iss=${claims['iss']}');
+          debugPrint('[Apple Sign-In] Nonce matches: ${claims['nonce'] == expectedNonce}');
+          // If nonce doesn't match, surface a clear, actionable error
+          if (claims.containsKey('nonce') && claims['nonce'] != expectedNonce) {
+            return ApiResponse.error(
+              'Nonce mismatch in Apple token. Ensure you pass SHA256(rawNonce) to getAppleIDCredential(nonce: ...) '
+              'and pass the rawNonce to Firebase (credential.rawNonce).',
+            );
+          }
+        } else {
+          debugPrint('[Apple Sign-In] Failed to decode Apple ID token payload for diagnostics');
+        }
+      }
+
       final oauth = OAuthProvider('apple.com').credential(
         idToken: appleCredential.identityToken,
         rawNonce: rawNonce,
