@@ -510,6 +510,7 @@ class AuthService extends BaseApiService {
       final oauth = OAuthProvider('apple.com').credential(
         idToken: appleCredential.identityToken,
         rawNonce: rawNonce,
+        accessToken: appleCredential.authorizationCode,
       );
 
       final userCredential = await _firebaseAuth.signInWithCredential(oauth);
