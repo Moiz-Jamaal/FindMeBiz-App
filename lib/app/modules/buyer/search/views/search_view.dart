@@ -240,11 +240,11 @@ class SearchView extends GetView<BuyerSearchController> {
     
     return GestureDetector(
       onTap: () {
-        // Add category to filters and perform search
-        controller.addCategoryFilter(category.catid ?? 0);
-        controller.searchTextController.text = '';
-        controller.searchQuery.value = '';
-        controller.performSearch();
+        // Selecting a category should populate the search box with its name
+        // and run search consistently using both query and category filter.
+        if (category.catid != null) {
+          controller.onCategorySelected(category);
+        }
       },
       child: Container(
         decoration: BoxDecoration(

@@ -21,6 +21,7 @@ class ProductService extends BaseApiService {
     int? sellerId,
     String? productName,
     List<int>? categoryIds,
+  String? categoryName,
     double? minPrice,
     double? maxPrice,
     bool? isAvailable,
@@ -36,32 +37,52 @@ class ProductService extends BaseApiService {
       'pageSize': pageSize.toString(),
       'sortBy': sortBy,
       'sortOrder': sortOrder,
+      // Capitalized variants for some backends
+      'Page': page.toString(),
+      'PageSize': pageSize.toString(),
+      'SortBy': sortBy,
+      'SortOrder': sortOrder,
     };
 
-    if (sellerId != null) queryParams['sellerId'] = sellerId.toString();
-    if (productName != null && productName.isNotEmpty) queryParams['productName'] = productName;
+  if (sellerId != null) { queryParams['sellerId'] = sellerId.toString(); queryParams['SellerId'] = sellerId.toString(); }
+  if (productName != null && productName.isNotEmpty) { queryParams['productName'] = productName; queryParams['ProductName'] = productName; }
     if (categoryIds != null && categoryIds.isNotEmpty) {
+      // Common patterns used by backends for array binding
+      // 1) Indexed params: categoryIds[0]=1&categoryIds[1]=2
       for (int i = 0; i < categoryIds.length; i++) {
         queryParams['categoryIds[$i]'] = categoryIds[i].toString();
       }
+      // 2) Repeated key without brackets: categoryIds=1&categoryIds=2 (ASP.NET works)
+      // We'll also provide a comma-separated variant as a single key.
+  queryParams['categoryIds'] = categoryIds.join(',');
+  queryParams['CategoryIds'] = categoryIds.join(',');
+      // 3) Single category fallback some APIs expect
+      queryParams['categoryId'] = categoryIds.first.toString();
+      queryParams['CategoryId'] = categoryIds.first.toString();
     }
-    if (minPrice != null) queryParams['minPrice'] = minPrice.toString();
-    if (maxPrice != null) queryParams['maxPrice'] = maxPrice.toString();
-    if (isAvailable != null) queryParams['isAvailable'] = isAvailable.toString();
-    if (city != null && city.isNotEmpty) queryParams['city'] = city;
-    if (area != null && area.isNotEmpty) queryParams['area'] = area;
+  if (categoryName != null && categoryName.isNotEmpty) { queryParams['categoryName'] = categoryName; queryParams['CategoryName'] = categoryName; }
+  if (minPrice != null) { queryParams['minPrice'] = minPrice.toString(); queryParams['MinPrice'] = minPrice.toString(); }
+    if (maxPrice != null) { queryParams['maxPrice'] = maxPrice.toString(); queryParams['MaxPrice'] = maxPrice.toString(); }
+    if (isAvailable != null) { queryParams['isAvailable'] = isAvailable.toString(); queryParams['IsAvailable'] = isAvailable.toString(); }
+    if (city != null && city.isNotEmpty) { queryParams['city'] = city; queryParams['City'] = city; }
+    if (area != null && area.isNotEmpty) { queryParams['area'] = area; queryParams['Area'] = area; }
 
     return await get<ProductSearchResponse>(
       '/Products',
       queryParams: queryParams,
       fromJson: (json) {
-if (json['Products'] != null) {
-          final productsList = json['Products'] as List;
-for (int i = 0; i < productsList.length; i++) {
-            final product = productsList[i];
-}
+        // Normalize known field casing before parsing
+        if (json is Map<String, dynamic>) {
+          // If only uppercase keys exist, copy to lowercase for parser fallback
+          json.putIfAbsent('products', () => json['Products']);
+          json.putIfAbsent('totalCount', () => json['TotalCount']);
+          json.putIfAbsent('page', () => json['Page']);
+          json.putIfAbsent('pageSize', () => json['PageSize']);
+          json.putIfAbsent('totalPages', () => json['TotalPages']);
+          json.putIfAbsent('hasNextPage', () => json['HasNextPage']);
+          json.putIfAbsent('hasPreviousPage', () => json['HasPreviousPage']);
         }
-return ProductSearchResponse.fromJson(json);
+        return ProductSearchResponse.fromJson(json);
       },
     );
   }
@@ -79,6 +100,7 @@ return ProductSearchResponse.fromJson(json);
     int? sellerId,
     String? productName,
     List<int>? categoryIds,
+  String? categoryName,
     double? minPrice,
     double? maxPrice,
     bool? isAvailable,
@@ -94,6 +116,7 @@ return ProductSearchResponse.fromJson(json);
       sellerId: sellerId,
       productName: productName,
       categoryIds: categoryIds,
+  categoryName: categoryName,
       minPrice: minPrice,
       maxPrice: maxPrice,
       isAvailable: isAvailable,
@@ -425,7 +448,7 @@ class ProductSearchResponse {
   });
 
   factory ProductSearchResponse.fromJson(Map<String, dynamic> json) {
-    final productsJson = (json['products'] ?? json['Products']) as List?;
+  final productsJson = (json['products'] ?? json['Products']) as List?;
     
     final products = productsJson?.map((item) {
       try {
@@ -437,12 +460,12 @@ class ProductSearchResponse {
     
     return ProductSearchResponse(
       products: products,
-      totalCount: json['totalCount'] ?? 0,
-      page: json['page'] ?? 1,
-      pageSize: json['pageSize'] ?? 20,
-      totalPages: json['totalPages'] ?? 0,
-      hasNextPage: json['hasNextPage'] ?? false,
-      hasPreviousPage: json['hasPreviousPage'] ?? false,
+      totalCount: json['totalCount'] ?? json['TotalCount'] ?? products.length,
+      page: json['page'] ?? json['Page'] ?? 1,
+      pageSize: json['pageSize'] ?? json['PageSize'] ?? 20,
+      totalPages: json['totalPages'] ?? json['TotalPages'] ?? 0,
+      hasNextPage: json['hasNextPage'] ?? json['HasNextPage'] ?? false,
+      hasPreviousPage: json['hasPreviousPage'] ?? json['HasPreviousPage'] ?? false,
     );
   }
 }

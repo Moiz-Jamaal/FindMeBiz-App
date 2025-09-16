@@ -346,6 +346,8 @@ Get.snackbar(
           _debounceTimer = Timer(const Duration(milliseconds: 600), () {
             // Ensure the text hasn't changed during the debounce period
             if (searchQuery.value == searchTextController.text) {
+              // If user typed an exact category name, sync selectedCategoryIds
+              _syncCategoryFromTypedQuery();
               performSearch();
             }
           });
@@ -356,9 +358,24 @@ Get.snackbar(
     });
   }
 
+  // If the typed query exactly matches a known category name, set that as the only selected category
+  void _syncCategoryFromTypedQuery() {
+    final q = searchQuery.value.trim().toLowerCase();
+    if (q.isEmpty) return;
+    final match = availableCategories.firstWhereOrNull(
+      (c) => (c.catname).toLowerCase() == q,
+    );
+    if (match != null && match.catid != null) {
+      // Avoid duplicates and keep it single-source-of-truth
+      selectedCategoryIds
+        ..clear()
+        ..add(match.catid!);
+    }
+  }
+
   // Removed legacy _debounceSearch in favor of Timer-based listener
   Future<void> performSearch({String? query, bool resetPage = true}) async {
-    final searchTerm = query ?? searchQuery.value;
+  final searchTerm = query ?? searchQuery.value;
     if (searchTerm.trim().isEmpty && selectedCategoryIds.isEmpty) return;
 
     // Increment token to invalidate any in-flight older searches
@@ -389,7 +406,7 @@ Get.snackbar(
       }
       
       if (searchType.value == 'All' || searchType.value == 'Products') {
-        await _searchProducts(searchTerm, token: token);
+  await _searchProducts(searchTerm, token: token);
       }
       // Only update counts if this is still the latest search
       if (token == _searchToken) {
@@ -407,8 +424,14 @@ Get.snackbar(
 
   Future<void> _searchSellers(String query, {int? token}) async {
     try {
+      String? effectiveQuery;
+      if (query.isNotEmpty) {
+        final isExactCategory = availableCategories.any((c) =>
+          c.catname.toLowerCase() == query.trim().toLowerCase());
+        effectiveQuery = isExactCategory ? null : query;
+      }
       final response = await _buyerService.searchSellers(
-        businessName: query.isNotEmpty ? query : null,
+        businessName: (effectiveQuery != null && effectiveQuery.isNotEmpty) ? effectiveQuery : null,
         city: selectedCity.value.isNotEmpty ? selectedCity.value : null,
         area: selectedArea.value.isNotEmpty ? selectedArea.value : null,
         categoryId: selectedCategoryIds.isNotEmpty ? selectedCategoryIds.first : null,
@@ -433,10 +456,24 @@ Get.snackbar(
   }
 
   Future<void> _searchProducts(String query, {int? token}) async {
- 
-      final response = await _productService.searchProducts(
-        productName: query.isNotEmpty ? query : null,
+      // If the typed query exactly matches a selected category's name,
+      // avoid passing productName to prevent conflicting filters and improve relevance.
+      String? effectiveQuery;
+      if (query.isNotEmpty) {
+        final isExactCategory = availableCategories.any((c) =>
+          c.catname.toLowerCase() == query.trim().toLowerCase());
+        effectiveQuery = isExactCategory ? null : query;
+      }
+
+    // Pass category name for backends that filter by name
+    final selectedName = (selectedCategoryIds.isNotEmpty)
+      ? availableCategories.firstWhereOrNull((c) => c.catid == selectedCategoryIds.first)?.catname
+      : null;
+
+  final response = await _productService.searchProducts(
+        productName: (effectiveQuery != null && effectiveQuery.isNotEmpty) ? effectiveQuery : null,
         categoryIds: selectedCategoryIds.isNotEmpty ? selectedCategoryIds : null,
+        categoryName: selectedName,
         minPrice: minPrice.value,
         maxPrice: maxPrice.value,
         city: selectedCity.value.isNotEmpty ? selectedCity.value : null,
@@ -451,14 +488,30 @@ Get.snackbar(
       if (token != null && token != _searchToken) return;
 
       if (response.isSuccess && response.data != null) {
-        productSearchResponse.value = response.data!;
-        
-        if (currentPage.value == 1) {
-          productResults.assignAll(response.data!.products);
-        } else {
-          productResults.addAll(response.data!.products);
+        // Apply client-side category filter as a safety net if backend doesn't filter correctly.
+        List<Product> fetched = response.data!.products;
+        if (selectedCategoryIds.isNotEmpty || (selectedName != null && selectedName.isNotEmpty)) {
+          final selIds = selectedCategoryIds.toList();
+          final selNameLower = selectedName?.toLowerCase();
+          fetched = fetched.where((p) {
+            bool byId = selIds.isEmpty
+                ? true
+                : (p.productCategories?.any((pc) => selIds.contains(pc.catId)) ?? false);
+            if (!byId) return false;
+            if (selNameLower == null || selNameLower.isEmpty) return true;
+            final names = p.categoryNames ?? p.categories;
+            return names.any((n) => n.toLowerCase() == selNameLower);
+          }).toList();
         }
-        
+
+        if (currentPage.value == 1) {
+          productResults.assignAll(fetched);
+        } else {
+          productResults.addAll(fetched);
+        }
+
+        // Keep original paging flags from server
+        productSearchResponse.value = response.data!;
         hasMoreResults.value = response.data!.hasNextPage;
       }
   
@@ -523,6 +576,22 @@ Get.snackbar(
         performSearch();
       }
     }
+  }
+
+  // Unified handler when user taps a category chip/card in UI
+  void onCategorySelected(CategoryMaster category) {
+    final id = category.catid;
+    if (id == null) return;
+    // Put category name into the textbox so user sees what is searched
+    final name = category.catname;
+    searchTextController.text = name;
+    searchQuery.value = name;
+    // Ensure only this category is selected for relevance
+    selectedCategoryIds
+      ..clear()
+      ..add(id);
+    // Reset pagination and run search
+    performSearch(query: name, resetPage: true);
   }
 
   void removeCategoryFilter(int categoryId) {
@@ -761,8 +830,8 @@ Get.snackbar(
     if (!hasSearched.value) return '';
     
     final sellerCount = sellerResults.length;
-    final productCount = productResults.length;
-    final totalCount = productSearchResponse.value?.totalCount ?? productCount;
+  final productCount = productResults.length;
+  final totalCount = productSearchResponse.value?.totalCount ?? productCount;
     
     if (searchType.value == 'Sellers') {
       return '$sellerCount seller${sellerCount != 1 ? 's' : ''} found';

@@ -22,27 +22,34 @@ class BuyerService extends BaseApiService {
     
     if (businessName != null && businessName.isNotEmpty) {
       queryParams['businessName'] = businessName;
+      queryParams['BusinessName'] = businessName;
     }
     if (city != null && city.isNotEmpty) {
       queryParams['city'] = city;
+      queryParams['City'] = city;
     }
     if (area != null && area.isNotEmpty) {
       queryParams['area'] = area;
+      queryParams['Area'] = area;
     }
     if (categoryId != null) {
       queryParams['categoryId'] = categoryId.toString();
+      queryParams['CategoryId'] = categoryId.toString();
     }
     if (address != null && address.isNotEmpty) {
       queryParams['address'] = address;
     }
     if (userLat != null) {
       queryParams['userLat'] = userLat.toString();
+      queryParams['UserLat'] = userLat.toString();
     }
     if (userLng != null) {
       queryParams['userLng'] = userLng.toString();
+      queryParams['UserLng'] = userLng.toString();
     }
     if (radiusKm != null) {
       queryParams['radiusKm'] = radiusKm.toString();
+      queryParams['RadiusKm'] = radiusKm.toString();
     }
     
     final response = await getList<SellerDetails>(
