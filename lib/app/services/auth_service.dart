@@ -3,6 +3,7 @@ import 'package:get_storage/get_storage.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:crypto/crypto.dart';
 import 'dart:math';
@@ -385,6 +386,50 @@ class AuthService extends BaseApiService {
   // Apple Sign-In with Firebase Auth (iOS/macOS)
   Future<ApiResponse<UsersProfile>> signInWithApple() async {
     try {
+      // Web: use Firebase popup provider if enabled in Firebase Console
+      if (kIsWeb) {
+        final appleProvider = OAuthProvider('apple.com');
+        // Request basic scopes
+        appleProvider.addScope('email');
+        appleProvider.addScope('name');
+
+        final userCredential = await _firebaseAuth.signInWithPopup(appleProvider);
+        final firebaseUser = userCredential.user;
+        if (firebaseUser == null) {
+          return ApiResponse.error('Firebase authentication failed');
+        }
+
+        final response = await post<UsersProfile>(
+          '/AppleAuth',
+          body: {
+            'appleId': firebaseUser.uid,
+            'email': firebaseUser.email ?? '',
+            'name': (firebaseUser.displayName ?? firebaseUser.email?.split('@').first ?? 'User'),
+            'pictureUrl': firebaseUser.photoURL,
+          },
+          fromJson: (json) => UsersProfile.fromJson(json),
+        );
+
+        if (response.success && response.data != null) {
+          _saveUser(response.data!);
+          if (Get.isRegistered<RoleService>()) {
+            await Get.find<RoleService>().checkSellerData();
+            await _loadSellerData();
+          }
+        }
+
+        return response;
+      }
+
+      // Native Apple flow is supported only on iOS/macOS
+      if (!(defaultTargetPlatform == TargetPlatform.iOS ||
+          defaultTargetPlatform == TargetPlatform.macOS)) {
+        return ApiResponse.error(
+          'Apple Sign-In is only supported on iOS/macOS in this app. '
+          'On Android, configure the Apple Web flow with a Services ID and use a backend exchange.',
+        );
+      }
+
       // Create a cryptographically secure random nonce, to include in the ID token.
       String _generateNonce([int length = 32]) {
         const charset = '0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._';
@@ -409,6 +454,14 @@ class AuthService extends BaseApiService {
         ],
         nonce: nonce,
       );
+
+      // If Apple didn't return an ID token, Firebase cannot verify the credential
+      if (appleCredential.identityToken == null || appleCredential.identityToken!.isEmpty) {
+        return ApiResponse.error(
+          'Apple did not return a valid identity token. Ensure "Sign in with Apple" is enabled for your app ID, '
+          'the capability is added in Xcode, and try again with a real device/account.',
+        );
+      }
 
       final oauth = OAuthProvider('apple.com').credential(
         idToken: appleCredential.identityToken,
@@ -448,6 +501,19 @@ class AuthService extends BaseApiService {
 
       return response;
     } catch (e) {
+      // Provide a more actionable message for invalid credential errors
+      if (e is FirebaseAuthException && e.code == 'invalid-credential') {
+        return ApiResponse.error(
+          'Apple credential was rejected. Check that the nonce hashing is correct, '
+          'the Apple capability is enabled for this bundle ID, and Firebase Apple provider is configured.',
+        );
+      }
+      if (e is PlatformException && e.code == 'invalid-credential') {
+        return ApiResponse.error(
+          'Invalid OAuth response from Apple. Verify that Sign in with Apple is enabled in Apple Developer, '
+          'the app capability is added in Xcode, and test on a real device signed into iCloud.',
+        );
+      }
       return ApiResponse.error('Apple Sign-In failed: $e');
     }
   }
