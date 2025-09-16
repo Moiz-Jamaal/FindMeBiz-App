@@ -107,8 +107,7 @@ if (body != null && body.isNotEmpty) {
   // Error logging
   void _logError(String method, String url, dynamic error) {
     if (ApiConfig.enableLogging && kDebugMode) {
-debugPrint('[API][ERROR] $error');
-    }
+}
   }
 
   // Dispose
