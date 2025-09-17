@@ -5,6 +5,7 @@ import 'package:souq/app/data/models/seller.dart';
 import 'package:souq/app/services/api/api_exception.dart';
 import 'package:souq/app/services/product_service.dart';
 import 'package:souq/app/services/auth_service.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/theme/app_theme.dart';
 
@@ -291,17 +292,17 @@ class BuyerProductViewController extends GetxController {
         pageSize: 10,
       ).then((response) {
         if (response.isSuccess && response.data != null) {
-if (response.data!.products.isNotEmpty) {
-            final firstProduct = response.data!.products.first;
-}
-relatedProducts.clear();
+          if (response.data!.products.isNotEmpty) {
+            // Product exists, continue with filtering
+          }
+          relatedProducts.clear();
           final filtered = response.data!.products.where((p) => p.id != product.value!.id).toList();
           relatedProducts.addAll(filtered);
         } else {
-relatedProducts.clear();
+          relatedProducts.clear();
         }
       }).catchError((e) {
-relatedProducts.clear();
+        relatedProducts.clear();
       });
     } else {
       relatedProducts.clear();
@@ -400,42 +401,73 @@ relatedProducts.clear();
   }
 
   void contactSeller() {
-    if (seller.value?.whatsappNumber != null && seller.value!.whatsappNumber!.isNotEmpty) {
-      _showSnackbar(
-        'Opening WhatsApp',
-        'Opening WhatsApp to contact ${seller.value?.businessName}',
-        Colors.green.withValues(alpha: 0.9),
-      );
-    } else if (seller.value != null) {
+    if (seller.value == null) {
+      _showSnackbar('Error', 'Seller information not available', Colors.red);
+      return;
+    }
+
+    final phoneNumber = seller.value!.whatsappNumber ?? seller.value!.phoneNumber;
+    
+    if (phoneNumber == null) {
       _showSnackbar(
         'Contact Info',
-        'Contact details will be available when you view the seller profile. Tap "View Profile" above.',
-        Colors.blue,
-        duration: const Duration(seconds: 4),
+        'No contact information available',
+        Colors.orange,
       );
-    } else {
-      _showSnackbar('Error', 'Seller information not available', Colors.red);
+      return;
+    }
+
+    _launchPhoneDialer(phoneNumber);
+  }
+
+  void _launchPhoneDialer(String phoneNumber) async {
+    final cleanNumber = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
+    final url = 'tel:$cleanNumber';
+    
+    try {
+      if (await canLaunchUrl(Uri.parse(url))) {
+        await launchUrl(Uri.parse(url));
+      } else {
+        throw 'Could not launch $url';
+      }
+    } catch (e) {
+      _showSnackbar(
+        'Phone Call',
+        'Could not open phone dialer',
+        Colors.red,
+      );
     }
   }
 
   void getDirections() {
-    if (seller.value?.stallLocation != null && 
-        seller.value!.stallLocation!.latitude != 0.0 && 
-        seller.value!.stallLocation!.longitude != 0.0) {
+    if (seller.value?.stallLocation == null) {
       _showSnackbar(
-        'Opening Maps',
-        'Getting directions to ${seller.value?.businessName}',
-        Colors.blue,
+        'Location',
+        'Stall location not available',
+        Colors.orange,
       );
-    } else if (seller.value != null) {
+      return;
+    }
+
+    final location = seller.value!.stallLocation!;
+    _launchMaps(location.latitude, location.longitude);
+  }
+
+  void _launchMaps(double lat, double lng) async {
+    final url = 'https://www.google.com/maps/dir/?api=1&destination=$lat,$lng';
+    
+    try {
+      if (await canLaunchUrl(Uri.parse(url))) {
+        await launchUrl(Uri.parse(url));
+      } else {
+        throw 'Could not launch $url';
+      }
+    } catch (e) {
       _showSnackbar(
-        'Location Info',
-        'Detailed location will be available when you view the seller profile. Tap "View Profile" above.',
-        Colors.blue,
-        duration: const Duration(seconds: 4),
+        'Google Maps',
+        'Could not open Google Maps',
+        Colors.red,
       );
-    } else {
-      _showSnackbar('Error', 'Seller information not available', Colors.red);
     }
   }
 

@@ -493,7 +493,7 @@ class BuyerProductView extends GetView<BuyerProductViewController> {
             Expanded(
               flex: 2,
               child: ElevatedButton.icon(
-                onPressed: controller.inquireAboutProduct,
+                onPressed: controller.contactSeller,
                 icon: const Icon(Icons.chat, size: 18),
                 label: const Text('Contact Seller'),
                 style: ElevatedButton.styleFrom(
