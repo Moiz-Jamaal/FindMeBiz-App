@@ -129,12 +129,28 @@ class AuthController extends GetxController {
         // Navigate based on role
         _navigateAfterAuth();
       } else {
-        Get.snackbar(
-          'Login Failed',
-          response.message ?? 'Invalid credentials',
-          backgroundColor: Colors.red.withValues(alpha: 0.1),
-          colorText: Colors.red,
-        );
+        // Check if user not found
+        final message = response.message?.toLowerCase() ?? '';
+        if (message.contains('not found') ||
+            message.contains('user not found') ||
+            message.contains('no account')) {
+          Get.snackbar(
+            'User Not Found',
+            'No account found with this email. Please sign up.',
+            backgroundColor: Colors.orange.withValues(alpha: 0.1),
+            colorText: Colors.orange[800]!,
+          );
+          // Switch to register mode
+          isLoginMode.value = false;
+          clearForm();
+        } else {
+          Get.snackbar(
+            'Login Failed',
+            response.message ?? 'Invalid credentials',
+            backgroundColor: Colors.red.withValues(alpha: 0.1),
+            colorText: Colors.red,
+          );
+        }
       }
     } catch (e) {
       Get.snackbar(
