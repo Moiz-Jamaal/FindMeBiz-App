@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Offer QR Scanner</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .scanner-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            padding: 30px;
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .logo {
+            font-size: 28px;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 16px;
+        }
+
+        #video {
+            width: 100%;
+            max-width: 400px;
+            height: 300px;
+            border-radius: 15px;
+            background: #f5f5f5;
+            margin-bottom: 20px;
+            object-fit: cover;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #333;
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        textarea {
+            height: 80px;
+            resize: vertical;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 50px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+            margin: 10px;
+            min-width: 150px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .status-card {
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 15px;
+            display: none;
+        }
+
+        .status-success {
+            background: #d4edda;
+            border: 2px solid #c3e6cb;
+            color: #155724;
+        }
+
+        .status-error {
+            background: #f8d7da;
+            border: 2px solid #f5c6cb;
+            color: #721c24;
+        }
+
+        .status-warning {
+            background: #fff3cd;
+            border: 2px solid #ffeaa7;
+            color: #856404;
+        }
+
+        .offer-details {
+            text-align: left;
+            margin-top: 15px;
+        }
+
+        .offer-details h4 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .offer-details p {
+            margin: 5px 0;
+            color: #666;
+        }
+
+        .loading {
+            display: none;
+            margin: 20px 0;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .manual-input {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px solid #e1e5e9;
+        }
+
+        @media (max-width: 480px) {
+            .scanner-container {
+                padding: 20px;
+                margin: 10px;
+            }
+            
+            #video {
+                height: 250px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="scanner-container">
+        <div class="logo">🎯 FindMeBiz</div>
+        <div class="subtitle">Daily Offer QR Scanner</div>
+
+        <video id="video" autoplay playsinline></video>
+        
+        <div>
+            <button id="startBtn" class="btn">Start Camera</button>
+            <button id="stopBtn" class="btn" disabled>Stop Camera</button>
+        </div>
+
+        <div class="manual-input">
+            <div class="input-group">
+                <label for="qrInput">Or enter QR code manually:</label>
+                <input type="text" id="qrInput" placeholder="FindMeBiz_12345_2024-01-15">
+            </div>
+            
+            <div class="input-group">
+                <label for="locationInput">Location (optional):</label>
+                <textarea id="locationInput" placeholder="Shop address or additional notes..."></textarea>
+            </div>
+            
+            <button id="validateBtn" class="btn">Validate & Redeem</button>
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Processing...</p>
+        </div>
+
+        <div id="statusCard" class="status-card">
+            <div id="statusMessage"></div>
+            <div id="offerDetails" class="offer-details"></div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+    <script>
+        const video = document.getElementById('video');
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const validateBtn = document.getElementById('validateBtn');
+        const qrInput = document.getElementById('qrInput');
+        const locationInput = document.getElementById('locationInput');
+        const statusCard = document.getElementById('statusCard');
+        const statusMessage = document.getElementById('statusMessage');
+        const offerDetails = document.getElementById('offerDetails');
+        const loading = document.getElementById('loading');
+
+        let stream = null;
+        let animationId = null;
+        const API_BASE = 'https://your-api-domain.com'; // Replace with your API URL
+        const SELLER_ID = 12345; // Replace with actual seller ID
+
+        startBtn.addEventListener('click', startCamera);
+        stopBtn.addEventListener('click', stopCamera);
+        validateBtn.addEventListener('click', validateQR);
+
+        async function startCamera() {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: 'environment' } 
+                });
+                video.srcObject = stream;
+                video.play();
+                
+                startBtn.disabled = true;
+                stopBtn.disabled = false;
+                
+                scanQR();
+            } catch (err) {
+                showStatus('error', 'Camera access denied or not available');
+            }
+        }
+
+        function stopCamera() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+            }
+            
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+                animationId = null;
+            }
+            
+            video.srcObject = null;
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+        }
+
+        function scanQR() {
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            
+            function tick() {
+                if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                    canvas.height = video.videoHeight;
+                    canvas.width = video.videoWidth;
+                    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    
+                    const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+                    const code = jsQR(imageData.data, imageData.width, imageData.height);
+                    
+                    if (code) {
+                        qrInput.value = code.data;
+                        validateQR();
+                        return;
+                    }
+                }
+                
+                animationId = requestAnimationFrame(tick);
+            }
+            
+            tick();
+        }
+
+        async function validateQR() {
+            const qrCode = qrInput.value.trim();
+            const location = locationInput.value.trim();
+            
+            if (!qrCode) {
+                showStatus('error', 'Please enter a QR code');
+                return;
+            }
+
+            if (!qrCode.startsWith('FindMeBiz_')) {
+                showStatus('error', 'Invalid QR code format');
+                return;
+            }
+
+            showLoading(true);
+            
+            try {
+                // First validate the QR code
+                const validateResponse = await fetch(`${API_BASE}/FMB/ValidateQRToken`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        qrToken: qrCode,
+                        sellerId: SELLER_ID,
+                        location: location
+                    })
+                });
+
+                const validateResult = await validateResponse.json();
+                
+                if (!validateResult.isValid) {
+                    showStatus('error', validateResult.message);
+                    return;
+                }
+
+                if (validateResult.alreadyRedeemed) {
+                    showStatus('warning', 'This offer has already been redeemed');
+                    return;
+                }
+
+                // If valid, proceed to redeem
+                const redeemResponse = await fetch(`${API_BASE}/FMB/RedeemDailyOffer`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        qrToken: qrCode,
+                        sellerId: SELLER_ID,
+                        location: location
+                    })
+                });
+
+                const redeemResult = await redeemResponse.json();
+                
+                if (redeemResult.success) {
+                    showStatus('success', 'Offer redeemed successfully!');
+                    displayOfferDetails(validateResult.offer);
+                    qrInput.value = '';
+                    locationInput.value = '';
+                } else {
+                    showStatus('error', redeemResult.message);
+                }
+
+            } catch (error) {
+                showStatus('error', 'Network error. Please try again.');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function showStatus(type, message) {
+            statusCard.className = `status-card status-${type}`;
+            statusMessage.textContent = message;
+            statusCard.style.display = 'block';
+            
+            if (type === 'success') {
+                setTimeout(() => {
+                    statusCard.style.display = 'none';
+                }, 5000);
+            }
+        }
+
+        function displayOfferDetails(offer) {
+            if (!offer) return;
+            
+            offerDetails.innerHTML = `
+                <h4>Offer Details:</h4>
+                <p><strong>Title:</strong> ${offer.offerTitle || 'Daily Offer'}</p>
+                <p><strong>Description:</strong> ${offer.offerDescription || 'Special daily offer'}</p>
+                <p><strong>Business:</strong> ${offer.businessName || 'N/A'}</p>
+                <p><strong>Valid Until:</strong> End of day</p>
+            `;
+        }
+
+        function showLoading(show) {
+            loading.style.display = show ? 'block' : 'none';
+            validateBtn.disabled = show;
+        }
+
+        // Auto-focus QR input on page load
+        qrInput.focus();
+    </script>
+</body>
+</html>

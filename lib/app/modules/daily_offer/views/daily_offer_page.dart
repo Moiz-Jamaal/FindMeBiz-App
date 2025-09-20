@@ -16,12 +16,18 @@ class DailyOfferPage extends GetView<DailyOfferController> {
         if (!controller.hasOffer.value) {
           return _buildNoOfferView();
         }
-        
-    return Stack(
+
+        return Stack(
+          fit: StackFit.expand,
           children: [
             _buildBackgroundImage(),
-      _buildContent(context),
-            _buildAppBar(),
+            _buildContent(context),
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: _buildAppBar(),
+            ),
           ],
         );
       }),
