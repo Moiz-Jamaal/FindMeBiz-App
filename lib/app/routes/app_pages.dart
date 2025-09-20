@@ -48,6 +48,10 @@ import '../modules/buyer/seller_view/bindings/seller_profile_view_binding.dart';
 import '../modules/buyer/seller_view/views/seller_profile_view.dart';
 import '../modules/buyer/profile/bindings/buyer_profile_binding.dart';
 import '../modules/buyer/profile/views/buyer_profile_view.dart';
+
+// Daily Offer module
+import '../modules/daily_offer/views/daily_offer_page.dart';
+import '../modules/buyer/home/bindings/buyer_home_binding.dart'; // Reuse for DailyOfferController
 import '../modules/buyer/favorites/bindings/buyer_favorites_binding.dart';
 import '../modules/buyer/favorites/views/buyer_favorites_view.dart';
 import '../modules/buyer/product_view/bindings/buyer_product_view_binding.dart';
@@ -177,6 +181,11 @@ class AppPages {
       name: '/favorites',
       page: () => const FavoritesView(),
       binding: FavoritesBinding(),
+    ),
+    GetPage(
+      name: '/daily-offer',
+      page: () => const DailyOfferPage(),
+      binding: BuyerHomeBinding(), // Reuse binding that includes DailyOfferController
     ),
     GetPage(
       name: '/app-info-settings',

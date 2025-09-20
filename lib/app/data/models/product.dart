@@ -44,12 +44,7 @@ class Product {
 
   // Get primary image URL
   String get primaryImageUrl {
-if (media?.isNotEmpty == true) {
-for (int i = 0; i < media!.length; i++) {
-        final m = media![i];
-}
-    }
-if (media?.isNotEmpty == true) {
+    if (media?.isNotEmpty == true) {
       final primaryMedia = media!.firstWhere(
         (m) => m.isPrimary && m.mediaType == 'image',
         orElse: () => media!.firstWhere(
@@ -57,12 +52,12 @@ if (media?.isNotEmpty == true) {
           orElse: () => media!.first,
         ),
       );
-return primaryMedia.mediaUrl;
+      return primaryMedia.mediaUrl;
     }
     if (images.isNotEmpty) {
-return images.first;
+      return images.first;
     }
-return 'https://via.placeholder.com/300x300/E0E0E0/FFFFFF?text=No+Image';
+    return 'https://via.placeholder.com/300x300/E0E0E0/FFFFFF?text=No+Image';
   }
 
   // Get all image URLs

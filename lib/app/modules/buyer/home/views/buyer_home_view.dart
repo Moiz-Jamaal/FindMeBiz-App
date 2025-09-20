@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:souq/app/modules/daily_offer/controllers/daily_offer_controller.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../data/models/api/index.dart';
@@ -37,7 +38,8 @@ class BuyerHomeView extends GetView<BuyerHomeController> {
           _buildAppBar(),
           _buildTopBannerCarousel(),
           _buildSearchSection(),
-          _buildBelowSearchBannerCarousel(),
+          _buildDailyOfferSection(),
+          // _buildBelowSearchBannerCarousel(),
           _buildFeaturedSellersSection(),
           _buildFeaturedProductsSection(),
           _buildCategoriesSection(),
@@ -250,6 +252,113 @@ class BuyerHomeView extends GetView<BuyerHomeController> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildDailyOfferSection() {
+    return SliverToBoxAdapter(
+      child: Obx(() {
+    final dailyCtrl = Get.isRegistered<DailyOfferController>()
+      ? Get.find<DailyOfferController>()
+      : Get.put(DailyOfferController(), permanent: true);
+        if (!dailyCtrl.hasOffer.value) {
+          return const SizedBox.shrink();
+        }
+        return Container(
+          margin: const EdgeInsets.all(AppConstants.defaultPadding),
+          child: Material(
+            elevation: 4,
+            borderRadius: BorderRadius.circular(16),
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    AppTheme.buyerPrimary.withOpacity(0.8),
+                    const Color(0xFF6366F1).withOpacity(0.9),
+                  ],
+                ),
+              ),
+              child: InkWell(
+                onTap: () => Get.toNamed('/daily-offer'),
+                borderRadius: BorderRadius.circular(16),
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(
+                          Icons.star,
+                          color: Colors.white,
+                          size: 28,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Daily Exclusive Offer',
+                              style: Get.textTheme.titleLarge?.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Special deals just for you',
+                              style: Get.textTheme.bodyMedium?.copyWith(
+                                color: Colors.white.withOpacity(0.9),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      // Pending Badge (observe existing controller instance)
+                      GetX<DailyOfferController>(builder: (controller) {
+                        if (controller.hasOffer.value && !controller.isRedeemed.value) {
+                          return Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.amber,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              'PENDING',
+                              style: Get.textTheme.labelSmall?.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          );
+                        }
+                        return const SizedBox.shrink();
+                      }),
+                      const SizedBox(width: 8),
+                      const Icon(
+                        Icons.arrow_forward_ios,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      }),
     );
   }
 
@@ -530,20 +639,31 @@ class BuyerHomeView extends GetView<BuyerHomeController> {
               ),
             ),
           ),
-          SizedBox(
-            height: 120,
-            child: Obx(() => ListView.builder(
-              scrollDirection: Axis.horizontal,
+          // Grid view of categories
+          Obx(() {
+            final categories = controller.categories;
+            if (categories.isEmpty) return const SizedBox.shrink();
+            return Padding(
               padding: const EdgeInsets.symmetric(
                 horizontal: AppConstants.defaultPadding,
               ),
-              itemCount: controller.categories.length,
-              itemBuilder: (context, index) {
-                final category = controller.categories[index];
-                return _buildCategoryCard(category);
-              },
-            )),
-          ),
+              child: GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: categories.length,
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 4,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                  childAspectRatio: 0.8,
+                ),
+                itemBuilder: (context, index) {
+                  final category = categories[index];
+                  return _buildCategoryCard(category);
+                },
+              ),
+            );
+          }),
         ],
       ),
     );
@@ -571,8 +691,10 @@ class BuyerHomeView extends GetView<BuyerHomeController> {
     }
 
     return Container(
-      width: 90,
-      margin: const EdgeInsets.only(right: 12),
+      // Fill available grid cell width
+      width: double.infinity,
+      // Spacing handled by GridView's crossAxisSpacing/mainAxisSpacing
+      margin: EdgeInsets.zero,
       child: InkWell(
         onTap: () => controller.browseCategory(category.catid ?? 0, category.catname),
         borderRadius: BorderRadius.circular(12),

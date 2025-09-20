@@ -39,6 +39,63 @@ class SponsoredContent {
     this.suppressOverlay = false,
     this.hideSponsoredTag = false,
   });
+
+  factory SponsoredContent.fromJson(Map<String, dynamic> json) {
+    return SponsoredContent(
+    id: json['id']?.toString() 
+      ?? json['campId']?.toString() 
+      ?? json['CampId']?.toString() 
+      ?? '',
+    type: _parseType(json['type'] 
+      ?? json['campGroup'] 
+      ?? json['CampGroup']),
+    title: json['title'] 
+      ?? json['offerTitle'] 
+      ?? json['OfferTitle'] 
+      ?? '',
+    subtitle: json['subtitle'] 
+      ?? json['offerDescription'] 
+      ?? json['OfferDescription'],
+    imageUrl: json['imageUrl'] 
+      ?? json['displayUrl'] 
+      ?? json['DisplayUrl'],
+    ctaLabel: json['ctaLabel'] ?? 'View Offer',
+    deeplinkRoute: json['deeplinkRoute'] 
+      ?? json['navigateUrl'] 
+      ?? json['NavigateUrl'],
+      payload: json['payload'] as Map<String, dynamic>? ?? json,
+      suppressOverlay: json['suppressOverlay'] ?? false,
+      hideSponsoredTag: json['hideSponsoredTag'] ?? false,
+    );
+  }
+
+  static SponsoredType _parseType(dynamic type) {
+    switch (type?.toString().toLowerCase()) {
+      case 'seller':
+        return SponsoredType.seller;
+      case 'product':
+        return SponsoredType.product;
+      case 'banner':
+      case 'daily_offer':
+      default:
+        return SponsoredType.banner;
+    }
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'type': type.name,
+      'title': title,
+      'subtitle': subtitle,
+      'imageUrl': imageUrl,
+      'ctaLabel': ctaLabel,
+      'deeplinkRoute': deeplinkRoute,
+      'payload': payload,
+      'suppressOverlay': suppressOverlay,
+      'hideSponsoredTag': hideSponsoredTag,
+    };
+  }
 }
 
 /// Small helper for subtle 'Sponsored' label styling

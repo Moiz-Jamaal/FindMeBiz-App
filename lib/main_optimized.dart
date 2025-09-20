@@ -10,6 +10,7 @@ import 'package:souq/app/services/url_handler_service.dart';
 import 'package:souq/app/services/favorites_service.dart';
 import 'package:souq/app/services/user_settings_service.dart';
 import 'package:souq/app/services/viewed_history_service.dart';
+import 'package:souq/services/daily_offer_service.dart';
 
 import 'app/routes/app_pages.dart';
 import 'app/core/theme/app_theme.dart';
@@ -94,6 +95,7 @@ void _initializeSecondaryServices() {
     final group3 = [
       () => Get.put<AdService>(AdService(), permanent: true),
       () => Get.put<CampaignService>(CampaignService(), permanent: true),
+      () => Get.put<DailyOfferService>(DailyOfferService(), permanent: true),
       () => Get.put<SubscriptionService>(SubscriptionService(), permanent: true),
     ];
     
