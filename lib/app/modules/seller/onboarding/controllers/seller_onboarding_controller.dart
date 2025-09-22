@@ -288,6 +288,44 @@ class SellerOnboardingController extends GetxController {
       final response = await _sellerService.createSeller(sellerDetails);
       
       if (response.success) {
+        // After creating seller, persist selected categories
+        try {
+          final createdSellerId = response.data?.sellerid ?? response.data?.sellerId;
+          int? sellerId = createdSellerId;
+          // Fallback: fetch by current user if sellerId not returned
+          if (sellerId == null && _authService.currentUser?.userid != null) {
+            final sellerLookup = await _sellerService.getSellerByUserId(_authService.currentUser!.userid!);
+            if (sellerLookup.success) {
+              sellerId = sellerLookup.data?.sellerid ?? sellerLookup.data?.sellerId;
+            }
+          }
+
+          if (sellerId != null && selectedCategories.isNotEmpty) {
+            final cats = List<CategoryMaster>.from(selectedCategories);
+            final results = await Future.wait(
+              cats.where((c) => c.catid != null).map((c) async {
+                final res = await _sellerService.addSellerCategory(
+                  SellerCategory(sellerid: sellerId, catid: c.catid),
+                );
+                return res.success;
+              }),
+              eagerError: false,
+            );
+            // Optional: notify if any failed
+            if (results.any((ok) => ok == false)) {
+              Get.snackbar(
+                'Notice',
+                'Some categories could not be saved. You can add them later in settings.',
+                backgroundColor: Colors.orange.withValues(alpha: 0.1),
+                colorText: Colors.orange,
+                duration: const Duration(seconds: 3),
+              );
+            }
+          }
+        } catch (_) {
+          // Non-blocking: continue onboarding even if category binding fails
+        }
+
         // Track analytics
         AnalyticsService.to.logEvent('seller_onboarding_complete', parameters: {
           'business_name': businessNameController.text.trim(),

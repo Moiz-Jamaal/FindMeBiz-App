@@ -22,10 +22,10 @@ class SellerCategory {
 
   Map<String, dynamic> toJson() {
     return {
-      if (scbindid != null) 'scbindid': scbindid,
-      'sellerid': sellerid,
-      'catid': catid,
-      'active': active,
+      if (scbindid != null) 'ScBindId': scbindid,
+      'SellerId': sellerid,
+      'CatId': catid,
+      'Active': active,
     };
   }
 
