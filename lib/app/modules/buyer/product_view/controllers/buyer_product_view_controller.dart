@@ -481,7 +481,13 @@ class BuyerProductViewController extends GetxController {
 
   void viewRelatedProduct(Product relatedProduct) {
     _trackRelatedProductView(relatedProduct);
-    Get.toNamed('/buyer-product-view', arguments: relatedProduct);
+    // Force navigation even if we're already on the same route
+    // (GetX by default may prevent duplicate routes with the same name)
+    Get.toNamed(
+      '/buyer-product-view',
+      arguments: relatedProduct,
+      preventDuplicates: false,
+    );
   }
 
   void _trackRelatedProductView(Product product) {
