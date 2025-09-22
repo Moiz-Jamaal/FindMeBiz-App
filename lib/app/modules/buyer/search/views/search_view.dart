@@ -119,9 +119,9 @@ class SearchView extends GetView<BuyerSearchController> {
     return Obx(() {
       if (controller.isSearching.value) {
         return _buildLoadingState();
-      } else if (!controller.hasSearched.value && !controller.useLocation.value) {
+  } else if (!controller.hasSearched.value && !controller.useLocation.value) {
         return _buildInitialState();
-      } else if (controller.totalResultsCount.value == 0) {
+  } else if (controller.totalResultsCount.value == 0 && controller.placesResults.isEmpty) {
         return _buildEmptyState();
       } else {
         return _buildSearchResults();
@@ -396,6 +396,55 @@ class SearchView extends GetView<BuyerSearchController> {
             _buildSectionHeader('Products', controller.productResults.length),
             const SizedBox(height: 12),
             _buildProductResults(),
+          ],
+
+          // Google Places supplemental results (always after app results)
+          if (controller.placesResults.isNotEmpty) ...[
+            const SizedBox(height: 24),
+            _buildSectionHeader('Nearby on Google', controller.placesResults.length),
+            const SizedBox(height: 12),
+            ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: controller.placesResults.length,
+              itemBuilder: (context, index) {
+                final place = controller.placesResults[index];
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  child: ListTile(
+                    leading: SizedBox(
+                      width: 48,
+                      height: 48,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: place.photoUrl != null && place.photoUrl!.isNotEmpty
+                            ? Image.network(
+                                place.photoUrl!,
+                                width: 48,
+                                height: 48,
+                                fit: BoxFit.cover,
+                                errorBuilder: (c, e, s) => Container(
+                                  color: Colors.grey.shade200,
+                                  child: const Icon(Icons.place, color: Colors.grey),
+                                ),
+                              )
+                            : Container(
+                                color: Colors.grey.shade200,
+                                child: const Icon(Icons.place, color: Colors.grey),
+                              ),
+                      ),
+                    ),
+                    title: Text(place.displayName.isNotEmpty ? place.displayName : 'Place'),
+                    subtitle: Text(place.formattedAddress),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.map, color: Colors.green),
+                      onPressed: () => controller.openPlaceInMaps(place),
+                    ),
+                    onTap: () => controller.openPlaceInMaps(place),
+                  ),
+                );
+              },
+            ),
           ],
         ],
       ),

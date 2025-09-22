@@ -10,6 +10,9 @@ import '../../../../services/category_service.dart';
 import '../../../../services/viewed_history_service.dart';
 import '../../../../services/product_service.dart';
 import '../../../../data/models/api/index.dart';
+import 'package:souq/app/data/models/google_place_result.dart';
+import '../../../../services/google_places_service.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class BuyerSearchController extends GetxController {
   // Services
@@ -31,6 +34,8 @@ class BuyerSearchController extends GetxController {
   final RxList<SellerDetails> sellerResults = <SellerDetails>[].obs;
   final RxList<Product> productResults = <Product>[].obs;
   final Rx<ProductSearchResponse?> productSearchResponse = Rx<ProductSearchResponse?>(null);
+  // Google Places supplemental results
+  final RxList<GooglePlaceResult> placesResults = <GooglePlaceResult>[].obs;
   
   // Filters
   final RxList<int> selectedCategoryIds = <int>[].obs;
@@ -68,6 +73,7 @@ class BuyerSearchController extends GetxController {
   // Debounce and request tracking
   Timer? _debounceTimer;
   int _searchToken = 0; // monotonically increasing token to ignore stale searches
+  bool _autoLocationAttempted = false;
   
   // Location methods
   Future<void> getCurrentLocation() async {
@@ -192,20 +198,18 @@ Get.snackbar(
   // Auto-search nearby sellers when location is obtained
   Future<void> _searchNearbySellers() async {
     try {
-      isSearching.value = true;
-      hasSearched.value = true;
-      
-      // Clear previous results
-      sellerResults.clear();
-      productResults.clear();
-      currentPage.value = 1;
-      
-      // Search for nearby sellers without any search query
-      await _searchSellers('');
-      
-      _updateResultsCount();
-      
-      if (sellerResults.isNotEmpty) {
+  isSearching.value = true;
+  hasSearched.value = true;
+
+  // Keep current app results intact; just refresh sellers nearby and Google places
+  await _searchSellers('');
+
+  // Fetch supplemental Google Places results
+  await _searchGooglePlaces(keyword: searchQuery.value.trim());
+
+  _updateResultsCount();
+
+  if (sellerResults.isNotEmpty) {
         Get.snackbar(
           'Nearby Sellers Found',
           'Found ${sellerResults.length} sellers near you',
@@ -272,6 +276,9 @@ Get.snackbar(
     if (arguments != null) {
       _handleArguments(arguments);
     }
+
+  // Auto-enable location on first visit if not already enabled
+  _maybeAutoEnableLocation();
   }
 
   @override
@@ -280,6 +287,21 @@ Get.snackbar(
   _debounceTimer?.cancel();
     searchTextController.dispose();
     super.onClose();
+  }
+
+  void _maybeAutoEnableLocation() {
+    if (_autoLocationAttempted) return;
+    _autoLocationAttempted = true;
+    // If user hasn't enabled location yet, attempt to get it once
+    if (!useLocation.value) {
+      // Delay slightly to allow UI to mount before permission prompt
+      Future.delayed(const Duration(milliseconds: 300), () async {
+        // Avoid interrupting an argument-driven search in progress
+        if (!hasSearched.value) {
+          await getCurrentLocation();
+        }
+      });
+    }
   }
 
   void _handleArguments(dynamic arguments) {
@@ -407,6 +429,12 @@ Get.snackbar(
       
       if (searchType.value == 'All' || searchType.value == 'Products') {
   await _searchProducts(searchTerm, token: token);
+      }
+      // Always fetch Google Places supplemental results after app results when location is enabled
+      if (useLocation.value && hasValidLocation) {
+        await _searchGooglePlaces(keyword: searchTerm);
+      } else {
+        placesResults.clear();
       }
       // Only update counts if this is still the latest search
       if (token == _searchToken) {
@@ -537,6 +565,7 @@ Get.snackbar(
   void _clearResults() {
     sellerResults.clear();
     productResults.clear();
+  placesResults.clear();
     productSearchResponse.value = null;
     hasSearched.value = false;
     totalResultsCount.value = 0;
@@ -839,6 +868,39 @@ Get.snackbar(
       return '$totalCount product${totalCount != 1 ? 's' : ''} found';
     } else {
       return '$sellerCount seller${sellerCount != 1 ? 's' : ''}, $totalCount product${totalCount != 1 ? 's' : ''} found';
+    }
+  }
+
+  // Google Places
+  Future<void> _searchGooglePlaces({String? keyword}) async {
+    try {
+      if (!useLocation.value || !hasValidLocation) {
+        placesResults.clear();
+        return;
+      }
+      final results = await GooglePlacesService.instance.nearbyBusinesses(
+        latitude: userLatitude.value!,
+        longitude: userLongitude.value!,
+        keyword: (keyword != null && keyword.trim().isNotEmpty) ? keyword : null,
+        radiusMeters: (radiusKm.value * 1000).toInt(),
+        pageSize: 8,
+      );
+      placesResults.assignAll(results);
+    } catch (_) {
+      placesResults.clear();
+    }
+  }
+
+  Future<void> openPlaceInMaps(GooglePlaceResult place) async {
+    final uri = place.mapsUri;
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      Get.snackbar(
+        'Open in Maps',
+        'Could not open Google Maps.',
+        snackPosition: SnackPosition.BOTTOM,
+      );
     }
   }
 }
