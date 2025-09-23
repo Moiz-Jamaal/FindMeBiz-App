@@ -13,6 +13,7 @@ import '../../../../data/models/api/index.dart';
 import 'package:souq/app/data/models/google_place_result.dart';
 import '../../../../services/google_places_service.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:souq/app/core/constants/app_constants.dart';
 
 class BuyerSearchController extends GetxController {
   // Services
@@ -430,12 +431,9 @@ Get.snackbar(
       if (searchType.value == 'All' || searchType.value == 'Products') {
   await _searchProducts(searchTerm, token: token);
       }
-      // Always fetch Google Places supplemental results after app results when location is enabled
-      if (useLocation.value && hasValidLocation) {
-        await _searchGooglePlaces(keyword: searchTerm);
-      } else {
-        placesResults.clear();
-      }
+  // Always fetch Google Places supplemental results after app results.
+  // If device location is unavailable/disabled, fall back to Surat coordinates.
+  await _searchGooglePlaces(keyword: searchTerm);
       // Only update counts if this is still the latest search
       if (token == _searchToken) {
         _updateResultsCount();
@@ -874,13 +872,17 @@ Get.snackbar(
   // Google Places
   Future<void> _searchGooglePlaces({String? keyword}) async {
     try {
-      if (!useLocation.value || !hasValidLocation) {
-        placesResults.clear();
-        return;
-      }
-      final results = await GooglePlacesService.instance.nearbyBusinesses(
-        latitude: userLatitude.value!,
-        longitude: userLongitude.value!,
+    // Choose coordinates: device location if enabled and valid; otherwise Surat defaults
+    final double lat = (useLocation.value)
+      ? userLatitude.value!
+      : AppConstants.defaultLatitude; // Surat
+    final double lng = (useLocation.value )
+      ? userLongitude.value!
+      : AppConstants.defaultLongitude; // Surat
+
+    final results = await GooglePlacesService.instance.nearbyBusinesses(
+    latitude: lat,
+    longitude: lng,
         keyword: (keyword != null && keyword.trim().isNotEmpty) ? keyword : null,
         radiusMeters: (radiusKm.value * 1000).toInt(),
         pageSize: 8,
