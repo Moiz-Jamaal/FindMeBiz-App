@@ -26,12 +26,10 @@ class DailyOfferService extends GetConnect {
   // baseUrl already includes '/FMB'
   final response = await get('/GetUserRedemptionStatus/$userId');
       if (ApiConfig.enableLogging && kDebugMode) {
-        debugPrint('[DailyOfferService] GET /GetUserRedemptionStatus/$userId → status=${response.statusCode}');
-        final bodyPreview = response.bodyString != null && response.bodyString!.length > 400
+final bodyPreview = response.bodyString != null && response.bodyString!.length > 400
             ? response.bodyString!.substring(0, 400) + '...'
             : response.bodyString;
-        debugPrint('[DailyOfferService] body: $bodyPreview');
-      }
+}
       
       if (response.hasError) {
         return ApiResponse<DailyOfferStatus>(
@@ -69,13 +67,11 @@ class DailyOfferService extends GetConnect {
         'campaignCount': 1,
       });
       if (ApiConfig.enableLogging && kDebugMode) {
-        debugPrint('[DailyOfferService] POST /TopCampaigns (daily_offer) → status=${response.statusCode}');
-        debugPrint('[DailyOfferService] payload: {userId: $userId, campGroup: daily_offer, campaignCount: 1}');
+debugPrint('[DailyOfferService] payload: {userId: $userId, campGroup: daily_offer, campaignCount: 1}');
         final bodyPreview = response.bodyString != null && response.bodyString!.length > 400
             ? '${response.bodyString!.substring(0, 400)}...'
             : response.bodyString;
-        debugPrint('[DailyOfferService] body: $bodyPreview');
-      }
+}
       
       if (response.hasError) {
         return ApiResponse<List<SponsoredContent>>(
@@ -159,8 +155,7 @@ class DailyOfferService extends GetConnect {
   // baseUrl already includes '/FMB'
   final response = await get('/HasRedeemedToday/$userId');
       if (ApiConfig.enableLogging && kDebugMode) {
-        debugPrint('[DailyOfferService] GET /HasRedeemedToday/$userId → status=${response.statusCode}, body=${response.bodyString}');
-      }
+}
       final b = response.body;
       if (b is bool) return b;
       if (b is String) return b.toLowerCase() == 'true';

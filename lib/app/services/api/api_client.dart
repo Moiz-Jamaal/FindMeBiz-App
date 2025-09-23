@@ -101,15 +101,13 @@ class ApiClient extends GetxService {
     final preview = response.body.length > 300
       ? response.body.substring(0, 300) + '...'
       : response.body;
-    debugPrint('[ApiClient] $method $url → ${response.statusCode}$bodyInfo');
-    debugPrint('[ApiClient] Response preview: $preview');
+debugPrint('[ApiClient] Response preview: $preview');
 }
   }
 
   // Error logging
   void _logError(String method, String url, dynamic error) {
     if (ApiConfig.enableLogging && kDebugMode) {
-  debugPrint('[ApiClient] $method $url ERROR: $error');
 }
   }
 

@@ -311,14 +311,11 @@ class AuthController extends GetxController {
     
     // Navigate based on role and check seller data for sellers
     if (currentRole == UserRole.seller) {
-  debugPrint('[AuthController] Auth complete; role=seller. Checking seller data...');
-      await _roleService.checkSellerData();
+await _roleService.checkSellerData();
       final route = _roleService.getSellerRoute();
-  debugPrint('[AuthController] Navigating to $route');
-      Get.offAllNamed(route);
+Get.offAllNamed(route);
     } else {
-  debugPrint('[AuthController] Auth complete; role=buyer. Navigating to /buyer-home');
-      Get.offAllNamed('/buyer-home');
+Get.offAllNamed('/buyer-home');
     }
   }
   

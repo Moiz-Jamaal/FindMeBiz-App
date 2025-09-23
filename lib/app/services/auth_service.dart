@@ -494,8 +494,7 @@ class AuthService extends BaseApiService {
           final expectedNonce = _sha256ofString(rawNonce);
           debugPrint('[Apple Sign-In] JWT aud=${claims['aud']}, email=${claims['email']}, ' 
               'nonce=${claims['nonce']}, iss=${claims['iss']}');
-          debugPrint('[Apple Sign-In] Nonce matches: ${claims['nonce'] == expectedNonce}');
-          // If nonce doesn't match, surface a clear, actionable error
+// If nonce doesn't match, surface a clear, actionable error
           if (claims.containsKey('nonce') && claims['nonce'] != expectedNonce) {
             return ApiResponse.error(
               'Nonce mismatch in Apple token. Ensure you pass SHA256(rawNonce) to getAppleIDCredential(nonce: ...) '
@@ -503,8 +502,7 @@ class AuthService extends BaseApiService {
             );
           }
         } else {
-          debugPrint('[Apple Sign-In] Failed to decode Apple ID token payload for diagnostics');
-        }
+}
       }
 
       final oauth = OAuthProvider('apple.com').credential(

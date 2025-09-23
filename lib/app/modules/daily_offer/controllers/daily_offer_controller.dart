@@ -62,47 +62,35 @@ class DailyOfferController extends GetxController with GetTickerProviderStateMix
       
       final userId = _authService.currentUser?.userid;
       if (userId == null) {
-        debugPrint('[DailyOfferController] No userId found; skipping daily offer load');
-        return;
+return;
       }
 
   // Use existing TopCampaign API for daily_offer campaigns
   final offerResponse = await _dailyOfferService.getTodaysOffer(userId: userId);
-      debugPrint('[DailyOfferController] TopCampaigns success=${offerResponse.success} count=${offerResponse.data?.length ?? 0}');
-      
-      if (offerResponse.success && offerResponse.data != null && offerResponse.data!.isNotEmpty) {
+if (offerResponse.success && offerResponse.data != null && offerResponse.data!.isNotEmpty) {
         final todaysOffer = offerResponse.data!.first;
         offer.value = todaysOffer;
         hasOffer.value = true;
-        debugPrint('[DailyOfferController] Using TopCampaigns offer: id=${todaysOffer.id}, title=${todaysOffer.title}');
-        
-        // Generate QR token
+// Generate QR token
         qrToken.value = _dailyOfferService.generateQRToken(userId);
         
         // Check redemption status separately
         final hasRedeemed = await _dailyOfferService.hasRedeemedToday(userId);
         isRedeemed.value = hasRedeemed;
-        debugPrint('[DailyOfferController] hasRedeemedToday=$hasRedeemed');
-      } else {
+} else {
         // Fallback: query full daily status
         final statusResp = await _dailyOfferService.getUserRedemptionStatus(userId);
-        debugPrint('[DailyOfferController] Fallback status success=${statusResp.success} hasOffer=${statusResp.data?.hasTodaysOffer}');
-        if (statusResp.success && statusResp.data != null && statusResp.data!.hasTodaysOffer && statusResp.data!.todaysOffer != null) {
+if (statusResp.success && statusResp.data != null && statusResp.data!.hasTodaysOffer && statusResp.data!.todaysOffer != null) {
           offer.value = statusResp.data!.todaysOffer;
           hasOffer.value = true;
           isRedeemed.value = statusResp.data!.isRedeemed;
           qrToken.value = statusResp.data!.qrToken ?? _dailyOfferService.generateQRToken(userId);
-          debugPrint('[DailyOfferController] Using fallback offer: title=${offer.value?.title}');
-        } else {
+} else {
           hasOffer.value = false;
-          print('No daily offer campaigns found');
-          debugPrint('[DailyOfferController] No daily offers available for user=$userId');
-        }
+}
       }
     } catch (e) {
-      print('Error loading daily offer: $e');
-      debugPrint('[DailyOfferController] Error: $e');
-    } finally {
+} finally {
       isLoading.value = false;
     }
   }
