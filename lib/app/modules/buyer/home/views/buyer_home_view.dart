@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:souq/app/modules/daily_offer/controllers/daily_offer_controller.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../data/models/api/index.dart';
@@ -90,6 +91,7 @@ class BuyerHomeView extends GetView<BuyerHomeController> {
     );
   }
 
+  // ignore: unused_element
   Widget _buildBelowSearchBannerCarousel() {
     final adService = Get.find<AdService>();
     
@@ -690,6 +692,40 @@ class BuyerHomeView extends GetView<BuyerHomeController> {
       }
     }
 
+    final rawUrl = category.icon;
+    String? iconUrl = rawUrl;
+    if (iconUrl != null) {
+      // If backend sent only a filename, prepend the S3 base path
+      if (!iconUrl.contains('://')) {
+        iconUrl = 'https://findmebiz-media.s3.us-east-1.amazonaws.com/icons/' + iconUrl;
+      }
+      // Encode spaces and unsafe characters in path to avoid 403/404 from S3
+      try {
+        final uri = Uri.parse(iconUrl);
+        final encoded = Uri(
+          scheme: uri.scheme,
+          userInfo: uri.userInfo,
+          host: uri.host,
+          port: uri.hasPort ? uri.port : null,
+          pathSegments: uri.pathSegments.map(Uri.encodeComponent).toList(),
+          query: uri.query,
+          fragment: uri.fragment,
+        );
+        iconUrl = encoded.toString();
+      } catch (_) {
+        iconUrl = (iconUrl ?? '').replaceAll(' ', '%20');
+      }
+    }
+    final bool isSvg = (() {
+      if (iconUrl == null) return false;
+      try {
+        final p = Uri.parse(iconUrl).path.toLowerCase();
+        return p.endsWith('.svg');
+      } catch (_) {
+        return iconUrl.toLowerCase().endsWith('.svg');
+      }
+    })();
+
     return Container(
       // Fill available grid cell width
       width: double.infinity,
@@ -707,15 +743,40 @@ class BuyerHomeView extends GetView<BuyerHomeController> {
                 color: AppTheme.buyerPrimary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(
-                getIconForCategory(category.catname ),
-                color: AppTheme.buyerPrimary,
-                size: 24,
-              ),
+              child: (iconUrl != null && iconUrl.isNotEmpty)
+                  ? Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: isSvg
+              ? SvgPicture.network(
+                iconUrl,
+                fit: BoxFit.contain,
+                placeholderBuilder: (ctx) => Center(
+                                child: Icon(
+                                  getIconForCategory(category.catname ),
+                                  color: AppTheme.buyerPrimary,
+                                  size: 24,
+                                ),
+                              ),
+                            )
+                          : Image.network(
+                              iconUrl,
+                              fit: BoxFit.contain,
+                              errorBuilder: (ctx, err, st) => Icon(
+                                getIconForCategory(category.catname ),
+                                color: AppTheme.buyerPrimary,
+                                size: 24,
+                              ),
+                            ),
+                    )
+                  : Icon(
+                      getIconForCategory(category.catname ),
+                      color: AppTheme.buyerPrimary,
+                      size: 24,
+                    ),
             ),
             const SizedBox(height: 8),
             Text(
-              category.catname ,
+              category.catname,
               style: Get.textTheme.bodySmall?.copyWith(
                 fontWeight: FontWeight.w500,
               ),

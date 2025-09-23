@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:get/get.dart';
 import 'package:souq/app/data/models/api/category_master.dart';
 import 'package:souq/core/widgets/enhanced_network_image.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../controllers/buyer_search_controller.dart';
@@ -237,6 +238,37 @@ class SearchView extends GetView<BuyerSearchController> {
     
     final categoryData = categoryMap[category.catname] ?? 
         {'icon': Icons.category, 'color': Colors.grey};
+    final rawUrl = category.icon;
+    String? iconUrl = rawUrl;
+    if (iconUrl != null) {
+      if (!iconUrl.contains('://')) {
+        iconUrl = 'https://findmebiz-media.s3.us-east-1.amazonaws.com/icons/' + iconUrl;
+      }
+      try {
+        final uri = Uri.parse(iconUrl);
+        final encoded = Uri(
+          scheme: uri.scheme,
+          userInfo: uri.userInfo,
+          host: uri.host,
+          port: uri.hasPort ? uri.port : null,
+          pathSegments: uri.pathSegments.map(Uri.encodeComponent).toList(),
+          query: uri.query,
+          fragment: uri.fragment,
+        );
+        iconUrl = encoded.toString();
+      } catch (_) {
+        iconUrl = (iconUrl ?? '').replaceAll(' ', '%20');
+      }
+    }
+    final bool isSvg = (() {
+      if (iconUrl == null) return false;
+      try {
+        final p = Uri.parse(iconUrl).path.toLowerCase();
+        return p.endsWith('.svg');
+      } catch (_) {
+        return iconUrl.toLowerCase().endsWith('.svg');
+      }
+    })();
     
     return GestureDetector(
       onTap: () {
@@ -268,11 +300,34 @@ class SearchView extends GetView<BuyerSearchController> {
                 color: (categoryData['color'] as Color).withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Icon(
-                categoryData['icon'] as IconData,
-                color: categoryData['color'] as Color,
-                size: 24,
-              ),
+              child: (iconUrl != null && iconUrl.isNotEmpty)
+                  ? Padding(
+                      padding: const EdgeInsets.all(6.0),
+                      child: isSvg
+                          ? SvgPicture.network(
+                              iconUrl,
+                              fit: BoxFit.contain,
+                              placeholderBuilder: (ctx) => Icon(
+                                categoryData['icon'] as IconData,
+                                color: categoryData['color'] as Color,
+                                size: 20,
+                              ),
+                            )
+                          : Image.network(
+                              iconUrl,
+                              fit: BoxFit.contain,
+                              errorBuilder: (ctx, err, st) => Icon(
+                                categoryData['icon'] as IconData,
+                                color: categoryData['color'] as Color,
+                                size: 20,
+                              ),
+                            ),
+                    )
+                  : Icon(
+                      categoryData['icon'] as IconData,
+                      color: categoryData['color'] as Color,
+                      size: 24,
+                    ),
             ),
             const SizedBox(height: 8),
             Text(
