@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import 'package:souq/app/data/models/seller.dart';
 import 'package:geolocator/geolocator.dart';
@@ -79,6 +80,57 @@ class BuyerSearchController extends GetxController {
   // Location methods
   Future<void> getCurrentLocation() async {
     try {
+      // On web, don't use permission_handler flows. Only attempt geolocation
+      // when user explicitly toggles it; the browser will handle permission UI.
+      if (kIsWeb) {
+        Get.snackbar(
+          'Getting Location',
+          'Please wait while we get your current location...',
+          snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(seconds: 2),
+        );
+
+        try {
+          final position = await Geolocator.getCurrentPosition(
+            desiredAccuracy: LocationAccuracy.high,
+            timeLimit: const Duration(seconds: 10),
+          );
+
+          userLatitude.value = position.latitude;
+          userLongitude.value = position.longitude;
+          useLocation.value = true;
+
+          Get.snackbar(
+            'Location Found',
+            'Loading nearby sellers...',
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: Colors.green,
+            colorText: Colors.white,
+            duration: const Duration(seconds: 2),
+          );
+
+          await _searchNearbySellers();
+        } on TimeoutException {
+          Get.snackbar(
+            'Location Timeout',
+            'Could not get location. Please try again or check GPS signal',
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: Colors.orange,
+            colorText: Colors.white,
+          );
+        } on PermissionDeniedException {
+          // User denied in browser; continue without enabling location
+          Get.snackbar(
+            'Permission Denied',
+            'Location permission is required for nearby search',
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: Colors.red,
+            colorText: Colors.white,
+          );
+        }
+        return;
+      }
+
       // Check if location service is enabled
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
@@ -294,7 +346,9 @@ Get.snackbar(
     if (_autoLocationAttempted) return;
     _autoLocationAttempted = true;
     // If user hasn't enabled location yet, attempt to get it once
-    if (!useLocation.value) {
+  // On web, avoid auto-requesting location to prevent immediate browser prompts
+  if (kIsWeb) return;
+  if (!useLocation.value) {
       // Delay slightly to allow UI to mount before permission prompt
       Future.delayed(const Duration(milliseconds: 300), () async {
         // Avoid interrupting an argument-driven search in progress
@@ -873,10 +927,11 @@ Get.snackbar(
   Future<void> _searchGooglePlaces({String? keyword}) async {
     try {
     // Choose coordinates: device location if enabled and valid; otherwise Surat defaults
-    final double lat = (useLocation.value)
+    final bool canUseDeviceLocation = useLocation.value && hasValidLocation;
+    final double lat = canUseDeviceLocation
       ? userLatitude.value!
       : AppConstants.defaultLatitude; // Surat
-    final double lng = (useLocation.value )
+    final double lng = canUseDeviceLocation
       ? userLongitude.value!
       : AppConstants.defaultLongitude; // Surat
 
