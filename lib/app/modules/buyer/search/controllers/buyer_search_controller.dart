@@ -364,26 +364,44 @@ Get.snackbar(
       // Simple search query
       searchTextController.text = arguments;
       searchQuery.value = arguments;
-      performSearch();
+      // Reset to a fresh search using the provided query
+      performSearch(query: arguments, resetPage: true);
     } else if (arguments is Map<String, dynamic>) {
-      // Advanced search with filters
-      if (arguments['query'] != null) {
-        searchTextController.text = arguments['query'];
-        searchQuery.value = arguments['query'];
-      }
-      if (arguments['categoryId'] != null) {
-        selectedCategoryIds.add(arguments['categoryId']);
-      }
-      if (arguments['categoryName'] != null) {
-        // Find category by name and add ID
-        final category = availableCategories.firstWhereOrNull(
-          (c) => c.catname == arguments['categoryName'],
+      // Advanced search with filters (e.g., from Home category tap)
+      final String? queryArg = arguments['query'] as String?;
+      final int? categoryId = arguments['categoryId'] as int?;
+      final String? categoryName = arguments['categoryName'] as String?;
+
+      // Ensure category filter is single-source-of-truth like onCategorySelected()
+      selectedCategoryIds.clear();
+      if (categoryId != null) {
+        selectedCategoryIds.add(categoryId);
+      } else if (categoryName != null) {
+        // Map name to ID if possible
+        final match = availableCategories.firstWhereOrNull(
+          (c) => c.catname.trim().toLowerCase() == categoryName.trim().toLowerCase(),
         );
-        if (category != null) {
-          selectedCategoryIds.add(category.catid!);
+        if (match?.catid != null) {
+          selectedCategoryIds.add(match!.catid!);
         }
       }
-      performSearch();
+
+      // Prefer showing category name in the search box for consistency
+      String visibleText = '';
+      if (categoryName != null && categoryName.trim().isNotEmpty) {
+        visibleText = categoryName.trim();
+      } else if (queryArg != null && queryArg.trim().isNotEmpty) {
+        visibleText = queryArg.trim();
+      } else if (categoryId != null) {
+        final match = availableCategories.firstWhereOrNull((c) => c.catid == categoryId);
+        if (match != null) visibleText = match.catname;
+      }
+
+      searchTextController.text = visibleText;
+      searchQuery.value = visibleText;
+
+      // Run a fresh search mirroring onCategorySelected behavior
+      performSearch(query: visibleText.isNotEmpty ? visibleText : null, resetPage: true);
     }
   }
 

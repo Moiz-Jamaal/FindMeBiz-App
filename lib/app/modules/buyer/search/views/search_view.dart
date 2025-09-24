@@ -787,22 +787,6 @@ class SearchView extends GetView<BuyerSearchController> {
                   ],
                 ),
               ),
-              
-              // Contact Button
-              IconButton(
-                onPressed: () {
-                  // Contact seller action
-                  Get.snackbar(
-                    'Contact Seller',
-                    'Opening WhatsApp to contact ${seller.businessname ?? 'Business'}',
-                    snackPosition: SnackPosition.BOTTOM,
-                  );
-                },
-                icon: Icon(
-                  Icons.chat,
-                  color: AppTheme.buyerPrimary,
-                ),
-              ),
             ],
           ),
         ),
