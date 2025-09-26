@@ -548,7 +548,7 @@ class BuyerHomeView extends GetView<BuyerHomeController> {
                           product.imageUrl!,
                           width: double.infinity,
                           height: 120,
-                          fit: BoxFit.cover,
+                          fit: BoxFit.contain,
                           errorBuilder: (context, error, stackTrace) => Icon(
                             Icons.shopping_bag,
                             size: 40,

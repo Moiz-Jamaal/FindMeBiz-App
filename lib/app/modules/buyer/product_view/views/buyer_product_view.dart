@@ -166,7 +166,7 @@ class BuyerProductView extends GetView<BuyerProductViewController> {
                       borderRadius: BorderRadius.circular(12),
                       child: EnhancedNetworkImage(
                         imageUrl: imageUrl,
-                        fit: BoxFit.cover,
+                        fit: BoxFit.contain,
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
@@ -675,7 +675,7 @@ class BuyerProductView extends GetView<BuyerProductViewController> {
       if (imageUrl != null && imageUrl.isNotEmpty) {
         return Image.network(
           imageUrl,
-          fit: BoxFit.cover,
+          fit: BoxFit.contain,
           width: double.infinity,
           height: double.infinity,
           errorBuilder: (context, error, stackTrace) {
@@ -716,7 +716,7 @@ class BuyerProductView extends GetView<BuyerProductViewController> {
       if (imageUrl != null && imageUrl.isNotEmpty) {
         return Image.network(
           imageUrl,
-          fit: BoxFit.cover,
+          fit: BoxFit.contain,
           width: double.infinity,
           height: double.infinity,
           errorBuilder: (context, error, stackTrace) {
@@ -755,7 +755,7 @@ class BuyerProductView extends GetView<BuyerProductViewController> {
     if (product.primaryImageUrl != null && product.primaryImageUrl.isNotEmpty && !product.primaryImageUrl.contains('placeholder')) {
       return Image.network(
         product.primaryImageUrl,
-        fit: BoxFit.cover,
+        fit: BoxFit.contain,
         width: double.infinity,
         height: double.infinity,
         errorBuilder: (context, error, stackTrace) {
